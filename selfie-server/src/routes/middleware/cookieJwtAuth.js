@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 
 const cookieJwtAuth = (req, res, next) => {
   const token = req.cookies.token;
-  console.log('cookieJwtAuth: token: ', token);
   if (!token) return res.status(401).send('Access Denied');
 
   try {
