@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error</title>
+  <link rel="stylesheet" href="/stylesheets/style.css"> <!-- Ensure you have a stylesheet if needed -->
+</head>
+<body>
+  <div class="container">
+    <h1>Error</h1>
+    <h2><%= message %></h2>
+    <% if (error.status) { %>
+      <h3>Status: <%= error.status %></h3>
+    <% } %>
+    <% if (error.stack) { %>
+      <pre><%= error.stack %></pre>
+    <% } %>
+  </div>
+</body>
+</html>
+
