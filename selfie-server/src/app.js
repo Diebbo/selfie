@@ -6,25 +6,25 @@ var session = require('express-session');
 // var csrf = require('csurf');
 var passport = require('passport');
 var logger = require('morgan');
+const cors = require('cors');
 
-
-const PORT = process.env.PORT || 3000;
 
 // loading environment variables
 require('dotenv').config();
 
+const PORT = process.env.PORT || 3000;
+
 console.log('app.js starts...');
 var indexRouter = require('./routes/index');
 var authRouter = require('./routes/auth');
-
-console.log('app.js: indexRouter: ', indexRouter);
-console.log('app.js: authRouter: ', authRouter);
 
 var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'ejs');
+
+app.use(cors());
 
 app.locals.pluralize = require('pluralize');
 

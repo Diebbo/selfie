@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Form, Button, Container, Row, Col } from "react-bootstrap";
+import { login } from "../../services/auth/authService";
+import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login : React.FC = () => {
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 	const [formData, setFormData] = useState({
 		name: "",
 		email: "",
@@ -13,10 +17,20 @@ const Login = () => {
 		setFormData({ ...formData, [name]: value });
 	};
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
-		// Handle form submission logic
-		console.log("Form submitted:", formData);
+    setError(null);
+		const { email, password } = formData;
+
+    try {
+      const data = await login(email, password);
+      console.log('Login successful', data);
+      navigate('/dashboard'); 
+      // Handle successful login (e.g., redirect, load user data, etc.)
+    } catch (err) {
+      console.error('Login error', err);
+      setError('Login failed. Please check your credentials.');
+    }
 	};
 
 	return (
@@ -52,6 +66,7 @@ const Login = () => {
 						<Button variant="primary" type="submit">
 							Submit
 						</Button>
+							{error && <p style={{ color: 'red' }}>{error}</p>}
 					</Form>
 				</Col>
 			</Row>

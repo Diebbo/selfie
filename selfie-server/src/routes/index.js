@@ -5,11 +5,9 @@ const cookieJwtAuth = require("./middleware/cookieJwtAuth");
 const router = express.Router();
 
 // configuring routes
-router.get("/", function (req, res) {
-  console.log("request", req)
-  console.log("response", res)
+router.get("/ready", function (req, res) {
   // sending the response
-  res.send("Hello Express!!");
+  res.send("Server Runnign!!");
 });
 
 router.get("/about", cookieJwtAuth, function (req, res) {
