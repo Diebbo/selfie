@@ -10,21 +10,56 @@ export function createAuthRouter(db) {
   async function getData(username, password) {
     return await db.login(username, password);
   }
+  function userCast(user) {
+    return {
+      _id: user._id,
+      email: user.email,
+      username: user.username,
+      role: user.role
+    };
+  }
+  function createToken(user) {
+    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1h' });
+  }
 
-  // Example authentication route
   router.post("/login", async (req, res) => {
     const { username, password } = req.body;
     console.log(`User logging in: ${username}`);
 
-    const user = await getData(username, password);
+    const dbuser = await getData(username, password);
 
-    if (!user || password !== user.password) {
+    if (!dbuser || password !== dbuser.password) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+    
+    const user = userCast(dbuser);
 
-    delete user.password;
+    const token = createToken(user);
 
-    const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "Lax",
+      // secure: true, // Enable in production
+      // maxAge: 3600000, // 1 hour
+      // signed: true, // Enable if using signed cookies
+    });
+
+    res.json({ user, token });
+  });
+
+  router.post("/register", async (req, res) => {
+    const { username, password, email } = req.body;
+    console.log(`User registering: ${username}`);
+
+    const dbuser = await db.register(email, password, username, "user");
+
+    if (!dbuser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    const user = userCast(dbuser);
+
+    const token = createToken(user);
 
     res.cookie("token", token, {
       httpOnly: true,

@@ -5,7 +5,6 @@ export const loginSchema = new mongoose.Schema({
     password: String,
     username: String,
     role: String,
-    token: String,
 });
 
 

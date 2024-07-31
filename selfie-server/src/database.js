@@ -16,6 +16,9 @@ export async function createDataBase() {
   };
 
   const register = async (email, password, username, role) => {
+    const dbUser = await loginModel.findOne({ email });
+    if (dbUser) return null;
+
     const user = await loginModel.create({ email, password, username, role });
     return user;
   }
