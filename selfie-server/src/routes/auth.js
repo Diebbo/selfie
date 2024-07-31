@@ -6,10 +6,6 @@ const router = express.Router();
 
 // Function to create the router with dependency injection
 export function createAuthRouter(db) {
-  // Example fetch data function
-  async function getData(username, password) {
-    return await db.login(username, password);
-  }
   function userCast(user) {
     return {
       _id: user._id,
@@ -26,9 +22,9 @@ export function createAuthRouter(db) {
     const { username, password } = req.body;
     console.log(`User logging in: ${username}`);
 
-    const dbuser = await getData(username, password);
+    const dbuser = await db.login(username, password);
 
-    if (!dbuser || password !== dbuser.password) {
+    if (!dbuser) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
     
