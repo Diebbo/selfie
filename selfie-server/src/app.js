@@ -7,8 +7,10 @@ import httpErrors from 'http-errors';
 const { createError } = httpErrors;
 import dotenv from "dotenv";
 import pluralize from "pluralize";
+import { createAuthRouter } from "./routes/auth.js";
+import indexRouter from "./routes/index.js";
 
-export function createApp({ indexRouter, authRouter, dirpath }) {
+export function createApp({ dirpath, database }) {
   // loading environment variables
   dotenv.config();
 
@@ -29,6 +31,7 @@ export function createApp({ indexRouter, authRouter, dirpath }) {
   app.use(express.static(path.join(dirpath, "../public")));
 
   console.log("createApp.js: initialize routes");
+  const authRouter = createAuthRouter(database);
   app.use("/", indexRouter);
   app.use("/", authRouter);
 
