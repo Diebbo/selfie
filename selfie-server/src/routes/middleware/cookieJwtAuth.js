@@ -1,4 +1,5 @@
-const jwt = require('jsonwebtoken');
+// Description: Middleware to verify JWT token from cookie.
+import jwt from 'jsonwebtoken';
 
 const cookieJwtAuth = (req, res, next) => {
   const token = req.cookies.token;
@@ -15,5 +16,4 @@ const cookieJwtAuth = (req, res, next) => {
   }
 };
 
-module.exports = cookieJwtAuth;
-
+export default cookieJwtAuth;
