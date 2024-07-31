@@ -1,5 +1,5 @@
-const express = require("express");
-const cookieJwtAuth = require("./middleware/cookieJwtAuth");
+import express from "express";
+import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 
 // creating a router
 const router = express.Router();
@@ -10,10 +10,14 @@ router.get("/ready", function (req, res) {
   res.send("Server Runnign!!");
 });
 
-router.get("/about", cookieJwtAuth, function (req, res) {
+router.get("/dashboard", cookieJwtAuth, function (req, res) {
   // sending the response
-  res.send("About Us");
+  console.log(req.user);
+  if(req.user.username === "admin@a") {
+    res.send("Welcome to the admin dashboard");
+  }
+  res.send("You are not authorized to view this page");
 });
 
-module.exports = router;
+export default router;
 

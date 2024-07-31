@@ -1,27 +1,26 @@
-// routes/auth.js
-const express = require("express");
-const jwt = require("jsonwebtoken");
+import express from 'express';
+import jwt from 'jsonwebtoken';
+
 const router = express.Router();
+
+const users = [
+  { username: "user@gmail.com", password: "password" },
+  { username: "admin@a", password: "admin" }
+];
 
 // Example fetch data function
 async function getData(username) {
-  return { username: "user@gmail.com", password: "password" };
+  return users.find((user) => user.username === username);
 }
 
 // Example authentication route
-// router.get("/login", (req, res) => {
-//   res.render("login");
-// });
-
 router.post("/login", async (req, res) => {
-  // Add your authentication logic here
   const { username, password } = req.body;
-  console.log("this mf is loggin in:" + username + " " + password);
+  console.log(`User logging in: ${username}`);
 
   const user = await getData(username);
 
-  // Dummy authentication check
-  if (password !== user.password) {
+  if (!user || password !== user.password) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
@@ -40,4 +39,4 @@ router.post("/login", async (req, res) => {
   res.json({ user, token });
 });
 
-module.exports = router;
+export default router;
