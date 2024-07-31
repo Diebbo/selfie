@@ -9,8 +9,8 @@ export async function createDataBase() {
 
   mongoose.connect(uri);
 
-  const login = async (email, password) => {
-    const user = await loginModel.findOne({ email, password });
+  const login = async (username, password) => {
+    const user = await loginModel.findOne({ username, password });
 
     return user ? user : null;
   };
