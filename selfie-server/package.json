@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha 'src/**/*.test.js' --require esm --timeout 10000",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
@@ -27,5 +27,15 @@
     "morgan": "^1.10.0",
     "passport": "^0.7.0",
     "pluralize": "^8.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "chai": "^5.1.1",
+    "eslint": "^9.8.0",
+    "esm": "^3.2.25",
+    "globals": "^15.9.0",
+    "mocha": "^10.7.0",
+    "sinon": "^18.0.0",
+    "supertest": "^7.0.0"
   }
 }
