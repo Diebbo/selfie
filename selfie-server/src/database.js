@@ -6,7 +6,7 @@ export async function createDataBase() {
   const uri =
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
-  const loginModel = mongoose.model("login", userSchema);
+  const loginModel = mongoose.model("users", userSchema);
 
   mongoose.connect(uri);
 
