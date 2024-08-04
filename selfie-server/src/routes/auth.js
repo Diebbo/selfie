@@ -1,6 +1,7 @@
 // routes/auth.js
-import express from 'express';
-import jwt from 'jsonwebtoken';
+import express from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 const router = express.Router();
 
@@ -11,11 +12,11 @@ export function createAuthRouter(db) {
       _id: user._id,
       email: user.email,
       username: user.username,
-      role: user.role
+      role: user.role,
     };
   }
   function createToken(user) {
-    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1h' });
+    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
   }
 
   router.post("/login", async (req, res) => {
@@ -27,7 +28,7 @@ export function createAuthRouter(db) {
     if (!dbuser) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    
+
     const user = userCast(dbuser);
 
     const token = createToken(user);
@@ -44,13 +45,22 @@ export function createAuthRouter(db) {
   });
 
   router.post("/register", async (req, res) => {
-    const { username, password, email } = req.body;
-    console.log(`User registering: ${username}`);
+    const password = req.body.password;
 
-    const dbuser = await db.register(email, password, username, "user");
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      ...req.body,
+      password: hashedPassword,
+      role: "user",
+    };
+    console.log(`User registering: ${newUser.username}`);
 
-    if (!dbuser) {
-      return res.status(400).json({ error: "User already exists" });
+    var dbuser;
+
+    try {
+      dbuser = await db.register(newUser);
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
     }
 
     const user = userCast(dbuser);
