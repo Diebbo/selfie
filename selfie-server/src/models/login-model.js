@@ -1,10 +1,20 @@
-import { mongoose } from 'mongoose';
+import { mongoose } from "mongoose";
 
-export const loginSchema = new mongoose.Schema({
-    email: String,
-    password: String,
+export const userSchema = new mongoose.Schema({
     username: String,
+    password: String,
+    email: String,
+
+    name: String,
+    surname: String,
+    phoneNumber: String,
+    birthDate: Date,
+
+    address: String,
+    city: String,
+    state: String,
+    zip: String,
+    country: String,
+
     role: String,
 });
-
-
