@@ -20,13 +20,18 @@ export function createAuthRouter(db) {
   }
 
   router.post("/login", async (req, res) => {
-    const { username, password } = req.body;
-    console.log(`User logging in: ${username}`);
+    const { username, email, password } = req.body;
+    if (!username && !email) {
+      return res.status(400).json({ error: "Username or email required" });
+    }
+    
+    var dbuser;
 
-    const dbuser = await db.login(username, password);
-
-    if (!dbuser) {
-      return res.status(401).json({ error: "Invalid credentials" });
+    try{
+      dbuser = await db.login({username, email, password});
+    } catch(e) {
+      console.error(e.message)
+      return res.status(401).json({ message:e.message });
     }
 
     const user = userCast(dbuser);
@@ -60,7 +65,8 @@ export function createAuthRouter(db) {
     try {
       dbuser = await db.register(newUser);
     } catch (e) {
-      return res.status(400).json({ error: e.message });
+      console.error(e.message)
+      return res.status(400).json({ message: e.message });
     }
 
     const user = userCast(dbuser);
