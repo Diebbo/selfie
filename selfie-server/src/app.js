@@ -3,7 +3,7 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
 import cors from "cors";
-import httpErrors from 'http-errors';
+import httpErrors from "http-errors";
 const { createError } = httpErrors;
 import dotenv from "dotenv";
 import pluralize from "pluralize";
@@ -20,7 +20,7 @@ export function createApp({ dirpath, database }) {
   app.set("views", path.join(dirpath, "../views"));
   app.set("view engine", "ejs");
 
-  app.use(cors());
+  app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
   app.locals.pluralize = pluralize;
 
