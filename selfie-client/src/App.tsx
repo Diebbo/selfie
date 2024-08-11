@@ -1,4 +1,3 @@
-import {NextUIProvider} from "@nextui-org/system";
 import {Button} from "@nextui-org/button";
 
 function App() {

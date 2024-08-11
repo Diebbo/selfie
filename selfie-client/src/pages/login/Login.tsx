@@ -47,7 +47,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      <div className="dark-bg"></div>
+      <div className="dark-bg"
       <Card
         className="w-[40%] border-none"
         variant="bordered"

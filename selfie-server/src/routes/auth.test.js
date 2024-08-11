@@ -49,7 +49,7 @@ describe("Auth Router", () => {
 
       const response = await request
         .post("/login")
-        .send({ username: "diebbo", password: "123456" });
+        .send({ username: "user", password: "123456" });
 
       expect(response.status).to.equal(200);
       expect(response.body).to.have.property("token");
