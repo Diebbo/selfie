@@ -2,10 +2,17 @@
 
 import { LoginFormType, RegisterType } from "@/helpers/types";
 import { cookies } from "next/headers";
-import getBaseUrl  from "@/config/proxy";
+import getBaseUrl from "@/config/proxy";
 
 export const createAuthCookie = async (token: string) => {
-	cookies().set("token", token, { secure: true });
+	cookies().set("token", token,
+		{
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			domain: 'localhost', // Change this in production
+			path: '/'
+		});
 };
 
 export const deleteAuthCookie = async () => {
@@ -13,7 +20,7 @@ export const deleteAuthCookie = async () => {
 };
 // Purpose: Handles the login process.
 export async function login(user: LoginFormType) {
-	const response = await fetch(`${getBaseUrl()}/login`, {
+	const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -31,7 +38,7 @@ export async function login(user: LoginFormType) {
 }
 
 export async function register(user: RegisterType) {
-	const response = await fetch(`${getBaseUrl()}/register`, {
+	const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
