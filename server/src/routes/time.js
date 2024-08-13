@@ -13,7 +13,8 @@ function createTimeRouter(db) {
     }
 
     db.changeDateTime(req.body.date);
-    res.send('Time has been changed');
+    console.log('Time has been changed to', req.body.date.toString());
+    res.status(200).send({message:'Time has been changed to' + req.body.date.toString()});
   });
   return router;
 }
