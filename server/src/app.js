@@ -7,8 +7,11 @@ import httpErrors from "http-errors";
 const { createError } = httpErrors;
 import dotenv from "dotenv";
 import pluralize from "pluralize";
+
+// routers 
 import { createAuthRouter } from "./routes/auth.js";
 import indexRouter from "./routes/index.js";
+import createTimeRouter from "./routes/time.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -31,9 +34,10 @@ export function createApp({ dirpath, database }) {
   app.use(express.static(path.join(dirpath, "../public")));
 
   console.log("createApp.js: initialize routes");
-  const authRouter = createAuthRouter(database);
-  app.use("/", indexRouter);
-  app.use("/", authRouter);
+  app.use("/api/", indexRouter);
+  app.use("/api/auth", createAuthRouter(database));
+  app.use("/api/config", createTimeRouter(database));
+  
 
   // catch 404 and forward to error handler
   app.use(function(req, res, next) {

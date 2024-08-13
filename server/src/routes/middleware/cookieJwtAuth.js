@@ -3,16 +3,20 @@ import jwt from 'jsonwebtoken';
 
 const cookieJwtAuth = (req, res, next) => {
   const token = req.cookies.token;
-  if (!token) return res.status(401).send('Access Denied');
+
+  if (!token) {
+    console.log('No token found');
+    return res.status(401).json({ error: 'Access Denied: No token provided' });
+  }
 
   try {
-    const user = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = user;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
     next();
   } catch (err) {
+    console.error('Token verification failed:', err);
     res.clearCookie('token');
-    res.status(400).send('Invalid Token');
-    return redirect('/login');
+    return res.status(401).json({ error: 'Access Denied: Invalid token' });
   }
 };
 

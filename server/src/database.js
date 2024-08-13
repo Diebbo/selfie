@@ -1,12 +1,13 @@
 // database calls for the application
 import { mongoose } from "mongoose";
-import { userSchema } from "./models/login-model.js";
 
-export async function createDataBase() {
+export async function createDataBase(schemas) {
   const uri =
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-  const loginModel = mongoose.model("users", userSchema);
+  
+  // creating a model
+  const timeModel = mongoose.model("time", schemas.timeSchema);
+  const loginModel = mongoose.model("users", schemas.userSchema);
 
   mongoose.connect(uri);
 
@@ -32,5 +33,10 @@ export async function createDataBase() {
     return res;
   };
 
-  return { login, register };
+  const changeDateTime = async (time) => {
+    const res = await timeModel.findOneAndUpdate({}, { time: time });
+    return res;
+  }
+
+  return { login, register, changeDateTime};
 }
