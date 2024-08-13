@@ -4,6 +4,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createDataBase } from './src/database.js';
 
+// db Models
+import { userSchema } from "./src/models/login-model.js";
+import { timeSchema } from "./src/models/time-model.js";
+
 config();
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -14,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 // connect to the database
 console.log('server.js: createDataBase');
 try{
-    var db = await createDataBase()
+    var db = await createDataBase({userSchema, timeSchema})
 }catch(err){
     console.log(err);
 }
