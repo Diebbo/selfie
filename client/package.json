@@ -9,12 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@nextui-org/react": "2.0.22",
+    "@internationalized/date": "^3.5.5",
+    "@nextui-org/react": "^2.4.6",
+    "@react-aria/i18n": "^3.12.1",
     "apexcharts": "^3.35.5",
     "clsx": "^2.0.0",
     "formik": "^2.4.6",
-    "framer-motion": "^10.16.0",
+    "framer-motion": "^10.18.0",
     "next": "^14.0.4",
+    "next-client-cookies": "^1.1.1",
     "next-themes": "0.2.1",
     "react": "18.2.0",
     "react-apexcharts": "^1.4.0",
