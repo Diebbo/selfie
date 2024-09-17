@@ -7,6 +7,7 @@ import httpErrors from "http-errors";
 const { createError } = httpErrors;
 import dotenv from "dotenv";
 import pluralize from "pluralize";
+import bodyParser from "body-parser";
 
 // routers 
 import { createAuthRouter } from "./routes/auth.js";
@@ -19,9 +20,9 @@ export function createApp({ dirpath, database }) {
 
   const app = express();
 
-  // view engine setup
-  //app.set("views", path.join(dirpath, "../views"));
-  //app.set("view engine", "ejs");
+  // middelewares
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
 
   app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
