@@ -19,25 +19,28 @@ To install the application, follow these steps:
    ```
 2. Navigate to the project directory:
    ```bash
-   cd selfie
+   cd client
    ```
 3. Install the dependencies:
    ```bash
    npm install
    ```
+you will need to do the same steps for the server folder
 
 ## Usage
 To start using the application:
 
 1. Run the application:
    ```bash
-   npm start
+   npm run dev
    ```
 2. Open your web browser and navigate to:
    ```
    http://localhost:3000
    ```
 3. Start capturing and editing your selfies!
+
+> **Note:** 3000 is default client and 3001 is default server port, you can change them in the .env file
 
 ## Contributing
 We welcome contributions from the community! To contribute, please follow these steps:
