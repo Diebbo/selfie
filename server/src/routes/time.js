@@ -5,7 +5,7 @@ function createTimeRouter(db) {
   const router = express.Router();
   router.post('/time', cookieJwtAuth, function(req, res) {
     if (req.user.role !== 'admin') {
-      res.send('You are not authorized to change the time');
+      res.status(400).send('You are not authorized to change the time');
     }
 
     if (!req.body.date) {
