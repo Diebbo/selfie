@@ -20,8 +20,8 @@ export function createApp({ dirpath, database }) {
   const app = express();
 
   // view engine setup
-  app.set("views", path.join(dirpath, "../views"));
-  app.set("view engine", "ejs");
+  //app.set("views", path.join(dirpath, "../views"));
+  //app.set("view engine", "ejs");
 
   app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
