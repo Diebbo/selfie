@@ -13,6 +13,7 @@ import bodyParser from "body-parser";
 import { createAuthRouter } from "./routes/auth.js";
 import indexRouter from "./routes/index.js";
 import createTimeRouter from "./routes/time.js";
+import createCalendarRouter from "./routes/calendar.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -38,7 +39,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/", indexRouter);
   app.use("/api/auth", createAuthRouter(database));
   app.use("/api/config", createTimeRouter(database));
-  
+  app.use("/api/calendar", createCalendarRouter(database));
 
   // catch 404 and forward to error handler
   app.use(function(req, res, next) {

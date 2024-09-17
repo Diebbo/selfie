@@ -8,6 +8,7 @@ export async function createDataBase(schemas) {
   // creating a model
   const timeModel = mongoose.model("time", schemas.timeSchema);
   const loginModel = mongoose.model("users", schemas.userSchema);
+  const eventModel = mongoose.model("event", schemas.eventSchema);
 
   mongoose.connect(uri);
 
@@ -38,5 +39,10 @@ export async function createDataBase(schemas) {
     return res;
   }
 
-  return { login, register, changeDateTime};
+  const createEvent = async(event) => {
+    const res = await eventModel.create( event );
+    return res; 
+  }
+
+  return { login, register, changeDateTime, createEvent };
 }

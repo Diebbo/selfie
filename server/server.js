@@ -7,6 +7,7 @@ import { createDataBase } from './src/database.js';
 // db Models
 import { userSchema } from "./src/models/login-model.js";
 import { timeSchema } from "./src/models/time-model.js";
+import { eventSchema } from "./src/models/event-model.js";
 
 config();
 
@@ -18,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 // connect to the database
 console.log('server.js: createDataBase');
 try{
-    var db = await createDataBase({userSchema, timeSchema})
+    var db = await createDataBase({userSchema, timeSchema, eventSchema})
 }catch(err){
     console.log(err);
 }
