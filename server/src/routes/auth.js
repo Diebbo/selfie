@@ -29,9 +29,15 @@ export function createAuthRouter(db) {
 
     try{
       dbuser = await db.login({username, email, password});
+      console.log(`User logging in: ${dbuser.username}`);
     } catch(e) {
       console.error(e.message)
       return res.status(401).json({ message:e.message });
+    }
+
+    // check password
+    if (bcrypt.compareSync(password, dbuser.password) === false) {
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const user = userCast(dbuser);
@@ -52,7 +58,8 @@ export function createAuthRouter(db) {
   router.post("/register", async (req, res) => {
     const password = req.body.password;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    var salt = bcrypt.genSaltSync(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = {
       ...req.body,
       password: hashedPassword,
