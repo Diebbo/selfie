@@ -3,19 +3,25 @@ import cookieJwtAuth from './middleware/cookieJwtAuth.js';
 
 function createTimeRouter(db) {
   const router = express.Router();
-  router.post('/time', cookieJwtAuth, function(req, res) {
+  
+  router.post('/time', cookieJwtAuth, function(req, res, next) {
     if (req.user.role !== 'admin') {
-      res.status(400).send('You are not authorized to change the time');
+      return res.status(403).json({message: 'You are not authorized to change the time'});
     }
 
     if (!req.body.date) {
-      res.status(400).send('Time required');
+      return res.status(400).json({message: 'Time required'});
     }
 
-    db.changeDateTime(req.body.date);
-    console.log('Time has been changed to', req.body.date.toString());
-    res.status(200).send({message:'Time has been changed to' + req.body.date.toString()});
+    try {
+      db.changeDateTime(req.body.date);
+      console.log('Time has been changed to', req.body.date);
+      res.status(200).json({message: `Time has been changed to ${req.body.date}`});
+    } catch (error) {
+      next(error);
+    }
   });
+
   return router;
 }
 
