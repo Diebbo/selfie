@@ -5,6 +5,7 @@ import { mongoose } from "mongoose";
 import { userSchema } from "./models/login-model.js";
 import { timeSchema } from "./models/time-model.js";
 import { eventSchema } from "./models/event-model.js";
+import { noteSchema } from "./models/note-model.js";
 
 export async function createDataBase() {
   const uri =
@@ -14,6 +15,7 @@ export async function createDataBase() {
   const timeModel = mongoose.model("time", timeSchema);
   const loginModel = mongoose.model("users", userSchema);
   const eventModel = mongoose.model("event", eventSchema);
+  const noteModel = mongoose.model("note", noteSchema);
 
   mongoose.connect(uri);
 
@@ -49,5 +51,10 @@ export async function createDataBase() {
     return res; 
   }
 
-  return { login, register, changeDateTime, createEvent };
+  const createNote = async (note) => {
+    const res = await noteModel.create({ note: note });
+    return res;
+  }
+
+  return { login, register, changeDateTime, createEvent, createNote };
 }
