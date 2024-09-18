@@ -1,14 +1,19 @@
 // database calls for the application
 import { mongoose } from "mongoose";
 
-export async function createDataBase(schemas) {
+// db Models
+import { userSchema } from "./models/login-model.js";
+import { timeSchema } from "./models/time-model.js";
+import { eventSchema } from "./models/event-model.js";
+
+export async function createDataBase() {
   const uri =
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
   
   // creating a model
-  const timeModel = mongoose.model("time", schemas.timeSchema);
-  const loginModel = mongoose.model("users", schemas.userSchema);
-  const eventModel = mongoose.model("event", schemas.eventSchema);
+  const timeModel = mongoose.model("time", timeSchema);
+  const loginModel = mongoose.model("users", userSchema);
+  const eventModel = mongoose.model("event", eventSchema);
 
   mongoose.connect(uri);
 
