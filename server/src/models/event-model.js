@@ -14,7 +14,7 @@ export const eventSchema = new mongoose.Schema({
   uid: Number, 
   sequence: Number,
   status: String, 
-  trans: String, 
+  transp: String, 
   rrule: {freq: String, interval: Number, bymonth: Number, bymonthday: Number},
   dstart: Date,
   dtend: Date,
