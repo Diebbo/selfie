@@ -12,7 +12,7 @@ export async function createDataBase() {
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
   
   // creating a model
-  const timeModel = mongoose.model("time", timeSchema);
+  const timeModel = mongoose.model("times", timeSchema);
   const loginModel = mongoose.model("users", userSchema);
   const eventModel = mongoose.model("event", eventSchema);
   const noteModel = mongoose.model("note", noteSchema);
@@ -42,7 +42,12 @@ export async function createDataBase() {
   };
 
   const changeDateTime = async (time) => {
-    const res = await timeModel.findOneAndUpdate({}, { time: time });
+    let filter = { name: "timemachine" };
+    let update = { time: time };
+    const res = await timeModel.findOneAndUpdate(filter, update, {
+      new: true,
+      upsert: true,
+    });
     return res;
   }
 
