@@ -2,7 +2,7 @@
 import { mongoose } from "mongoose";
 
 // db Models
-import { userSchema } from "./models/login-model.js";
+import { userSchema } from "./models/user-model.js";
 import { timeSchema } from "./models/time-model.js";
 import { eventSchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
@@ -80,5 +80,16 @@ export async function createDataBase() {
     }
   }
 
-  return { login, register, changeDateTime, createEvent, createNote };
+  const getNotes = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      return user.notes;
+    }
+    catch (error) {
+      throw error;
+    }
+  }
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes };
 }
