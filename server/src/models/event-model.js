@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const NotificationSchema = new mongoose.Schema({
+const notificationSchema = new mongoose.Schema({
           title: String,
           type: String,
           repetition:
@@ -11,16 +11,18 @@ const NotificationSchema = new mongoose.Schema({
           fromDate: Date, // anticipo rispetto a data evento
 });
 
-export const ActivitySchema = new mongoose.Schema({
+const activitySchema = new mongoose.Schema({
     name: String,
     dueDate: Date,
     completed: Boolean,
     //notifiche per attività
-    notification: NotificationSchema,
-    subActivity: [ActivitySchema],
+    notification: notificationSchema,
+    subActivity: [
+        // should be an array of activitySchema but it's not defined yet
+    ],
 });
 
-export const EventSchema = new mongoose.Schema({
+const eventSchema = new mongoose.Schema({
     summary: String,
     uid: {
         type: mongoose.Schema.Types.ObjectId,
@@ -49,6 +51,7 @@ export const EventSchema = new mongoose.Schema({
     geo: [Number],
     description: String,
     URL: String,
-    notification: NotificationSchema,
+    notification: notificationSchema,
 });
 
+export { eventSchema, activitySchema, notificationSchema };
