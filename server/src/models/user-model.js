@@ -1,5 +1,4 @@
 import { mongoose } from "mongoose";
-
 import { activitySchema } from "./event-model.js";
 
 export const userSchema = new mongoose.Schema({
@@ -62,7 +61,10 @@ export const userSchema = new mongoose.Schema({
     },
 
     musicPlayer: {
-        currentSong: String,
+        songPlaying: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Song'
+        },
         currentTime: Number,
         likedSongs: [String] 
     },

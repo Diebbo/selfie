@@ -6,6 +6,7 @@ import { userSchema } from "./models/user-model.js";
 import { timeSchema } from "./models/time-model.js";
 import { eventSchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
+import { songSchema } from "./models/song-model.js";
 
 export async function createDataBase() {
   const uri =
@@ -15,6 +16,7 @@ export async function createDataBase() {
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
+  const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Projects", projectSchema);
 
   mongoose.connect(uri);
@@ -49,7 +51,7 @@ export async function createDataBase() {
       upsert: true,
     });
     return res;
-  }
+  };
 
   const createNote = async (uid, note) => {
     try {
@@ -68,18 +70,20 @@ export async function createDataBase() {
 
       user.notes.push(note);
       const updatedUser = await user.save();
-      return updatedUser.notes[updatedUser.notes.length - 1]; // Return the newly added note
+      
+      let num_notes = updatedUser.notes.length;
+      return updatedUser.notes[num_notes - 1]; // Return the newly added note
     } catch (error) {
       console.error("Error creating note:", error);
       throw error;
     }
-  }
+  };
 
   const getNotes = async (uid) => {
     var user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
     return user.notes;
-  }
+  };
 
   const getEvents = async (uid) => {
     return eventModel.find({ uid: uid });
@@ -216,5 +220,65 @@ export async function createDataBase() {
     return addedProject;
   }
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects };
+  const setPomodoroSettings = async (uid, settings) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      if (
+        !settings.studyDuration ||
+        !settings.shortBreakDuration ||
+        !settings.longBreakDuration
+      ) {
+        throw new Error(
+          "Settings must have studyDuration, shortBreakDuration, and longBreakDuration"
+        );
+      }
+
+      user.pomodoro.settings = settings;
+      const updatedUser = await user.save();
+      return updatedUser.pomodoro.settings;
+    } catch (error) {
+      console.error("Error setting pomodoro settings:", error);
+      throw error;
+    }
+  };
+
+  const getUserById = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      return user;
+    } catch (error) {
+      console.error("Error getting user by ID:", error);
+      throw error;
+    }
+  };
+
+  const get = async () => {
+    try {
+      const songs = await songModel.find({});
+      return songs;
+    } catch (error) {
+      console.error("Error getting songs:", error);
+      throw error;
+    }
+  };
+
+  const getCurrentSong = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const song = await songModel.findById(user.musicPlayer.songPlaying);
+      if (!song) throw new Error("Song not found");
+
+      return song;
+    } catch (error) {
+      console.error("Error getting current song:", error);
+      throw error;
+    }
+  };
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getCurrentSong, getUserById, get, createProject, setPomodoroSettings };
 }
