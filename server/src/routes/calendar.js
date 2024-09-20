@@ -44,6 +44,18 @@ function createCalendarRouter(db) {
     return res.status(200).json({ message: "evento eliminato correttamente" , eventId });
   });
 
+  router.post('/partecipate/:id', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const eventId = req.params.id;
+    try {
+      var result = await db.partecipateEvent(uid, eventId);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    return res.status(200).json({ message: "partecipazione all'evento confermata" , result });
+  });
+
   return router;
 }
 
