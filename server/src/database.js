@@ -162,5 +162,59 @@ export async function createDataBase() {
     return user.invitedEvents;
   }
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent };
+  const getProjects = async (uid) => {
+    // ritorno tutti i progetti creati dall'utente o a cui partecipa
+    return await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
+  }
+
+  const createProject = async (uid, project) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    
+    // Validate project object
+    if (!project.title || !project.description) {
+      throw new Error("Project must have a title and description");
+    }
+
+    // check if all the sub activities are valid:
+    // the start date must be before the end date, and the start date must be after the previous end date
+    var err = "Invalid sub activities: ";
+    if (project.activities) { // TODO: check if this is correct
+      for (let i = 0; i < project.activities.length; i++) {
+        const activity = project.activities[i];
+        if (!activity.title || !activity.description || !activity.start || !activity.end) {
+          err += activity.title + ", ";
+        } else {
+          if (i > 0 && project.activities[i-1].end > activity.start) {
+            err += activity.title + ", ";
+          }
+        }
+      }
+    }
+    if (err !== "Invalid sub activities: ") throw new Error(err);
+
+    // add project to the user's projects
+    var addedProject = await projectModel.create(project);
+
+    user.projects.push(addedProject._id);
+    await user.save();
+
+    // add all the members to the project
+    var err = "Members not found: ";
+    if (project.members) {
+      project.members.forEach(async (member) => {
+        const memberDoc = await userModel.findOne({ username: member });
+        if (!memberDoc) err += member + ", ";
+        else {
+          memberDoc.projects.push(addedProject._id);
+          await memberDoc.save();
+        }
+      });
+    }
+    if (err !== "Members not found: ") throw new Error("Project created but " + err);
+
+    return addedProject;
+  }
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects };
 }
