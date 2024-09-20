@@ -97,10 +97,26 @@ export async function createDataBase() {
     if (!event.dtstart || !event.dtend) {
       throw new Error("Event must have a date");
     }
-
-    var addedEvent = eventModel.create({ ...event, uid: uid });
+    // add event to the user's events
+    var addedEvent = await eventModel.create({ ...event, uid: uid });
+    console.log(addedEvent);
     user.events.push(addedEvent._id);
     await user.save();
+    
+    // invite all users in the event
+    var err = "Invited users not found: ";
+    if (event.invitedUsers) {
+      event.invitedUsers.forEach(async (invitedUser) => {
+        const invitedUserDoc = await userModel.findOne({ username: invitedUser });
+        if (!invitedUserDoc) err += invitedUser + ", ";
+        else {
+          invitedUserDoc.invitedEvents.push(addedEvent._id);
+          await invitedUserDoc.save();
+        }
+      });
+    } 
+    if (err !== "Invited users not found: ") throw new Error(err);
+    
     return addedEvent;
   }
 
