@@ -101,5 +101,11 @@ export const userSchema = new mongoose.Schema({
         },
     }],
 
+    // progetti a cui partecipo
+    projects: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project'
+    }],
+
 });
 

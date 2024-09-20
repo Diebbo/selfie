@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 export const projectSchema = new mongoose.Schema({
-    name: String,
+    title: String,
     description: String,
     creator: {
         type: mongoose.Schema.Types.ObjectId,
@@ -19,7 +19,7 @@ export const projectSchema = new mongoose.Schema({
             ref: 'Activity'
         }
     ],
-    time: { type: Date, default: Date.now },
+    creationDate: Date,
     deadline: Date,
 });
 
