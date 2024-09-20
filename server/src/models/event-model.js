@@ -23,6 +23,7 @@ const activitySchema = new mongoose.Schema({
 });
 
 const eventSchema = new mongoose.Schema({
+    title: String,
     summary: String,
     uid: {
         type: mongoose.Schema.Types.ObjectId,
@@ -43,7 +44,7 @@ const eventSchema = new mongoose.Schema({
         bymonth: Number,
         bymonthday: Number
     },
-    dstart: Date,
+    dtstart: Date,
     dtend: Date,
     dtstamp: String,
     categories: [String],
