@@ -194,7 +194,13 @@ export async function createDataBase() {
         throw new Error("Error song index");
       }
       console.log("currentSongIndex", currentSongIndex);
-      let previousSongIndex = (currentSongIndex - 1) % songs.length;
+      let previousSongIndex = 0;
+      if (currentSongIndex === 0) {
+        previousSongIndex = songs.length - 1;
+      }
+      else {
+        previousSongIndex = (currentSongIndex - 1) % songs.length;
+      }
       user.musicPlayer.songPlaying = songs[previousSongIndex]._id;
       await user.save();
 
