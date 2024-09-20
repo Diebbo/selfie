@@ -21,6 +21,7 @@ export function createAuthRouter(db) {
 
   router.post("/login", async (req, res) => {
     const { username, email, password } = req.body;
+    console.log(`User logging in: ${username || email}`);
     if (!username && !email) {
       return res.status(400).json({ error: "Username or email required" });
     }

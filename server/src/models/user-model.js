@@ -1,6 +1,5 @@
 import { mongoose } from "mongoose";
-
-import { ActivitySchema } from "./activity-model.js";
+import { activitySchema } from "./event-model.js";
 
 export const userSchema = new mongoose.Schema({
     //campi user di default per l'iscrizione
@@ -62,13 +61,16 @@ export const userSchema = new mongoose.Schema({
     },
 
     musicPlayer: {
-        currentSong: String,
+        songPlaying: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Song'
+        },
         currentTime: Number,
         likedSongs: [String] 
     },
 
     activities: [
-        ActivitySchema
+        activitySchema
     ],
     
     //campi per risorse
