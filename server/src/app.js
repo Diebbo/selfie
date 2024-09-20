@@ -12,6 +12,7 @@ import indexRouter from "./routes/index.js";
 import createTimeRouter from "./routes/time.js";
 import createCalendarRouter from "./routes/calendar.js";
 import createNoteRouter from "./routes/note.js";
+import { createProjectRouter } from "./routes/projects.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -35,6 +36,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/config", createTimeRouter(database));
   app.use("/api/events", createCalendarRouter(database));
   app.use("/api/notes", createNoteRouter(database));
+  app.use("/api/projects", createProjectRouter(database));
 
   return app;
 }
