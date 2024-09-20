@@ -5,15 +5,43 @@ import cookieJwtAuth from './middleware/cookieJwtAuth.js';
 function createCalendarRouter(db) {
   const router = express.Router();
 
-  router.post('/add', cookieJwtAuth, function(req, res) {
+  router.put('/', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
     const event = req.body.event;
+    if (!event) return res.status(400).json({ message: "Evento non fornito" });
+
     try {
-      const res = db.createEvent(event);
+      var result = await db.createEvent(uid, event);
+
+      res.status(200).json({ message: "evento aggiunto correttamente" , result });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.get('/', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    try {
+      var result = await db.getEvents(uid);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "evento aggiunto correttamente" , event: event});
+    if (!result || Object.keys(result).length === 0) return res.status(404).json({ message: "Nessun evento trovato" });
+
+    return res.status(200).json(result);
+  });
+
+  router.delete('/:id', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const eventId = req.params.id;
+    try {
+      await db.deleteEvent(uid, eventId);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    return res.status(200).json({ message: "evento eliminato correttamente" , eventId });
   });
 
   return router;

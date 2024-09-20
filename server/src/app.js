@@ -3,11 +3,8 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
 import cors from "cors";
-import httpErrors from "http-errors";
-const { createError } = httpErrors;
 import dotenv from "dotenv";
 import pluralize from "pluralize";
-import bodyParser from "body-parser";
 
 // routers 
 import { createAuthRouter } from "./routes/auth.js";
@@ -36,7 +33,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/", indexRouter);
   app.use("/api/auth", createAuthRouter(database));
   app.use("/api/config", createTimeRouter(database));
-  app.use("/api/calendar", createCalendarRouter(database));
+  app.use("/api/events", createCalendarRouter(database));
   app.use("/api/notes", createNoteRouter(database));
 
   return app;
