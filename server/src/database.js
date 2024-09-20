@@ -133,6 +133,15 @@ export async function createDataBase() {
     try {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
+      if (!user.musicPlayer.songPlaying) {
+        // se non c'è salvato nessun ID per la current song, allora inserisci l'id del primo elemento del DB song-model
+        const songs = await songModel.find({});
+        if (songs.length === 0) {
+          throw new Error("No songs in the database");
+        }
+        user.musicPlayer.songPlaying = songs[0]._id;
+        await user.save();
+      }
 
       const song = await songModel.findById(user.musicPlayer.songPlaying);
       if (!song) throw new Error("Song not found");
@@ -144,5 +153,66 @@ export async function createDataBase() {
     }
   };
 
-  return { login, register, changeDateTime, createEvent, createNote, setPomodoroSettings, getUserById };
+  const getNextSong = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const songs = await songModel.find({});
+      if (songs.length === 0) {
+        throw new Error("No songs in the database");
+      }
+
+      let currentSongIndex = songs.findIndex(song => song._id.equals(user.musicPlayer.songPlaying));
+      if (currentSongIndex === -1) {
+        throw new Error("Error song index");
+      }
+      console.log("currentSongIndex", currentSongIndex);
+      let nextSongIndex = (currentSongIndex + 1) % songs.length;
+      user.musicPlayer.songPlaying = songs[nextSongIndex]._id;
+      await user.save();
+
+      return songs[nextSongIndex];
+    } catch (error) {
+      console.error("Error getting next song:", error);
+      throw error;
+    }
+  };
+
+  const getPrevSong = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const songs = await songModel.find({});
+      if (songs.length === 0) {
+        throw new Error("No songs in the database");
+      }
+
+      let currentSongIndex = songs.findIndex(song => song._id.equals(user.musicPlayer.songPlaying));
+      if (currentSongIndex === -1) {
+        throw new Error("Error song index");
+      }
+      console.log("currentSongIndex", currentSongIndex);
+      let previousSongIndex = (currentSongIndex - 1) % songs.length;
+      user.musicPlayer.songPlaying = songs[previousSongIndex]._id;
+      await user.save();
+
+      return songs[previousSongIndex];
+    } catch (error) {
+      console.error("Error getting previous song:", error);
+      throw error;
+    }
+  };
+
+  const addSong = async (uid, song) => {
+    try {
+      const result = await songModel.create(song);
+    } catch (error) {
+      console.error("Error adding song:", error);
+      throw error;
+    }
+  };
+
+  return { login, register, changeDateTime, createEvent, createNote, setPomodoroSettings, getUserById, getCurrentSong, addSong, getNextSong, getPrevSong };
 }
