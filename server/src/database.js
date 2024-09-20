@@ -51,11 +51,6 @@ export async function createDataBase() {
     return res;
   }
 
-  const createEvent = async (event) => {
-    const res = await eventModel.create(event);
-    return res;
-  }
-
   const createNote = async (uid, note) => {
     try {
       const user = await userModel.findById(uid);
@@ -81,15 +76,62 @@ export async function createDataBase() {
   }
 
   const getNotes = async (uid) => {
-    try {
-      const user = await userModel.findById(uid);
-      if (!user) throw new Error("User not found");
-      return user.notes;
-    }
-    catch (error) {
-      throw error;
-    }
+    var user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    return user.notes;
   }
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes };
+  const getEvents = async (uid) => {
+    return eventModel.find({ uid: uid });
+  }
+
+  const createEvent = async (uid, event) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // Validate event object
+    if (!event.title) {
+      throw new Error("Event must have a title");
+    }
+
+    if (!event.dtstart || !event.dtend) {
+      throw new Error("Event must have a date");
+    }
+
+    var addedEvent = eventModel.create({ ...event, uid: uid });
+    user.events.push(addedEvent._id);
+    await user.save();
+    return addedEvent;
+  }
+
+  const deleteEvent = async (uid, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+
+    if (event.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+
+    // Remove event from user's events
+    await userModel.findByIdAndUpdate(uid, { $pull: { events: eventId } });
+
+    // Remove event from invited and participating users
+    await userModel.updateMany(
+      { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
+      { $pull: { invitedEvents: eventId, participatingEvents: eventId } }
+    );
+
+    // Delete the event
+    await eventModel.findByIdAndDelete(eventId);
+
+    // Remove any notifications related to this event
+    await userModel.updateMany(
+      { 'inboxNotifications.fromEvent': eventId },
+      { $pull: { inboxNotifications: { fromEvent: eventId } } }
+    );
+  };
+
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent };
 }
