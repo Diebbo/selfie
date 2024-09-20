@@ -9,12 +9,14 @@ import dotenv from "dotenv";
 import pluralize from "pluralize";
 import bodyParser from "body-parser";
 
-// routers 
+// routers
 import { createAuthRouter } from "./routes/auth.js";
 import indexRouter from "./routes/index.js";
 import createTimeRouter from "./routes/time.js";
 import createCalendarRouter from "./routes/calendar.js";
 import createNoteRouter from "./routes/note.js";
+import createPomodoroRouter from "./routes/pomodoro.js";
+import createMusicRouter from "./routes/musicplayer.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -42,14 +44,16 @@ export function createApp({ dirpath, database }) {
   app.use("/api/config", createTimeRouter(database));
   app.use("/api/calendar", createCalendarRouter(database));
   app.use("/api/notes", createNoteRouter(database));
+  app.use("/api/pomodoro", createPomodoroRouter(database));
+  app.use("/api/musicplayer", createMusicRouter(database));
 
   // catch 404 and forward to error handler
-  app.use(function(req, res, next) {
+  app.use(function (req, res, next) {
     next(createError(404));
   });
 
   // error handler
-  app.use(function(err, req, res, next) {
+  app.use(function (err, req, res, next) {
     // set locals, only providing error in development
     res.locals.message = err.message;
     res.locals.error = req.app.get("env") === "development" ? err : {};
