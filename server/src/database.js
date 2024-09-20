@@ -99,7 +99,6 @@ export async function createDataBase() {
     }
     // add event to the user's events
     var addedEvent = await eventModel.create({ ...event, uid: uid });
-    console.log(addedEvent);
     user.events.push(addedEvent._id);
     await user.save();
     
@@ -148,6 +147,20 @@ export async function createDataBase() {
     );
   };
 
+  const partecipateEvent = async (uid, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent };
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+    
+    // Check if user is already participating
+    if (user.participatingEvents.includes(eventId)) throw new Error("User is already participating in this event");
+    user.participatingEvents.push(eventId);
+    user.invitedEvents = user.invitedEvents.filter((e) => e.toString() !== eventId.toString());
+    await user.save();
+    return user.invitedEvents;
+  }
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent };
 }
