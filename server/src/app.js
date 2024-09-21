@@ -5,6 +5,7 @@ import logger from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
 import pluralize from "pluralize";
+import nodemailer from "nodemailer";
 
 // routers
 import { createAuthRouter } from "./routes/auth.js";
@@ -19,6 +20,17 @@ import createMusicRouter from "./routes/musicplayer.js";
 export function createApp({ dirpath, database }) {
   // loading environment variables
   dotenv.config();
+
+  // configure nodemailer
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // use false for STARTTLS; true for SSL on port 465
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_PASS,
+    }
+  });
 
   const app = express();
 
