@@ -21,6 +21,7 @@ function createCalendarRouter(db) {
 
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
+    console.log(uid);
     try {
       var result = await db.getEvents(uid);
     } catch (e) {
@@ -56,7 +57,27 @@ function createCalendarRouter(db) {
     return res.status(200).json({ message: "partecipazione all'evento confermata" , result });
   });
 
+  router.patch('/:id', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const eventId = req.params.id;
+    const event = req.body.event;
+    if (!event) return res.status(400).json({ message: "Id dell'evento non fornito" });
+
+    try {
+      const result = await db.modifyEvent(uid, event, eventId);
+       
+      if(!result || Object.keys(result).length === 0) {
+        return res.status(404).json({ message: "evento vuoto" });
+      }
+      res.status(200).json({ message: "evento modificato correttamente" , result });
+    } catch (e) {
+      return res.status(500).json({ message: "Server error, " + e.message });
+    }
+    
+  });
+
   return router;
 }
 
+  
 export default createCalendarRouter;
