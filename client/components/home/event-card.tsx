@@ -20,17 +20,29 @@ interface EventCardTheme {
 }
 
 var themes: EventCardTheme[] = [
-  { bg: "bg-primary", text: "text-white" },
-  { bg: "bg-default-50", text: "text-black" },
-  { bg: "bg-default-100", text: "text-black" },
+  { bg: "bg-primary", text: "text-warning" },
+  //{ bg: "bg-default-50", text: "text-black" },
+  //{ bg: "bg-default-100", text: "text-black" },
   { bg: "bg-success", text: "text-white" },
   { bg: "bg-danger", text: "text-white" },
   { bg: "bg-warning", text: "text-danger" },
 ];
 
 export const EventCard = (props: {data:SelfieEvent, theme:number}) => {
+  function formatDate(dateString: Date) {
+    if (!dateString) return 'N/A';
+    
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date:', dateString);
+      return 'Invalid Date';
+    }
+    
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+  }
   const data = props.data;
-  const theme = themes[props.theme];
+  const theme = themes[props.theme % themes.length];
   return (
     <Card className={`xl:max-w-sm rounded-xl shadow-md px-3 w-full ${theme.bg}`}>
       <CardBody className="py-5 overflow-hidden">
@@ -42,20 +54,20 @@ export const EventCard = (props: {data:SelfieEvent, theme:number}) => {
           </div>
         </div>
         <div className="flex gap-2.5 py-2 items-center">
-          <span className="text-white text-xl font-semibold">{data.name}</span>
+          <span className="text-white text-xl font-semibold">{data.title}</span>
         </div>
         <div className="flex items-center gap-6">
           <div>
             <div>
               <span className={`font-semibold text-xs mr-1 ${theme.text}`}>from</span>
-              <span className="text-s text-white">{data.dateFrom.toLocaleDateString()} {data.dateFrom.toLocaleTimeString()}</span>
+              <span className="text-s text-white">{formatDate(data.dtstart)}</span>
             </div>
           </div>
 
           <div>
             <div>
               <span className={`font-semibold text-xs mr-1 ${theme.text}`}>to</span>
-              <span className="text-s text-white">{data.dateTo.toLocaleDateString()} {data.dateTo.toLocaleTimeString()}</span>
+              <span className="text-s text-white">{formatDate(data.dtend)}</span>
             </div>
           </div>
         </div>

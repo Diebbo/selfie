@@ -36,9 +36,31 @@ export interface Person extends RegisterType {
 export type People = Person[];
 
 export interface SelfieEvent {
-  name: string;
-  participants: People;
-  creator: Person;
-  dateFrom: Date;
-  dateTo: Date;
+    title: String,
+    summary: String,
+    uid: String,
+    sequence: Number,
+    status: {
+        type: String,
+        enum: ['confirmed', 'tentative', 'cancelled']
+    },
+    transp: String,
+    rrule: {
+        freq: {
+            type: String,
+            enum: ['daily', 'weekly', 'monthly', 'yearly']
+        },
+        interval: Number,
+        bymonth: Number,
+        bymonthday: Number
+    },
+    dtstart: Date,
+    dtend: Date,
+    dtstamp: String,
+    categories: [String],
+    location: String,
+    geo: [Number],
+    description: String,
+    URL: String,
+    participants: People,
 }
