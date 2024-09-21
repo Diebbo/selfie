@@ -32,6 +32,23 @@ export function createApp({ dirpath, database }) {
     }
   });
 
+  // Configure the mailoptions object
+  const mailOptions = {
+    from: 'selfie.notifications@gmail.com',
+    to: 'ayache.omar@gmail.com, leleargo.2003@gmail.com, die.barbieri03@gmail.com',
+    subject: 'Sending Email using Node.js',
+    text: 'Omar kebabo'
+  };
+
+  // Send the email
+  /* transporter.sendMail(mailOptions, function(error, info) {
+    if (error) {
+      console.log('Error:', error);
+    } else {
+      console.log('Email sent: ', info.response);
+    }
+  }); */
+
   const app = express();
 
   app.use(cors({ origin: "http://localhost:3000", credentials: true }));
