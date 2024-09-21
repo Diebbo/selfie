@@ -151,6 +151,35 @@ export async function createDataBase() {
     );
   };
 
+const modifyEvent = async (uid, event, eventId) => {
+  const user = await userModel.findById(uid);
+  if (!user) throw new Error("User not found");
+
+  const oldEvent = await eventModel.findById(eventId);
+  if (!oldEvent) throw new Error("Event not found");
+  
+  if (oldEvent.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+
+  try {
+    // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
+    const replacedEvent = await eventModel.replaceOne({ _id: eventId }, event)
+    if (replacedEvent.modifiedCount === 0) {
+      throw new Error("Event replace failed");
+    }
+
+    // Aggiorno le notifiche di ogni partecipante
+    const updatedUsers = await userModel.updateMany(
+      { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
+      { $set: { inboxNotifications: { fromEvent: eventId } } }
+    );
+
+    return { replacedEvent, updatedUsers };
+
+  } catch (e) {
+    throw new Error("Event did not get changed: " + e.message);
+  }
+};
+
   const partecipateEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -358,5 +387,5 @@ export async function createDataBase() {
   };
 
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong };
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, modifyEvent, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong };
 }
