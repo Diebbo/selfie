@@ -28,7 +28,7 @@ function createCalendarRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    if (!result || Object.keys(result).length === 0) return res.status(404).json({ message: "Nessun evento trovato" });
+    if (!result) return res.status(404).json({ message: "Nessun evento trovato" });
 
     return res.status(200).json(result);
   });
