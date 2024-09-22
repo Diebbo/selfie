@@ -415,5 +415,5 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications };
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, modifyEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications };
 }
