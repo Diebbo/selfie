@@ -86,7 +86,13 @@ export async function createDataBase() {
   };
 
   const getEvents = async (uid) => {
-    return eventModel.find({ uid: uid });
+    var user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    var createdEvents = await eventModel.find({ _id: { $in: user.events } });
+    var partecipatingEvents = await eventModel.find({ _id: { $in: user.participatingEvents } });
+
+    return { createdEvents: res, partecipatingEvents: partecipatingEvents };
   }
 
   const createEvent = async (uid, event) => {
@@ -162,7 +168,7 @@ const modifyEvent = async (uid, event, eventId) => {
 
   try {
     // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
-    const replacedEvent = await eventModel.replaceOne({ _id: eventId }, event)
+    const replacedEvent = await eventModel.replaceOne({ _id: eventId }, { ...event, uid: uid });
     if (replacedEvent.modifiedCount === 0) {
       throw new Error("Event replace failed");
     }
