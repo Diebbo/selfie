@@ -19,13 +19,14 @@
 */
 export async function sendNotification(notificationData) {
     // Example: Send email or push notification here
-    console.log('Sending notification:', notificationData);
-    sendEmail(notificationData.email);
+    await sendEmail(notificationData.email);
     // sendPushNotification(notificationData.pushNotification);
 }
 
-async function sendEmail(email) {
+async function sendEmail(emails) {
     // Example: Send email
-    console.log('Sending email:', email);
+    for (const email of emails) {
+        console.log('Sending email:', email);
+    }
     // Add logic to send email
 }
