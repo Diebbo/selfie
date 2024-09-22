@@ -92,7 +92,7 @@ export async function createDataBase() {
     var createdEvents = await eventModel.find({ _id: { $in: user.events } });
     var partecipatingEvents = await eventModel.find({ _id: { $in: user.participatingEvents } });
 
-    return { createdEvents: res, partecipatingEvents: partecipatingEvents };
+    return { createdEvents: createdEvents, partecipatingEvents: partecipatingEvents };
   }
 
   const createEvent = async (uid, event) => {
