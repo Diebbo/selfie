@@ -1,14 +1,16 @@
 # Selfie
 
 ## Project Overview
-Selfie is a versatile and user-friendly application designed to capture and edit selfies with a range of filters and tools. It aims to provide users with an intuitive interface and seamless experience for creating and sharing high-quality selfies.
+Manage Your University Life with Ease: Introducing Selfie
+With Selfie, university students can effortlessly plan their private, social, and academic lives with maximum flexibility and completeness. Selfie is a client-server application that can be used seamlessly from both mobile and PC. It is organized into modules designed to support the various types of events, deadlines, and commitments that make up student life.
+
 
 ## Features
-- **Capture Selfies:** Take selfies with your device’s front camera.
-- **Filters and Effects:** Apply various filters and effects to enhance your selfies.
-- **Editing Tools:** Crop, rotate, and adjust the brightness, contrast, and saturation of your images.
-- **Sharing Options:** Share your selfies directly to social media platforms.
-- **Gallery:** Save and organize your selfies in a built-in gallery.
+**The life of a university student is diverse and complex, filled with events, deadlines, and commitments that range widely:**
+- Individual or group-based
+- One-time (like a casual hangout this Friday at 7 PM) or recurring (weekly soccer game every Tuesday at 8 PM)
+- Simple (exam on June 12th at 11 AM) or more structured (study theory from May 10-21, prepare the project from May 22 to June 5, group demo on June 6, debugging from June 7-11, written exam preparation, followed by the written exam on June 12). Often, these events overlap.
+
 
 ## Installation
 To install the application, follow these steps:
@@ -64,6 +66,6 @@ We welcome contributions from the community! To contribute, please follow these 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Authors
-- Omar Kebab
+- Omar Ayache
 - Emanuele Argonni
 - Diego Barbieri
