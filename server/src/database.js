@@ -357,6 +357,30 @@ export async function createDataBase() {
     }
   };
 
+  const getNextNotifications = async () => {
+    // get from the inboxNotifications for each user the first notification
+    // if less than 30 seconds from the date of the notification, pop it from the array
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong };
+    // get all the users
+    const users = await userModel.find({});
+    var notifications = {email: [], pushNotification: []};
+    users.forEach(user => {
+      if (user.inboxNotifications.length > 0) {
+        const notification = user.inboxNotifications[0];
+        if (notification.when - new Date() < 30000) {
+          user.inboxNotifications.shift();
+          user.save();
+        }
+        if (notification.method === 'email') {
+          notifications.email.push({email: user.email, title: notification.title});
+        } else {
+          notifications.pushNotification.push({username: user.username, title: notification.title});
+        }
+      }
+    });
+    return notifications;
+  };
+
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications };
 }
