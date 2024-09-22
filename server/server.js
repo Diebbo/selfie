@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createDataBase } from './src/database.js';
+import { fork } from 'child_process';
 
 config();
 
@@ -17,6 +18,19 @@ try{
     var db = await createDataBase();
 }catch(err){
     console.log(err);
+    process.exit(1);
+}
+
+// start the notification worker
+try {
+    const notificationWorker = fork(path.join(__dirname, 'notificationWorker.js'));
+    notificationWorker.send({ message: 'Notification worker started' });
+    notificationWorker.on('message', (message) => {
+        console.log('Notification Worker:', message);
+    });
+} catch (error) {
+    console.log('Error starting notification worker:', error);
+    exit(1);
 }
 
 console.log('server.js: createApp');
