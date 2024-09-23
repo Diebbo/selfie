@@ -11,7 +11,8 @@ function createNoteRouter(db) {
 
     try {
       const result = await db.postNote(uid, note);
-      res.status(200).json({ message: "nota aggiunta correttamente" , result});
+      if (note._id) return res.status(200).json({ message: "nota modificata correttamente" , result});
+      else res.status(200).json({ message: "nota aggiunta correttamente" , result});
     } catch (e) {
       console.error("Error creating note:", e);
       return res.status(400).json({ message: e.message });
