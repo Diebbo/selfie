@@ -59,37 +59,106 @@ export async function createDataBase() {
     return new Date(res.time);
   };
 
-  const createNote = async (uid, note) => {
+  const postNote = async (uid, note) => {
+    try {
+        const user = await userModel.findById(uid);
+        if (!user) throw new Error("User not found");
+
+        if (!user.notes) user.notes = [];
+        if (!note.title || !note.content) {
+            throw new Error("Note must have a title and content");
+        }
+        if (!note.tags) note.tags = []; 
+        note.date = new Date(); // update the last modified date with current date
+        
+        if (note._id) { // Modify existing note
+            const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
+            const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
+            if (noteIndex !== -1) {
+                // Update existing note
+                user.notes[noteIndex] = {
+                    ...user.notes[noteIndex].toObject(),
+                    ...note,
+                    _id: noteId // Ensure we keep the original ObjectId
+                };
+            } else {
+                throw new Error("Note with provided ID not found");
+            }
+        } else { // New note
+            user.notes.push(note);
+        }
+
+        await user.save();
+        return note;
+    } catch (error) {
+        console.error(`Error posting note for user ${uid}:`, error);
+        throw error;
+    }
+};
+
+
+  const getNotes = async (uid, fields = null) => {
+    let projection = { 'notes._id': 1 }; // Sempre includi l'ID della nota
+  
+    if (Array.isArray(fields) && fields.length > 0) {
+      fields.forEach(field => {
+        projection[`notes.${field}`] = 1;
+      });
+    } else {
+      projection = { notes: 1 }; // Se fields non è specificato o è vuoto, prendi tutte le note
+    }
+  
+    const user = await userModel.findById(uid, projection);
+    if (!user) throw new Error("User not found");
+  
+    return user.notes.map(note => {
+      if (Array.isArray(fields) && fields.length > 0) {
+        const filteredNote = { _id: note._id };
+        fields.forEach(field => {
+          if (note[field] !== undefined) {
+            filteredNote[field] = note[field];
+          }
+        });
+        return filteredNote;
+      } else {
+        return note.toObject(); // Ritorna tutti i campi della nota
+      }
+    });
+  };
+
+  const getNoteById = async (uid, noteId) => {
     try {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      // Validate note object
-      if (!note.title || !note.content) {
-        throw new Error("Note must have a title and content");
-      }
+      const note = user.notes.id(noteId);
+      if (!note) throw new Error("Note not found");
 
-      // Add current date if not provided
-      if (!note.date) {
-        note.date = new Date();
-      }
-
-      user.notes.push(note);
-      const updatedUser = await user.save();
-
-      let num_notes = updatedUser.notes.length;
-      return updatedUser.notes[num_notes - 1]; // Return the newly added note
+      return note;
     } catch (error) {
-      console.error("Error creating note:", error);
+      console.error("Error getting note by ID:", error);
       throw error;
     }
   };
 
-  const getNotes = async (uid) => {
-    var user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-    return user.notes;
+  const removeNoteById = async (uid, noteId) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const noteIndex = user.notes.findIndex(note => note._id.toString() === noteId);
+      if (noteIndex === -1) throw new Error("Note not found");
+
+      user.notes.splice(noteIndex, 1);
+      await user.save();
+
+      return { message: "Note removed successfully" };
+    } catch (error) {
+      console.error("Error removing note:", error);
+      throw error;
+    }
   };
+  
 
   const getEvents = async (uid) => {
     var user = await userModel.findById(uid);
@@ -257,12 +326,12 @@ const modifyEvent = async (uid, event, eventId) => {
     generateNotifications(event, [user]);
 
     return user.invitedEvents;
-  }
+  };
 
   const getProjects = async (uid) => {
     // ritorno tutti i progetti creati dall'utente o a cui partecipa
     return await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
-  }
+  };
 
   const createProject = async (uid, project) => {
     const user = await userModel.findById(uid);
@@ -311,7 +380,7 @@ const modifyEvent = async (uid, event, eventId) => {
     if (err !== "Members not found: ") throw new Error("Project created but " + err);
 
     return addedProject;
-  }
+  };
 
   const setPomodoroSettings = async (uid, settings) => {
     try {
@@ -441,7 +510,8 @@ const modifyEvent = async (uid, event, eventId) => {
     }
   };
 
-  const addSong = async (uid, song) => {
+  // For now only for testing (to add song to the DB)
+  const addSong = async (uid, song) => { 
     try {
       const result = await songModel.create(song);
     } catch (error) {
@@ -493,5 +563,5 @@ const modifyEvent = async (uid, event, eventId) => {
 
 
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime };
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime };
 }
