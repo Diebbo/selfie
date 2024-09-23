@@ -2,6 +2,8 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { sendNotification } from "../notifications.js";
 
 const router = express.Router();
 
@@ -58,12 +60,14 @@ export function createAuthRouter(db) {
 
   router.post("/register", async (req, res) => {
     const password = req.body.password;
+    const emailToken = crypto.randomBytes(64).toString("hex");
 
     var salt = bcrypt.genSaltSync(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = {
       ...req.body,
       password: hashedPassword,
+      emailtoken: emailToken,
       role: "user",
     };
     console.log(`User registering: ${newUser.username}`);
@@ -90,6 +94,22 @@ export function createAuthRouter(db) {
     });
 
     res.json({ user, token });
+  });
+
+  router.patch("/verifyemail", async (req, res) => {
+    const emailToken = req.query.emailToken;
+    if (!emailToken) {
+      return res.status(400).json({ status: "Failed", error: "No Token provided" });
+    }
+    const result = await db.verifyEmail(emailToken);
+    if (!result) {
+      return res
+        .status(400)
+        .json({ status: "Failed", error: "Invalid token" });
+    }
+    return res
+      .status(200)
+      .json({ status: "Success", message: "User verified successfully" });
   });
 
   return router;
