@@ -8,6 +8,9 @@ import { eventSchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 
+import nodemailer from "nodemailer";
+import { sendMail } from "./notifications.js";
+
 export async function createDataBase() {
   const uri =
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -33,14 +36,31 @@ export async function createDataBase() {
     return res;
   };
 
+  
   const register = async (user) => {
     const emailUser = await userModel.findOne({ email: user.email });
     if (emailUser) throw new Error("Email already used");
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
-
+    const subject = 'Please verify your email...';
+    const body = `<p>Hello, verify your email address by clicking on this</p>
+    <br>
+    <a href="http://localhost:3001/api/auth/verifyemail?emailToken=${user.emailtoken}">Click here to verify</a>
+    `
+    sendMail(user.email, subject, body);
     const res = await userModel.create({ ...user });
     return res;
+  };
+
+  const verifyEmail = async (emailToken) => {
+    const user = await userModel.findOne({ emailtoken: emailToken });
+    if (!user) return null;
+
+    user.isVerified = true;
+    user.emailtoken = null; // Clear the token after verification
+    await user.save();
+
+    return { message: "Email verified successfully" };
   };
 
   const changeDateTime = async (time) => {
@@ -58,6 +78,7 @@ export async function createDataBase() {
     if (!res) throw new Error("Time not found");
     return new Date(res.time);
   };
+
 
   const postNote = async (uid, note) => {
     try {
@@ -563,5 +584,5 @@ const modifyEvent = async (uid, event, eventId) => {
 
 
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime };
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail };
 }

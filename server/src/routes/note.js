@@ -48,7 +48,7 @@ function createNoteRouter(db) {
   });
 
   // Rimuove la nota con l'id specificato
-  router.post("/remove/:id", cookieJwtAuth, async function(req, res) {
+  router.delete("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const noteId = req.params.id;
   
