@@ -53,6 +53,12 @@ export async function createDataBase() {
     return res;
   };
 
+  const getDateTime = async () => {
+    const res = await timeModel.findOne({ name: "timemachine" });
+    if (!res) throw new Error("Time not found");
+    return new Date(res.time);
+  };
+
   const createNote = async (uid, note) => {
     try {
       const user = await userModel.findById(uid);
@@ -70,7 +76,7 @@ export async function createDataBase() {
 
       user.notes.push(note);
       const updatedUser = await user.save();
-      
+
       let num_notes = updatedUser.notes.length;
       return updatedUser.notes[num_notes - 1]; // Return the newly added note
     } catch (error) {
@@ -111,7 +117,7 @@ export async function createDataBase() {
     var addedEvent = await eventModel.create({ ...event, uid: uid });
     user.events.push(addedEvent._id);
     await user.save();
-    
+
     // invite all users in the event
     var err = "Invited users not found: ";
     if (event.invitedUsers) {
@@ -123,10 +129,58 @@ export async function createDataBase() {
           await invitedUserDoc.save();
         }
       });
-    } 
+    }
     if (err !== "Invited users not found: ") throw new Error(err);
-    
+
+    // generate notifications for all the invited users
+    generateNotifications(addedEvent, [user]);
+
     return addedEvent;
+  }
+
+  function generateNotifications(event, users) {
+    let notificationTimes = [];
+
+    if (event.notification) {
+      const eventStartDate = new Date(event.dtstart);  // Start of the event
+      let notificationDate = new Date(event.notification.fromDate);  // First notification date
+
+      const freq = event.notification.repetition.freq;
+      const interval = event.notification.repetition.interval;
+
+      // Generate notification times until the event start
+      while (notificationDate < eventStartDate) {
+        notificationTimes.push(new Date(notificationDate));  // Push a copy of the notification date
+
+        // Update notificationDate based on the frequency
+        if (freq === 'daily') {
+          notificationDate.setDate(notificationDate.getDate() + interval);
+        } else if (freq === 'weekly') {
+          notificationDate.setDate(notificationDate.getDate() + 7 * interval);
+        } else if (freq === 'monthly') {
+          notificationDate.setMonth(notificationDate.getMonth() + interval);
+        } else if (freq === 'yearly') {
+          notificationDate.setFullYear(notificationDate.getFullYear() + interval);
+        }
+      }
+    }
+
+    // Generate a notification for each user about the event
+    users.forEach(async (user) => {
+      // Ensure there are enough notification times
+      notificationTimes.forEach(async (notificationTime) => {
+        user.inboxNotifications.push({
+          fromEvent: event._id,
+          when: notificationTime,  // The calculated notification time
+          title: event.notification.title || event.title,  // Fallback to event title if notification title is missing
+          method: event.notification.type || 'email'  // Fallback to 'email' if method is missing
+        });
+      });
+
+      user.inboxNotifications.sort((a, b) => a.when - b.when);
+
+      await user.save();
+    });
   }
 
   const deleteEvent = async (uid, eventId) => {
@@ -192,12 +246,16 @@ const modifyEvent = async (uid, event, eventId) => {
 
     const event = await eventModel.findById(eventId);
     if (!event) throw new Error("Event not found");
-    
+
     // Check if user is already participating
     if (user.participatingEvents.includes(eventId)) throw new Error("User is already participating in this event");
     user.participatingEvents.push(eventId);
     user.invitedEvents = user.invitedEvents.filter((e) => e.toString() !== eventId.toString());
     await user.save();
+
+    // add notifications for the event
+    generateNotifications(event, [user]);
+
     return user.invitedEvents;
   }
 
@@ -209,7 +267,7 @@ const modifyEvent = async (uid, event, eventId) => {
   const createProject = async (uid, project) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-    
+
     // Validate project object
     if (!project.title || !project.description) {
       throw new Error("Project must have a title and description");
@@ -224,7 +282,7 @@ const modifyEvent = async (uid, event, eventId) => {
         if (!activity.title || !activity.description || !activity.start || !activity.end) {
           err += activity.title + ", ";
         } else {
-          if (i > 0 && project.activities[i-1].end > activity.start) {
+          if (i > 0 && project.activities[i - 1].end > activity.start) {
             err += activity.title + ", ";
           }
         }
@@ -396,18 +454,37 @@ const modifyEvent = async (uid, event, eventId) => {
     // get from the inboxNotifications for each user the first notification
     // if less than 30 seconds from the date of the notification, pop it from the array
     const users = await userModel.find({});
-    var notifications = {email: [], pushNotification: []};
-    users.forEach(user => {
+
+    // Prepare notifications array
+    let notifications = { email: [], pushNotification: [] };
+
+    // Get current date and time
+    const currentDateTime = await getDateTime(); // assuming this gives current DateTime
+
+    users.forEach(async (user) => {
+      // Check if user has any inbox notifications
       if (user.inboxNotifications.length > 0) {
-        const notification = user.inboxNotifications[0];
-        if (notification.when - new Date() < 30000) {
-          user.inboxNotifications.shift();
-          user.save();
-        }
-        if (notification.method === 'email') {
-          notifications.email.push({email: user.email, title: notification.title});
-        } else {
-          notifications.pushNotification.push({username: user.username, title: notification.title});
+        const notification = user.inboxNotifications[0]; // Get the first notification
+
+        // Check if notification is within 30 seconds or less from current time
+        if (new Date(notification.when) - currentDateTime <= 30000) {
+          // Pop the notification and save the user
+          let removedNotification = user.inboxNotifications.shift(); // Remove the first notification
+
+          // Add notification to the appropriate queue (email or push)
+          if (removedNotification.method === 'email') {
+            notifications.email.push({
+              email: user.email,
+              title: removedNotification.title
+            });
+          } else {
+            notifications.pushNotification.push({
+              username: user.username,
+              title: removedNotification.title
+            });
+          }
+
+          await user.save(); // Await user save to ensure changes are persisted
         }
       }
     });
@@ -415,5 +492,6 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
 
-  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, modifyEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications };
+
+  return { login, register, changeDateTime, createEvent, createNote, getNotes, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime };
 }
