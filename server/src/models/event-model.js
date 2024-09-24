@@ -17,6 +17,10 @@ const activitySchema = new mongoose.Schema({
     completed: Boolean,
     //notifiche per attività
     notification: notificationSchema,
+    participants: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     subActivity: [
         // should be an array of activitySchema but it's not defined yet
     ],
