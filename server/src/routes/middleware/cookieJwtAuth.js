@@ -14,7 +14,7 @@ const cookieJwtAuth = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    console.error('Token verification failed:', err);
+    console.error('Token verification failed:', err.message);
     res.clearCookie('token');
     return res.status(401).json({ error: 'Access Denied: Invalid token' });
   }
