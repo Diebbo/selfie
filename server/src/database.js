@@ -8,6 +8,7 @@ import { eventSchema } from "./models/event-model.js";
 import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
+import { messageSchema } from "./models/chat-model.js";
 
 export async function createDataBase() {
   const uri =
@@ -20,6 +21,7 @@ export async function createDataBase() {
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Projects", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
+  const chatModel = mongoose.model("Chat", messageSchema);
 
   mongoose.connect(uri);
 
@@ -617,5 +619,83 @@ export async function createDataBase() {
     return { activity: activity };
   }
 
-  return { login, register, changeDateTime, createEvent, modifyEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities };
+  /* Messages */
+
+  const getUserMessages = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    return await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+  }
+
+  const sendMessage = async (senderId, receiverId, message) => {
+    const sender = await userModel.findById(senderId);
+    if (!sender) throw new Error("Sender not found");
+
+    const receiver = await userModel.findById(receiverId);
+    if (!receiver) throw new Error("Receiver not found");
+
+    if (!message) throw new Error("Message cannot be empty");
+
+    const now = await getDateTime();
+    // date is automatically set to the current date
+    return await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
+  }
+
+  const getChat = async (senderId, receiverId) => {
+    const sender = await userModel.findById(senderId);
+    if (!sender) throw new Error("Sender not found");
+
+    const receiver = await userModel.findById(receiverId);
+    if (!receiver) throw new Error("Receiver not found");
+
+    const chat = await chatModel.find({ $or: [{ sender: senderId, receiver: receiverId }, { sender: receiverId, receiver: senderId }] });
+    return chat.sort((a, b) => a.createdAt - b.createdAt);
+  }
+
+  // get all users that the current user has chatted with and the last message
+  const getChats = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    let chats = [];
+
+    const messages = await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+
+    for(const message of messages) {
+      // Identify the other user in the conversation (either sender or receiver)
+      const otherUserId = message.sender.equals(uid) ? message.receiver : message.sender;
+      const otherUser = await userModel.findById(otherUserId);
+
+      // Check if the other user is already in the `chats` array
+      let chat = chats.find((c) => c.username === otherUser.username);
+
+      if (!chat) {
+        chat = {
+          username: otherUser.username,  // The user that the current user chatted with
+          lastMessage: message.message  // The current message is the last message in this chat
+        };
+        console.log("chat", chat);
+        chats.push(chat);
+      } else {
+        // If chat exists, check if this message is more recent than the stored last message
+        if (message.createdAt > chat.lastMessage.createdAt) {
+          chat.lastMessage = message;
+        }
+      }
+    }
+
+    return chats;
+  }
+
+  /* end Messages */
+
+  return {
+    login, register, changeDateTime, createEvent, modifyEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities, messages: {
+      getUserMessages,
+      sendMessage,
+      getChat,
+      getChats
+    }
+  };
 }
