@@ -29,5 +29,14 @@ export function createProjectRouter(db) {
     return res.status(200).json(result);
   });
 
+  //patch projects
+  
+  //delete projects
+
+  //add activity inside project
+  router.put('/:id/activities', cookieJwtAuth, async function(req, res) {
+    console.log("TODO");   
+  });
+
   return router;
 }

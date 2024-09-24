@@ -16,6 +16,7 @@ import createNoteRouter from "./routes/note.js";
 import { createProjectRouter } from "./routes/projects.js";
 import createPomodoroRouter from "./routes/pomodoro.js";
 import createMusicRouter from "./routes/musicplayer.js";
+import createActivityRouter from "./routes/activities.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -70,6 +71,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/projects", createProjectRouter(database));
   app.use("/api/pomodoro", createPomodoroRouter(database));
   app.use("/api/musicplayer", createMusicRouter(database));
+  app.use("/api/activities", createActivityRouter(database));
 
   return app;
 }
