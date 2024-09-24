@@ -174,7 +174,7 @@ export async function createDataBase() {
 
   const createEvent = async (uid, event) => {
     const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not foun");
 
     // Validate event object
     if (!event.title) {
@@ -204,35 +204,33 @@ export async function createDataBase() {
     if (err !== "Invited users not found: ") throw new Error(err);
 
     // generate notifications for all the invited users
-    generateNotifications(addedEvent, [user]);
+    generateNotificationsForEvent(addedEvent, [user]);
 
     return addedEvent;
   }
 
-  function generateNotifications(event, users) {
+  function generateNotifications({ eventId, activityId, startDate, notification, title }, users) {
     let notificationTimes = [];
 
-    if (event.notification) {
-      const eventStartDate = new Date(event.dtstart);  // Start of the event
-      let notificationDate = new Date(event.notification.fromDate);  // First notification date
+    const eventStartDate = new Date(startDate);  // Start of the event
+    let notificationDate = new Date(notification.fromDate);  // First notification date
 
-      const freq = event.notification.repetition.freq;
-      const interval = event.notification.repetition.interval;
+    const freq = notification.repetition.freq;
+    const interval = notification.repetition.interval;
 
-      // Generate notification times until the event start
-      while (notificationDate < eventStartDate) {
-        notificationTimes.push(new Date(notificationDate));  // Push a copy of the notification date
+    // Generate notification times until the event start
+    while (notificationDate < eventStartDate) {
+      notificationTimes.push(new Date(notificationDate));  // Push a copy of the notification date
 
-        // Update notificationDate based on the frequency
-        if (freq === 'daily') {
-          notificationDate.setDate(notificationDate.getDate() + interval);
-        } else if (freq === 'weekly') {
-          notificationDate.setDate(notificationDate.getDate() + 7 * interval);
-        } else if (freq === 'monthly') {
-          notificationDate.setMonth(notificationDate.getMonth() + interval);
-        } else if (freq === 'yearly') {
-          notificationDate.setFullYear(notificationDate.getFullYear() + interval);
-        }
+      // Update notificationDate based on the frequency
+      if (freq === 'daily') {
+        notificationDate.setDate(notificationDate.getDate() + interval);
+      } else if (freq === 'weekly') {
+        notificationDate.setDate(notificationDate.getDate() + 7 * interval);
+      } else if (freq === 'monthly') {
+        notificationDate.setMonth(notificationDate.getMonth() + interval);
+      } else if (freq === 'yearly') {
+        notificationDate.setFullYear(notificationDate.getFullYear() + interval);
       }
     }
 
@@ -240,18 +238,38 @@ export async function createDataBase() {
     users.forEach(async (user) => {
       // Ensure there are enough notification times
       notificationTimes.forEach(async (notificationTime) => {
-        user.inboxNotifications.push({
-          fromEvent: event._id,
+        let addingNotification = {
+          fromEvent: eventId,
+          fromTask: activityId,
           when: notificationTime,  // The calculated notification time
-          title: event.notification.title || event.title,  // Fallback to event title if notification title is missing
-          method: event.notification.type || 'email'  // Fallback to 'email' if method is missing
-        });
+          title: notification.title || title,  // Fallback to event title if notification title is missing
+          method: notification.type || 'email'  // Fallback to 'email' if method is missing
+        };
+        user.inboxNotifications.push(addingNotification);
       });
 
       user.inboxNotifications.sort((a, b) => a.when - b.when);
 
       await user.save();
     });
+  }
+
+  function generateNotificationsForEvent(event, users) {
+    return generateNotifications({
+      eventId: event._id,
+      startDate: event.dtstart,
+      notification: event.notification,
+      title: event.title
+    }, users);
+  }
+
+  function generateNotificationsForActivity(activity, users) {
+    return generateNotifications({
+      activityId: activity._id,
+      startDate: activity.dueDate,
+      notification: activity.notification,
+      title: activity.name
+    }, users);
   }
 
   const deleteEvent = async (uid, eventId) => {
@@ -325,7 +343,7 @@ export async function createDataBase() {
     await user.save();
 
     // add notifications for the event
-    generateNotifications(event, [user]);
+    generateNotificationsForEvent(event, [user]);
 
     return user.invitedEvents;
   };
@@ -368,7 +386,7 @@ export async function createDataBase() {
     await user.save();
 
     // add all the members to the project
-    var err = "Members not found: ";
+    err = "Members not found: ";
     if (project.members) {
       project.members.forEach(async (member) => {
         const memberDoc = await userModel.findOne({ username: member });
@@ -532,8 +550,17 @@ export async function createDataBase() {
         const notification = user.inboxNotifications[0];
 
         if (new Date(notification.when) - currentDateTime <= 30000) {
-          const event = await eventModel.findById(notification.fromEvent);
-          let notificationDescription = notification.description || 'reminder for event taking place on ' + event.dtstart;
+          let event, activity, notificationDescription;
+
+          if (notification.fromEvent) {
+            event = await eventModel.findById(notification.fromEvent);
+            notificationDescription = 'reminder for event taking place on ' + event.dtstart;
+          } else {
+            activity = await activityModel.findById(notification.fromTask);
+            notificationDescription = 'reminder for activity due on ' + activity.dueDate;
+          }
+          // Override the default notification description if it's provided
+          notificationDescription = notification.description || notificationDescription;
 
           let removedNotification = user.inboxNotifications.shift();
 
@@ -547,7 +574,7 @@ export async function createDataBase() {
             notifications.pushNotification.push({
               username: user.username,
               title: removedNotification.title,
-              body: removedNotification.description
+              body: notificationDescription
             });
           }
 
@@ -575,6 +602,9 @@ export async function createDataBase() {
     user.activities.push(addedActivity._id);
     await user.save();
 
+    // add notifications for the activity
+    generateNotificationsForActivity(addedActivity, [user]);
+
     return addedActivity;
   };
 
@@ -587,5 +617,5 @@ export async function createDataBase() {
     return { activity: activity };
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities };
+  return { login, register, changeDateTime, createEvent, modifyEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities };
 }
