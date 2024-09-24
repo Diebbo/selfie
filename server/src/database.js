@@ -564,12 +564,9 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
   const createActivity = async (uid, activity) => {
-    console.log("OHHIHIHIIHIHIH: ", uid);
     const user = await userModel.findById(uid);
-    
     if (!user) throw new Error("User not found");
 
-    // Validate activity object
     if (!activity.name) {
       throw new Error("Event must have a name");
     }
@@ -585,5 +582,14 @@ const modifyEvent = async (uid, event, eventId) => {
     return addedActivity;
   };
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity};
+  const getActivities = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const activity = await userModel.findById({ _id: { $in: user.activities } });
+
+    return activity;
+  }
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities};
 }
