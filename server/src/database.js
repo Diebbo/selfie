@@ -19,7 +19,7 @@ export async function createDataBase() {
   const eventModel = mongoose.model("Event", eventSchema);
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Projects", projectSchema);
-  const activityModel = mongoose.model("Activity", activitySchema); 
+  const activityModel = mongoose.model("Activity", activitySchema);
 
   mongoose.connect(uri);
 
@@ -63,45 +63,45 @@ export async function createDataBase() {
 
   const postNote = async (uid, note) => {
     try {
-        const user = await userModel.findById(uid);
-        if (!user) throw new Error("User not found");
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
 
-        if (!user.notes) user.notes = [];
-        if (!note.title || !note.content) {
-            throw new Error("Note must have a title and content");
-        }
-        if (!note.tags) note.tags = []; 
-        note.date = new Date(); // update the last modified date with current date
-        
-        if (note._id) { // Modify existing note
-            const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
-            const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
-            if (noteIndex !== -1) {
-                // Update existing note
-                user.notes[noteIndex] = {
-                    ...user.notes[noteIndex].toObject(),
-                    ...note,
-                    _id: noteId // Ensure we keep the original ObjectId
-                };
-            } else {
-                throw new Error("Note with provided ID not found");
-            }
-        } else { // New note
-            user.notes.push(note);
-        }
+      if (!user.notes) user.notes = [];
+      if (!note.title || !note.content) {
+        throw new Error("Note must have a title and content");
+      }
+      if (!note.tags) note.tags = [];
+      note.date = new Date(); // update the last modified date with current date
 
-        await user.save();
-        return note;
+      if (note._id) { // Modify existing note
+        const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
+        const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
+        if (noteIndex !== -1) {
+          // Update existing note
+          user.notes[noteIndex] = {
+            ...user.notes[noteIndex].toObject(),
+            ...note,
+            _id: noteId // Ensure we keep the original ObjectId
+          };
+        } else {
+          throw new Error("Note with provided ID not found");
+        }
+      } else { // New note
+        user.notes.push(note);
+      }
+
+      await user.save();
+      return note;
     } catch (error) {
-        console.error(`Error posting note for user ${uid}:`, error);
-        throw error;
+      console.error(`Error posting note for user ${uid}:`, error);
+      throw error;
     }
-};
+  };
 
 
   const getNotes = async (uid, fields = null) => {
     let projection = { 'notes._id': 1 }; // Sempre includi l'ID della nota
-  
+
     if (Array.isArray(fields) && fields.length > 0) {
       fields.forEach(field => {
         projection[`notes.${field}`] = 1;
@@ -109,10 +109,10 @@ export async function createDataBase() {
     } else {
       projection = { notes: 1 }; // Se fields non è specificato o è vuoto, prendi tutte le note
     }
-  
+
     const user = await userModel.findById(uid, projection);
     if (!user) throw new Error("User not found");
-  
+
     return user.notes.map(note => {
       if (Array.isArray(fields) && fields.length > 0) {
         const filteredNote = { _id: note._id };
@@ -160,7 +160,7 @@ export async function createDataBase() {
       throw error;
     }
   };
-  
+
 
   const getEvents = async (uid) => {
     var user = await userModel.findById(uid);
@@ -282,34 +282,34 @@ export async function createDataBase() {
     );
   };
 
-const modifyEvent = async (uid, event, eventId) => {
-  const user = await userModel.findById(uid);
-  if (!user) throw new Error("User not found");
+  const modifyEvent = async (uid, event, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
 
-  const oldEvent = await eventModel.findById(eventId);
-  if (!oldEvent) throw new Error("Event not found");
-  
-  if (oldEvent.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+    const oldEvent = await eventModel.findById(eventId);
+    if (!oldEvent) throw new Error("Event not found");
 
-  try {
-    // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
-    const replacedEvent = await eventModel.replaceOne({ _id: eventId }, { ...event, uid: uid });
-    if (replacedEvent.modifiedCount === 0) {
-      throw new Error("Event replace failed");
+    if (oldEvent.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+
+    try {
+      // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
+      const replacedEvent = await eventModel.replaceOne({ _id: eventId }, { ...event, uid: uid });
+      if (replacedEvent.modifiedCount === 0) {
+        throw new Error("Event replace failed");
+      }
+
+      // Aggiorno le notifiche di ogni partecipante
+      const updatedUsers = await userModel.updateMany(
+        { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
+        { $set: { inboxNotifications: { fromEvent: eventId } } }
+      );
+
+      return { replacedEvent, updatedUsers };
+
+    } catch (e) {
+      throw new Error("Event did not get changed: " + e.message);
     }
-
-    // Aggiorno le notifiche di ogni partecipante
-    const updatedUsers = await userModel.updateMany(
-      { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
-      { $set: { inboxNotifications: { fromEvent: eventId } } }
-    );
-
-    return { replacedEvent, updatedUsers };
-
-  } catch (e) {
-    throw new Error("Event did not get changed: " + e.message);
-  }
-};
+  };
 
   const partecipateEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
@@ -513,7 +513,7 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
   // For now only for testing (to add song to the DB)
-  const addSong = async (uid, song) => { 
+  const addSong = async (uid, song) => {
     try {
       const result = await songModel.create(song);
     } catch (error) {
@@ -523,43 +523,39 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
   const getNextNotifications = async () => {
-    // get from the inboxNotifications for each user the first notification
-    // if less than 30 seconds from the date of the notification, pop it from the array
     const users = await userModel.find({});
-
-    // Prepare notifications array
     let notifications = { email: [], pushNotification: [] };
+    const currentDateTime = await getDateTime();
 
-    // Get current date and time
-    const currentDateTime = await getDateTime(); // assuming this gives current DateTime
-
-    users.forEach(async (user) => {
-      // Check if user has any inbox notifications
+    await Promise.all(users.map(async (user) => {
       if (user.inboxNotifications.length > 0) {
-        const notification = user.inboxNotifications[0]; // Get the first notification
+        const notification = user.inboxNotifications[0];
 
-        // Check if notification is within 30 seconds or less from current time
         if (new Date(notification.when) - currentDateTime <= 30000) {
-          // Pop the notification and save the user
-          let removedNotification = user.inboxNotifications.shift(); // Remove the first notification
+          const event = await eventModel.findById(notification.fromEvent);
+          let notificationDescription = notification.description || 'reminder for event taking place on ' + event.dtstart;
 
-          // Add notification to the appropriate queue (email or push)
+          let removedNotification = user.inboxNotifications.shift();
+
           if (removedNotification.method === 'email') {
             notifications.email.push({
-              email: user.email,
-              title: removedNotification.title
+              to: user.email,
+              subject: removedNotification.title,
+              body: notificationDescription
             });
           } else {
             notifications.pushNotification.push({
               username: user.username,
-              title: removedNotification.title
+              title: removedNotification.title,
+              body: removedNotification.description
             });
           }
 
-          await user.save(); // Await user save to ensure changes are persisted
+          await user.save();
         }
       }
-    });
+    }));
+
     return notifications;
   };
 
@@ -591,5 +587,5 @@ const modifyEvent = async (uid, event, eventId) => {
     return { activity: activity };
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities};
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities };
 }

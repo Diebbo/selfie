@@ -1,14 +1,15 @@
 import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
-          title: String,
-          type: String,
-          repetition:
-          {
-            freq: String, // daily, weekly, monthly, yearly
-            interval: Number, 
-          }, 
-          fromDate: Date, // anticipo rispetto a data evento
+    title: String,
+    description: String,
+    type: String,
+    repetition:
+    {
+        freq: String, // daily, weekly, monthly, yearly
+        interval: Number,
+    },
+    fromDate: Date, // anticipo rispetto a data evento
 });
 
 const activitySchema = new mongoose.Schema({

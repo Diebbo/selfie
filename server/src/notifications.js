@@ -17,16 +17,44 @@
         },
     }],
 */
-export async function sendNotification(notificationData) {
+export async function sendNotification(transporter, notificationData) {
     // Example: Send email or push notification here
-    await sendEmail(notificationData.email);
-    // sendPushNotification(notificationData.pushNotification);
+    try {
+        await sendEmail(transporter, notificationData.email);
+    } catch (error) {
+        console.log('Error sending email:', error);
+    }
+
+    /* try {
+        await sendPushNotification(notificationData.pushNotification);
+    } catch (error) {
+        console.log('Error sending push notification:', error);
+    }
+    */
 }
 
-async function sendEmail(emails) {
-    // Example: Send email
+async function sendEmail(transporter, emails) {
     for (const email of emails) {
-        console.log('Sending email:', email);
+        // Configure the mailoptions object
+        const mailOptions = {
+            from: 'selfie.notifications@gmail.com',
+            to: email.to,
+            subject: email.subject,
+            text: email.body
+        };
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Email:', mailOptions);
+            continue;
+        }
+
+        // Send the email
+        transporter.sendMail(mailOptions, function(error, info) {
+            if (error) {
+                console.log('Error:', error);
+            } else {
+                console.log('Email sent: ', mailOptions, info.response);
+            }
+        });
     }
-    // Add logic to send email
 }
