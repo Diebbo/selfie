@@ -16,7 +16,7 @@ export function createAuthRouter(db) {
     };
   }
   function createToken(user) {
-    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION || "1h", issuer:"selfie app" });
   }
 
   router.post("/login", async (req, res) => {
