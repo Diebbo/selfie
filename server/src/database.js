@@ -586,9 +586,9 @@ const modifyEvent = async (uid, event, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    const activity = await userModel.findById({ _id: { $in: user.activities } });
+    const activity = await activityModel.find({ _id: { $in: user.activities } });
 
-    return activity;
+    return { activity: activity };
   }
 
   return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities};
