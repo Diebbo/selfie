@@ -5,6 +5,7 @@ import { mongoose } from "mongoose";
 import { userSchema } from "./models/user-model.js";
 import { timeSchema } from "./models/time-model.js";
 import { eventSchema } from "./models/event-model.js";
+import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 
@@ -18,6 +19,7 @@ export async function createDataBase() {
   const eventModel = mongoose.model("Event", eventSchema);
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Projects", projectSchema);
+  const activityModel = mongoose.model("Activity", activitySchema); 
 
   mongoose.connect(uri);
 
@@ -561,7 +563,27 @@ const modifyEvent = async (uid, event, eventId) => {
     return notifications;
   };
 
+  const createActivity = async (uid, activity) => {
+    console.log("OHHIHIHIIHIHIH: ", uid);
+    const user = await userModel.findById(uid);
+    
+    if (!user) throw new Error("User not found");
 
+    // Validate activity object
+    if (!activity.name) {
+      throw new Error("Event must have a name");
+    }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime };
+    if (!activity.dueDate) {
+      throw new Error("Event must have a dueDate");
+    }
+
+    var addedActivity = await activityModel.create({ ...activity, uid: uid });
+    user.activities.push(addedActivity._id);
+    await user.save();
+
+    return addedActivity;
+  };
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity};
 }
