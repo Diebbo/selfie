@@ -19,13 +19,25 @@ function createActivityRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    console.log(result);
     if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
 
     res.status(200).json({ message: "attività aggiunta correttamente" , result });
   });
 
   //get attività
+  router.get('/', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+
+    try {
+      var result = await db.getActivities(uid);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Nessun attività trovata" });
+
+    return res.status(200).json(result);
+  });
 
   //delete attività
 
