@@ -5,15 +5,23 @@ function createActivityRouter(db) {
   const router = express.Router();
   
   //put attività
+  //URL: ?fields=parentId
   router.put('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const activity = req.body.activity;
+    const projectId = null; //user activity 
+    const parentId = req.query.fields ? req.query.fields : null;
+    console.log("activity1: ", activity);
 
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
 
     try {
-      var result = await db.createActivity(uid, activity);
-      
+      if(!parentId) {
+        var result = await db.createActivity(uid, projectId, activity);
+      } else {
+        var result = await db.createSubActivity(uid, projectId, parentId, activity);
+      }
+      console.log("result: ", result);
     } catch (e) { 
       return res.status(400).json({ message: e.message });
     }
@@ -23,33 +31,34 @@ function createActivityRouter(db) {
     res.status(200).json({ message: "attività aggiunta correttamente" , result });
   });
 
-  //get attività (da user o da project)
-  // es di URL: /activities/?fields=projectID
-  //CHECKARE SE È UNA SOTTO ATTIVITÀ
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
-    const projectId = req.query.fields
 
     try {
-      var result = await db.getActivities(uid);
+      var result = await db.getActivities(uid, null);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    if (!result) return res.status(404).json({ message: "Nessun attività trovata" });
+    if (!result) return res.status(404).json({ message: "Nessun attività creata" });
 
     return res.status(200).json(result);
   });
 
   //delete attività (da user o da project)
-  // es di URL: /activities/id?fields=project
+  // es di URL: :id/?fields=subActivityId
   router.delete('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
-    const activityId = req.params.id;
-    const projectId = req.query.fields;
+    const parentId = req.params.id;
+    const projectId = null; //user activity
+    const subActivityId = req.query.fields ? req.query.fields : null;
 
     try {
-      await db.deleteActivity(uid, activityId, projectId) ;
+      if(!subActivityId) {
+        await db.deleteActivity(uid, parentId, projectId);
+      } else {
+        await db.deleteSubActivity(uid, parentId, subActivityId, projectId);  
+      }
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -58,7 +67,6 @@ function createActivityRouter(db) {
   });
 
   //patch attività
-  
 
   return router;
 }
