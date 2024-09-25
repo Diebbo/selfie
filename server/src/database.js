@@ -565,7 +565,7 @@ const modifyEvent = async (uid, event, eventId) => {
 
   //funzione per checkare se l'attività è Layer 1
   function layer1check(parentId) { 
-    return await activityModel.findById(parentId) ? true : false;
+    return activityModel.findById(parentId) ? true : false;
   }
 
   const createActivity = async (uid, projectId, parentId, activity) => {
@@ -593,16 +593,14 @@ const modifyEvent = async (uid, event, eventId) => {
     if(!projectId) {
       if(!parent) {
         user.activities.push(addedActivity);
-      } else if () {
-        user.activities.subactivities.push(addedActivity);
       } else {
+        user.activities.subactivities.push(addedActivity);
       }
     } else {
       if(!parent) {
         project.activities.push(addedActivity);
-      } else if () {
-        project.activities.subactivities.push(addedActivity);
       } else {
+        project.activities.subactivities.push(addedActivity);
     }
 
     await user.save();
