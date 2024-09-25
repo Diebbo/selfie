@@ -87,6 +87,10 @@ export const userSchema = new mongoose.Schema({
     
     // lista di notifiche
     inboxNotifications: [{
+        fromMessage: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Chat'
+        },
         fromEvent: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Event'
@@ -97,6 +101,7 @@ export const userSchema = new mongoose.Schema({
         },
         when: Date,
         title: String,
+        description: String,
         method: {
             type: String,
             enum: ['system', 'email']

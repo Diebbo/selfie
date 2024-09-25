@@ -1,4 +1,5 @@
 // src/notifications.js
+import { config } from "dotenv";
 /* 
  *     inboxNotifications: [{
         fromEvent: {
@@ -19,6 +20,8 @@
 */
 export async function sendNotification(transporter, notificationData) {
     // Example: Send email or push notification here
+    config();
+
     try {
         await sendEmail(transporter, notificationData.email);
     } catch (error) {
@@ -43,11 +46,11 @@ async function sendEmail(transporter, emails) {
             text: email.body
         };
 
-        if (process.env.NODE_ENV === 'development') {
-            console.log('Email:', mailOptions);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('Faking sending email:', mailOptions);
             continue;
         }
-
+        
         // Send the email
         transporter.sendMail(mailOptions, function(error, info) {
             if (error) {
