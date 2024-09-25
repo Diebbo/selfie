@@ -24,7 +24,7 @@ export function createApp({ dirpath, database }) {
   dotenv.config();
 
   const app = express();
-
+  
   app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
   app.locals.pluralize = pluralize;
