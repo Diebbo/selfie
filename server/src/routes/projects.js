@@ -34,8 +34,24 @@ export function createProjectRouter(db) {
   //delete projects
 
   //add activity inside project
-  router.put('/:id/activities', cookieJwtAuth, async function(req, res) {
-    console.log("TODO");   
+  // es di URL: /projectId/activities/parentId
+  router.put('/:projectId/activities/:parentId', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.params.projectId;
+    const parentId = req.params.parentId;
+    const activity = req.body.activity;
+
+    if (!activity) return res.status(400).json({ message: "Attività non fornita" });
+
+    try {
+      var result = await db.createActivity(uid, projectId, parentId, activity);
+    } catch (e) { 
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
+
+    res.status(200).json({ message: "attività aggiunta correttamente" , result });
   });
 
   return router;

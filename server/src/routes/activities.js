@@ -11,7 +11,6 @@ function createActivityRouter(db) {
 
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
 
-    console.log("user: ", uid);
     try {
       var result = await db.createActivity(uid, activity);
       
@@ -24,9 +23,12 @@ function createActivityRouter(db) {
     res.status(200).json({ message: "attività aggiunta correttamente" , result });
   });
 
-  //get attività
+  //get attività (da user o da project)
+  // es di URL: /activities/?fields=projectID
+  //CHECKARE SE È UNA SOTTO ATTIVITÀ
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
+    const projectId = req.query.fields
 
     try {
       var result = await db.getActivities(uid);
@@ -39,9 +41,24 @@ function createActivityRouter(db) {
     return res.status(200).json(result);
   });
 
-  //delete attività
+  //delete attività (da user o da project)
+  // es di URL: /activities/id?fields=project
+  router.delete('/:id', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const activityId = req.params.id;
+    const projectId = req.query.fields;
 
-  //patch
+    try {
+      await db.deleteActivity(uid, activityId, projectId) ;
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    return res.status(200).json("Activity deleted successfully");
+  });
+
+  //patch attività
+  
 
   return router;
 }
