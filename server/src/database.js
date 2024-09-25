@@ -563,7 +563,15 @@ const modifyEvent = async (uid, event, eventId) => {
     return notifications;
   };
 
-  const createActivity = async (uid, activity) => {
+  //funzione per checkare se l'attività è Layer 1
+  function layer1check(parentId) { 
+    return await activityModel.findById(parentId) ? true : false;
+  }
+
+  const createActivity = async (uid, projectId, parentId, activity) => {
+
+    //cerco fra le attività di layer 1 nella collection delle attività
+
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -576,20 +584,73 @@ const modifyEvent = async (uid, event, eventId) => {
     }
 
     var addedActivity = await activityModel.create({ ...activity, uid: uid });
-    user.activities.push(addedActivity._id);
+     
+    if (!layer1check(addedActiviity)) { //errore se il padre non è layer1
+      throw new Error("Can't be more than layer-2 subactivities");
+    }
+    
+    //check if project activities or user activities or subactivities
+    if(!projectId) {
+      if(!parent) {
+        user.activities.push(addedActivity);
+      } else if () {
+        user.activities.subactivities.push(addedActivity);
+      } else {
+      }
+    } else {
+      if(!parent) {
+        project.activities.push(addedActivity);
+      } else if () {
+        project.activities.subactivities.push(addedActivity);
+      } else {
+    }
+
     await user.save();
 
     return addedActivity;
   };
 
+  //RETURN LAYER 1 AND 2
   const getActivities = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
     const activity = await activityModel.find({ _id: { $in: user.activities } });
+    //still need to check
+    const subactivities = await activityModel.find({ _id: { $in: user.activities.subActivity } });
 
-    return { activity: activity };
+    return { activity: activity, subactivities: subactivities };
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities};
+  // delete activity from user or project
+  const deleteActivity = async (uid, activityId, projectId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const activity = await activityModel.findById(activityId);
+    if (!activity) throw new Error("Event not found");
+
+    if (!projectId) {
+      // Remove activity from user's activity array
+      await userModel.findByIdAndUpdate(uid, { $pull: { "activities.subactivities": activityId, activities: activityId } });
+    } else {
+    // Remove activity from projects's activity array [search in my projects the activity that matches the Id I gave]
+      await projectModel.findByIdAndUpdate(projectId, { $pull: { "activities.subactivities": activityId, activities: activityId } });
+    }
+
+    // Delete the activity
+    await activityModel.findByIdAndDelete(activityId);
+
+
+    /* Implementa diego poi vediamo
+     * Remove any notifications related to this activity 
+      await userModel.updateMany(
+      { 'inboxNotifications.fromActivity': activityId },
+      { $pull: { inboxNotifications: { fromTask: activityId } } }
+    );
+    */
+
+  };
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities, deleteActivity};
 }
