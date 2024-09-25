@@ -23,7 +23,7 @@ export async function createDataBase() {
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
 
-  mongoose.connect(uri);
+  await mongoose.connect(uri);
 
   const login = async (user) => {
     var res;
@@ -209,6 +209,12 @@ export async function createDataBase() {
     generateNotificationsForEvent(addedEvent, [user]);
 
     return addedEvent;
+  }
+
+  const addNotification = async (user, notification) => {
+    if (!user.inobxNotifications) user.inboxNotifications = [];
+    user.inboxNotifications.push(notification);
+    await user.save();
   }
 
   function generateNotifications({ eventId, activityId, startDate, notification, title }, users) {
@@ -557,10 +563,11 @@ export async function createDataBase() {
           if (notification.fromEvent) {
             event = await eventModel.findById(notification.fromEvent);
             notificationDescription = 'reminder for event taking place on ' + event.dtstart;
-          } else {
+          } else if (notification.fromActivity) {
             activity = await activityModel.findById(notification.fromTask);
             notificationDescription = 'reminder for activity due on ' + activity.dueDate;
           }
+
           // Override the default notification description if it's provided
           notificationDescription = notification.description || notificationDescription;
 
@@ -638,8 +645,15 @@ export async function createDataBase() {
     if (!message) throw new Error("Message cannot be empty");
 
     const now = await getDateTime();
+
     // date is automatically set to the current date
-    return await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
+    const newMessage = await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
+
+    // send notification
+    const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
+    await addNotification(receiver, newNotification);
+
+    return newMessage;
   }
 
   const getChat = async (senderId, receiverId) => {
@@ -662,7 +676,7 @@ export async function createDataBase() {
 
     const messages = await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
 
-    for(const message of messages) {
+    for (const message of messages) {
       // Identify the other user in the conversation (either sender or receiver)
       const otherUserId = message.sender.equals(uid) ? message.receiver : message.sender;
       const otherUser = await userModel.findById(otherUserId);
