@@ -8,7 +8,7 @@ export default function createChatRouter(db) {
   router.get('/messages',cookieJwtAuth, async (req, res) => {
     const id = req.user._id;
     try {
-      const messages = await db.messages.getUserMessages(id);
+      const messages = await db.chatService.getUserMessages(id);
       res.status(200).json(messages);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -20,7 +20,7 @@ export default function createChatRouter(db) {
     const sender = req.user._id;
     const receiver = req.params.id;
     try {
-      const messages = await db.messages.getChat(sender, receiver);
+      const messages = await db.chatService.getChat(sender, receiver);
       res.status(200).json(messages);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -33,7 +33,7 @@ export default function createChatRouter(db) {
     const receiver = req.params.id;
     const message = req.body.message;
     try {
-      const newMessage = await db.messages.sendMessage(sender, receiver, message);
+      const newMessage = await db.chatService.sendMessage(sender, receiver, message);
       res.status(200).json(newMessage);
     } catch (err) {
       res.status(400).json({ error: err.message });
@@ -44,7 +44,7 @@ export default function createChatRouter(db) {
   router.get('/',cookieJwtAuth, async (req, res) => {
     const id = req.user._id;
     try {
-      const chats = await db.messages.getChats(id);
+      const chats = await db.chatService.getChats(id);
       res.status(200).json(chats);
     } catch (err) {
       res.status(400).json({ error: err.message });

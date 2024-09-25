@@ -626,90 +626,85 @@ export async function createDataBase() {
     return { activity: activity };
   }
 
-  /* Messages */
+  const chatService = {
+    async getUserMessages(uid) {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
 
-  const getUserMessages = async (uid) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
+      return await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+    },
 
-    return await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
-  }
+    async sendMessage(senderId, receiverId, message) {
+      const sender = await userModel.findById(senderId);
+      if (!sender) throw new Error("Sender not found");
 
-  const sendMessage = async (senderId, receiverId, message) => {
-    const sender = await userModel.findById(senderId);
-    if (!sender) throw new Error("Sender not found");
+      const receiver = await userModel.findById(receiverId);
+      if (!receiver) throw new Error("Receiver not found");
 
-    const receiver = await userModel.findById(receiverId);
-    if (!receiver) throw new Error("Receiver not found");
+      if (!message) throw new Error("Message cannot be empty");
 
-    if (!message) throw new Error("Message cannot be empty");
+      const now = await getDateTime();
 
-    const now = await getDateTime();
+      // date is automatically set to the current date
+      const newMessage = await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
 
-    // date is automatically set to the current date
-    const newMessage = await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
+      // send notification
+      const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
+      await addNotification(receiver, newNotification);
 
-    // send notification
-    const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
-    await addNotification(receiver, newNotification);
+      return newMessage;
+    },
 
-    return newMessage;
-  }
+    async getChat(senderId, receiverId) {
+      const sender = await userModel.findById(senderId);
+      if (!sender) throw new Error("Sender not found");
 
-  const getChat = async (senderId, receiverId) => {
-    const sender = await userModel.findById(senderId);
-    if (!sender) throw new Error("Sender not found");
+      const receiver = await userModel.findById(receiverId);
+      if (!receiver) throw new Error("Receiver not found");
 
-    const receiver = await userModel.findById(receiverId);
-    if (!receiver) throw new Error("Receiver not found");
+      const chat = await chatModel.find({ $or: [{ sender: senderId, receiver: receiverId }, { sender: receiverId, receiver: senderId }] });
+      return chat.sort((a, b) => a.createdAt - b.createdAt);
+    },
 
-    const chat = await chatModel.find({ $or: [{ sender: senderId, receiver: receiverId }, { sender: receiverId, receiver: senderId }] });
-    return chat.sort((a, b) => a.createdAt - b.createdAt);
-  }
+    // get all users that the current user has chatted with and the last message
+    async getChats(uid) {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
 
-  // get all users that the current user has chatted with and the last message
-  const getChats = async (uid) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
+      let chats = [];
 
-    let chats = [];
+      const messages = await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
 
-    const messages = await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+      for (const message of messages) {
+        // Identify the other user in the conversation (either sender or receiver)
+        const otherUserId = message.sender.equals(uid) ? message.receiver : message.sender;
+        const otherUser = await userModel.findById(otherUserId);
 
-    for (const message of messages) {
-      // Identify the other user in the conversation (either sender or receiver)
-      const otherUserId = message.sender.equals(uid) ? message.receiver : message.sender;
-      const otherUser = await userModel.findById(otherUserId);
+        // Check if the other user is already in the `chats` array
+        let chat = chats.find((c) => c.username === otherUser.username);
 
-      // Check if the other user is already in the `chats` array
-      let chat = chats.find((c) => c.username === otherUser.username);
-
-      if (!chat) {
-        chat = {
-          username: otherUser.username,  // The user that the current user chatted with
-          lastMessage: message.message  // The current message is the last message in this chat
-        };
-        console.log("chat", chat);
-        chats.push(chat);
-      } else {
-        // If chat exists, check if this message is more recent than the stored last message
-        if (message.createdAt > chat.lastMessage.createdAt) {
-          chat.lastMessage = message;
+        if (!chat) {
+          chat = {
+            username: otherUser.username,  // The user that the current user chatted with
+            lastMessage: message.message  // The current message is the last message in this chat
+          };
+          chats.push(chat);
+        } else {
+          // If chat exists, check if this message is more recent than the stored last message
+          if (message.createdAt > chat.lastMessage.createdAt) {
+            chat.lastMessage = message;
+          }
         }
       }
+
+      return chats;
     }
 
-    return chats;
+    /* end Messages */
   }
 
-  /* end Messages */
-
   return {
-    login, register, changeDateTime, createEvent, modifyEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities, messages: {
-      getUserMessages,
-      sendMessage,
-      getChat,
-      getChats
-    }
+    login, register, changeDateTime, createEvent, modifyEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities, 
+    chatService
   };
 }
