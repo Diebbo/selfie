@@ -2,6 +2,8 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { sendNotification } from "../notifications.js";
 
 const router = express.Router();
 
@@ -16,7 +18,7 @@ export function createAuthRouter(db) {
     };
   }
   function createToken(user) {
-    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION || "1h", issuer:"selfie app" });
+    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION || "1h", issuer: "selfie app" });
   }
 
   router.post("/login", async (req, res) => {
@@ -25,15 +27,15 @@ export function createAuthRouter(db) {
     if (!username && !email) {
       return res.status(400).json({ error: "Username or email required" });
     }
-    
+
     var dbuser;
 
-    try{
-      dbuser = await db.login({username, email, password});
+    try {
+      dbuser = await db.login({ username, email, password });
       console.log(`User logging in: ${dbuser.username}`);
-    } catch(e) {
+    } catch (e) {
       console.error(e.message)
-      return res.status(401).json({ message:e.message });
+      return res.status(401).json({ message: e.message });
     }
 
     // check password
@@ -58,12 +60,14 @@ export function createAuthRouter(db) {
 
   router.post("/register", async (req, res) => {
     const password = req.body.password;
+    const emailToken = crypto.randomBytes(64).toString("hex");
 
     var salt = bcrypt.genSaltSync(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = {
       ...req.body,
       password: hashedPassword,
+      emailtoken: emailToken,
       role: "user",
     };
     console.log(`User registering: ${newUser.username}`);
@@ -84,12 +88,29 @@ export function createAuthRouter(db) {
     res.cookie("token", token, {
       httpOnly: true,
       sameSite: "Lax",
-      // secure: true, // Enable in production
+      secure: true, // Enable in production
       // maxAge: 3600000, // 1 hour
-      // signed: true, // Enable if using signed cookies
+      signed: true, // Enable if using signed cookies
     });
 
     res.json({ user, token });
+  });
+
+  router.patch("/verifyemail", async (req, res) => {
+    const emailToken = req.query.emailToken;
+    if (!emailToken) {
+      return res.status(400).json({ error: "No Token provided" });
+    }
+    try {
+      const result = await db.verifyEmail(emailToken);
+      return res
+        .status(200)
+        .json({ result, emessage: "User verified successfully" });
+    } catch (e) {
+      return res
+        .status(400)
+        .json({ error: e.message });
+    }
   });
 
   return router;

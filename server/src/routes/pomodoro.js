@@ -32,7 +32,7 @@ function createPomodoroRouter(db) {
     }
   });
 
-  router.post("/update", cookieJwtAuth, async (req, res) => {
+  router.patch("/update", cookieJwtAuth, async (req, res) => {
     const uid = req.user._id;
     const incStudyTime = req.body.pomodoro.totalStudyTime;
     const incBreakTime = req.body.pomodoro.totalBreakTime;

@@ -37,14 +37,28 @@ export async function createDataBase() {
     return res;
   };
 
+
   const register = async (user) => {
     const emailUser = await userModel.findOne({ email: user.email });
     if (emailUser) throw new Error("Email already used");
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
 
+    // send verification email
+    addNotification(user, { title: "Verify your email", description: "verificati", method: "email" });
     const res = await userModel.create({ ...user });
     return res;
+  };
+
+  const verifyEmail = async (emailToken) => {
+    const user = await userModel.findOne({ emailtoken: emailToken });
+    if (!user) throw new Error("Invalid token");
+
+    user.isVerified = true;
+    user.emailtoken = null; // Clear the token after verification
+    await user.save();
+
+    return { message: "Email verified successfully" };
   };
 
   const changeDateTime = async (time) => {
@@ -62,6 +76,7 @@ export async function createDataBase() {
     if (!res) throw new Error("Time not found");
     return new Date(res.time);
   };
+
 
   const postNote = async (uid, note) => {
     try {
@@ -703,8 +718,5 @@ export async function createDataBase() {
     /* end Messages */
   }
 
-  return {
-    login, register, changeDateTime, createEvent, modifyEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, getActivities, 
-    chatService
-  };
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, getActivities, chatService };
 }
