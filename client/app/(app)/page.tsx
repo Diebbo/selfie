@@ -1,19 +1,21 @@
-import type { NextPage } from "next";
-import { Content } from "@/components/home/content";
+// page.tsx (Server-Side Component)
+
 import { getEvents } from "@/actions/events";
+import { getChats } from "@/actions/chats";
+import { Content } from "@/components/home/content";
 
-const Home: NextPage = async () => {
+export default async function Home() {
   try {
-    // Fetch events from the backend
+    // Fetch events and chats data
     const events = await getEvents();
+    const chats = await getChats();
 
-    // Pass the fetched events to the Content component
-    return <Content events={events} />;
-  } catch (error) {
-    console.error("Failed to fetch events:", error);
-    // You might want to render an error state here
-    return <div>Error loading events. Please try again later.</div>;
+    // Pass the fetched data to the client-side component
+    return <Content events={events} chats={chats} />;
+
+  } catch (error: any) {
+    console.error('Unexpected error:', error);
+    return <div>Unexpected error occurred. Please try again later.</div>;
+
   }
-};
-
-export default Home;
+}

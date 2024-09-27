@@ -16,7 +16,7 @@ export const Login = () => {
   const [error, setError] = useState<string | null>(null);
 
   const initialValues: LoginFormType = {
-    email: "user@gmail.com",
+    email: "die.barbieri03@gmail.com",
     password: "123456",
   };
 
