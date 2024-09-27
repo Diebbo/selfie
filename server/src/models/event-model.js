@@ -1,14 +1,15 @@
 import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
-          title: String,
-          type: String,
-          repetition:
-          {
-            freq: String, // daily, weekly, monthly, yearly
-            interval: Number, 
-          }, 
-          fromDate: Date, // anticipo rispetto a data evento
+    title: String,
+    description: String,
+    type: String,
+    repetition:
+    {
+        freq: String, // daily, weekly, monthly, yearly
+        interval: Number,
+    },
+    fromDate: Date, // anticipo rispetto a data evento
 });
 
 const activitySchema = new mongoose.Schema({
@@ -17,6 +18,10 @@ const activitySchema = new mongoose.Schema({
     completed: Boolean,
     //notifiche per attività
     notification: notificationSchema,
+    participants: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     subActivity: [
         // should be an array of activitySchema but it's not defined yet
     ],

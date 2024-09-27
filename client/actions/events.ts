@@ -9,7 +9,6 @@ export async function getEvents() {
     throw new Error('Not authenticated');
   }
 
-
   const res = await fetch(`${getBaseUrl()}/api/events`, {
     headers: {
       'Content-Type': 'application/json',
@@ -22,5 +21,5 @@ export async function getEvents() {
     throw new Error('Failed to fetch events');
   }
 
-  return res.json();
+  return await res.json();
 }

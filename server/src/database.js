@@ -8,6 +8,7 @@ import { eventSchema } from "./models/event-model.js";
 import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
+import { messageSchema } from "./models/chat-model.js";
 
 export async function createDataBase() {
   const uri =
@@ -19,21 +20,23 @@ export async function createDataBase() {
   const eventModel = mongoose.model("Event", eventSchema);
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Projects", projectSchema);
-  const activityModel = mongoose.model("Activity", activitySchema); 
+  const activityModel = mongoose.model("Activity", activitySchema);
+  const chatModel = mongoose.model("Chat", messageSchema);
 
-  mongoose.connect(uri);
+  await mongoose.connect(uri);
 
   const login = async (user) => {
     var res;
     if (user.username) {
       res = await userModel.findOne({ username: user.username });
     } else if (user.email) {
-      res = await userModelfindOne({ email: user.email });
+      res = await userModel.findOne({ email: user.email });
     }
 
     if (!res) throw new Error("Invalid credentials");
     return res;
   };
+
 
   const register = async (user) => {
     const emailUser = await userModel.findOne({ email: user.email });
@@ -41,8 +44,21 @@ export async function createDataBase() {
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
 
+    // send verification email
+    addNotification(user, { title: "Verify your email", description: "verificati", method: "email" });
     const res = await userModel.create({ ...user });
     return res;
+  };
+
+  const verifyEmail = async (emailToken) => {
+    const user = await userModel.findOne({ emailtoken: emailToken });
+    if (!user) throw new Error("Invalid token");
+
+    user.isVerified = true;
+    user.emailtoken = null; // Clear the token after verification
+    await user.save();
+
+    return { message: "Email verified successfully" };
   };
 
   const changeDateTime = async (time) => {
@@ -61,47 +77,48 @@ export async function createDataBase() {
     return new Date(res.time);
   };
 
+
   const postNote = async (uid, note) => {
     try {
-        const user = await userModel.findById(uid);
-        if (!user) throw new Error("User not found");
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
 
-        if (!user.notes) user.notes = [];
-        if (!note.title || !note.content) {
-            throw new Error("Note must have a title and content");
-        }
-        if (!note.tags) note.tags = []; 
-        note.date = new Date(); // update the last modified date with current date
-        
-        if (note._id) { // Modify existing note
-            const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
-            const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
-            if (noteIndex !== -1) {
-                // Update existing note
-                user.notes[noteIndex] = {
-                    ...user.notes[noteIndex].toObject(),
-                    ...note,
-                    _id: noteId // Ensure we keep the original ObjectId
-                };
-            } else {
-                throw new Error("Note with provided ID not found");
-            }
-        } else { // New note
-            user.notes.push(note);
-        }
+      if (!user.notes) user.notes = [];
+      if (!note.title || !note.content) {
+        throw new Error("Note must have a title and content");
+      }
+      if (!note.tags) note.tags = [];
+      note.date = new Date(); // update the last modified date with current date
 
-        await user.save();
-        return note;
+      if (note._id) { // Modify existing note
+        const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
+        const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
+        if (noteIndex !== -1) {
+          // Update existing note
+          user.notes[noteIndex] = {
+            ...user.notes[noteIndex].toObject(),
+            ...note,
+            _id: noteId // Ensure we keep the original ObjectId
+          };
+        } else {
+          throw new Error("Note with provided ID not found");
+        }
+      } else { // New note
+        user.notes.push(note);
+      }
+
+      await user.save();
+      return note;
     } catch (error) {
-        console.error(`Error posting note for user ${uid}:`, error);
-        throw error;
+      console.error(`Error posting note for user ${uid}:`, error);
+      throw error;
     }
-};
+  };
 
 
   const getNotes = async (uid, fields = null) => {
     let projection = { 'notes._id': 1 }; // Sempre includi l'ID della nota
-  
+
     if (Array.isArray(fields) && fields.length > 0) {
       fields.forEach(field => {
         projection[`notes.${field}`] = 1;
@@ -109,10 +126,10 @@ export async function createDataBase() {
     } else {
       projection = { notes: 1 }; // Se fields non è specificato o è vuoto, prendi tutte le note
     }
-  
+
     const user = await userModel.findById(uid, projection);
     if (!user) throw new Error("User not found");
-  
+
     return user.notes.map(note => {
       if (Array.isArray(fields) && fields.length > 0) {
         const filteredNote = { _id: note._id };
@@ -160,7 +177,7 @@ export async function createDataBase() {
       throw error;
     }
   };
-  
+
 
   const getEvents = async (uid) => {
     var user = await userModel.findById(uid);
@@ -174,7 +191,7 @@ export async function createDataBase() {
 
   const createEvent = async (uid, event) => {
     const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not foun");
 
     // Validate event object
     if (!event.title) {
@@ -204,35 +221,39 @@ export async function createDataBase() {
     if (err !== "Invited users not found: ") throw new Error(err);
 
     // generate notifications for all the invited users
-    generateNotifications(addedEvent, [user]);
+    generateNotificationsForEvent(addedEvent, [user]);
 
     return addedEvent;
   }
 
-  function generateNotifications(event, users) {
+  const addNotification = async (user, notification) => {
+    if (!user.inobxNotifications) user.inboxNotifications = [];
+    user.inboxNotifications.push(notification);
+    await user.save();
+  }
+
+  function generateNotifications({ eventId, activityId, startDate, notification, title }, users) {
     let notificationTimes = [];
 
-    if (event.notification) {
-      const eventStartDate = new Date(event.dtstart);  // Start of the event
-      let notificationDate = new Date(event.notification.fromDate);  // First notification date
+    const eventStartDate = new Date(startDate);  // Start of the event
+    let notificationDate = new Date(notification.fromDate);  // First notification date
 
-      const freq = event.notification.repetition.freq;
-      const interval = event.notification.repetition.interval;
+    const freq = notification.repetition.freq;
+    const interval = notification.repetition.interval;
 
-      // Generate notification times until the event start
-      while (notificationDate < eventStartDate) {
-        notificationTimes.push(new Date(notificationDate));  // Push a copy of the notification date
+    // Generate notification times until the event start
+    while (notificationDate < eventStartDate) {
+      notificationTimes.push(new Date(notificationDate));  // Push a copy of the notification date
 
-        // Update notificationDate based on the frequency
-        if (freq === 'daily') {
-          notificationDate.setDate(notificationDate.getDate() + interval);
-        } else if (freq === 'weekly') {
-          notificationDate.setDate(notificationDate.getDate() + 7 * interval);
-        } else if (freq === 'monthly') {
-          notificationDate.setMonth(notificationDate.getMonth() + interval);
-        } else if (freq === 'yearly') {
-          notificationDate.setFullYear(notificationDate.getFullYear() + interval);
-        }
+      // Update notificationDate based on the frequency
+      if (freq === 'daily') {
+        notificationDate.setDate(notificationDate.getDate() + interval);
+      } else if (freq === 'weekly') {
+        notificationDate.setDate(notificationDate.getDate() + 7 * interval);
+      } else if (freq === 'monthly') {
+        notificationDate.setMonth(notificationDate.getMonth() + interval);
+      } else if (freq === 'yearly') {
+        notificationDate.setFullYear(notificationDate.getFullYear() + interval);
       }
     }
 
@@ -240,18 +261,38 @@ export async function createDataBase() {
     users.forEach(async (user) => {
       // Ensure there are enough notification times
       notificationTimes.forEach(async (notificationTime) => {
-        user.inboxNotifications.push({
-          fromEvent: event._id,
+        let addingNotification = {
+          fromEvent: eventId,
+          fromTask: activityId,
           when: notificationTime,  // The calculated notification time
-          title: event.notification.title || event.title,  // Fallback to event title if notification title is missing
-          method: event.notification.type || 'email'  // Fallback to 'email' if method is missing
-        });
+          title: notification.title || title,  // Fallback to event title if notification title is missing
+          method: notification.type || 'email'  // Fallback to 'email' if method is missing
+        };
+        user.inboxNotifications.push(addingNotification);
       });
 
       user.inboxNotifications.sort((a, b) => a.when - b.when);
 
       await user.save();
     });
+  }
+
+  function generateNotificationsForEvent(event, users) {
+    return generateNotifications({
+      eventId: event._id,
+      startDate: event.dtstart,
+      notification: event.notification,
+      title: event.title
+    }, users);
+  }
+
+  function generateNotificationsForActivity(activity, users) {
+    return generateNotifications({
+      activityId: activity._id,
+      startDate: activity.dueDate,
+      notification: activity.notification,
+      title: activity.name
+    }, users);
   }
 
   const deleteEvent = async (uid, eventId) => {
@@ -282,34 +323,34 @@ export async function createDataBase() {
     );
   };
 
-const modifyEvent = async (uid, event, eventId) => {
-  const user = await userModel.findById(uid);
-  if (!user) throw new Error("User not found");
+  const modifyEvent = async (uid, event, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
 
-  const oldEvent = await eventModel.findById(eventId);
-  if (!oldEvent) throw new Error("Event not found");
-  
-  if (oldEvent.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+    const oldEvent = await eventModel.findById(eventId);
+    if (!oldEvent) throw new Error("Event not found");
 
-  try {
-    // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
-    const replacedEvent = await eventModel.replaceOne({ _id: eventId }, { ...event, uid: uid });
-    if (replacedEvent.modifiedCount === 0) {
-      throw new Error("Event replace failed");
+    if (oldEvent.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+
+    try {
+      // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
+      const replacedEvent = await eventModel.replaceOne({ _id: eventId }, { ...event, uid: uid });
+      if (replacedEvent.modifiedCount === 0) {
+        throw new Error("Event replace failed");
+      }
+
+      // Aggiorno le notifiche di ogni partecipante
+      const updatedUsers = await userModel.updateMany(
+        { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
+        { $set: { inboxNotifications: { fromEvent: eventId } } }
+      );
+
+      return { replacedEvent, updatedUsers };
+
+    } catch (e) {
+      throw new Error("Event did not get changed: " + e.message);
     }
-
-    // Aggiorno le notifiche di ogni partecipante
-    const updatedUsers = await userModel.updateMany(
-      { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
-      { $set: { inboxNotifications: { fromEvent: eventId } } }
-    );
-
-    return { replacedEvent, updatedUsers };
-
-  } catch (e) {
-    throw new Error("Event did not get changed: " + e.message);
-  }
-};
+  };
 
   const partecipateEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
@@ -325,7 +366,7 @@ const modifyEvent = async (uid, event, eventId) => {
     await user.save();
 
     // add notifications for the event
-    generateNotifications(event, [user]);
+    generateNotificationsForEvent(event, [user]);
 
     return user.invitedEvents;
   };
@@ -368,7 +409,7 @@ const modifyEvent = async (uid, event, eventId) => {
     await user.save();
 
     // add all the members to the project
-    var err = "Members not found: ";
+    err = "Members not found: ";
     if (project.members) {
       project.members.forEach(async (member) => {
         const memberDoc = await userModel.findOne({ username: member });
@@ -513,7 +554,7 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
   // For now only for testing (to add song to the DB)
-  const addSong = async (uid, song) => { 
+  const addSong = async (uid, song) => {
     try {
       const result = await songModel.create(song);
     } catch (error) {
@@ -523,43 +564,49 @@ const modifyEvent = async (uid, event, eventId) => {
   };
 
   const getNextNotifications = async () => {
-    // get from the inboxNotifications for each user the first notification
-    // if less than 30 seconds from the date of the notification, pop it from the array
     const users = await userModel.find({});
-
-    // Prepare notifications array
     let notifications = { email: [], pushNotification: [] };
+    const currentDateTime = await getDateTime();
 
-    // Get current date and time
-    const currentDateTime = await getDateTime(); // assuming this gives current DateTime
-
-    users.forEach(async (user) => {
-      // Check if user has any inbox notifications
+    await Promise.all(users.map(async (user) => {
       if (user.inboxNotifications.length > 0) {
-        const notification = user.inboxNotifications[0]; // Get the first notification
+        const notification = user.inboxNotifications[0];
 
-        // Check if notification is within 30 seconds or less from current time
         if (new Date(notification.when) - currentDateTime <= 30000) {
-          // Pop the notification and save the user
-          let removedNotification = user.inboxNotifications.shift(); // Remove the first notification
+          let event, activity, notificationDescription;
 
-          // Add notification to the appropriate queue (email or push)
+          if (notification.fromEvent) {
+            event = await eventModel.findById(notification.fromEvent);
+            notificationDescription = 'reminder for event taking place on ' + event.dtstart;
+          } else if (notification.fromActivity) {
+            activity = await activityModel.findById(notification.fromTask);
+            notificationDescription = 'reminder for activity due on ' + activity.dueDate;
+          }
+
+          // Override the default notification description if it's provided
+          notificationDescription = notification.description || notificationDescription;
+
+          let removedNotification = user.inboxNotifications.shift();
+
           if (removedNotification.method === 'email') {
             notifications.email.push({
-              email: user.email,
-              title: removedNotification.title
+              to: user.email,
+              subject: removedNotification.title,
+              body: notificationDescription
             });
           } else {
             notifications.pushNotification.push({
               username: user.username,
-              title: removedNotification.title
+              title: removedNotification.title,
+              body: notificationDescription
             });
           }
 
-          await user.save(); // Await user save to ensure changes are persisted
+          await user.save();
         }
       }
-    });
+    }));
+
     return notifications;
   };
 
@@ -587,6 +634,9 @@ const modifyEvent = async (uid, event, eventId) => {
     }
 
     //ADD NOTIFICATIONS
+
+    // add notifications for the activity
+    generateNotificationsForActivity(addedActivity, [user]);
 
     return addedActivity;
   }
@@ -660,27 +710,89 @@ const modifyEvent = async (uid, event, eventId) => {
     if (!user) throw new Error("User not found");
 
     const parent = await activityModel.findById(parentId);
-    if (!parent) throw new Error("Event not found");
+    if (!parent) throw new Error("Father Activity not found");
+    
+    parent.subActivity = parent.subActivity.filter((sub) => sub._id.toString() !== subActivityId.toString());
 
-    const subActivity = await activityModel.findById(subActivityId);
-    if (!subActivity) throw new Error("Event not found");
-
-    //tolgo la sotto attività anche dalla collezione di attività
-    console.log("sotto-attività: ", subActivity);
-    await activityModel.findByIdAndDelete(subActivity._id);
-
-    //tolgo la sotto attività dall'array delle sottoattività del padre
-    console.log(parentId);
-
-    // !!non funziona la rimozione della sotto-attività dall'array di attività!!
-    await activityModel.updateOne({ _id: parentId }, { $pull: { "parent.subActivity": { _id: subActivityId } } });
-
-    await parent.save();
-
-    /* Implementa diego poi vediamo
-     * Remove any notifications related to this activity 
-     */
+    return await parent.save();
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, createSubActivity, getActivities, deleteActivity, deleteSubActivity};
+  const chatService = {
+    async getUserMessages(uid) {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      return await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+    },
+
+    async sendMessage(senderId, receiverId, message) {
+      const sender = await userModel.findById(senderId);
+      if (!sender) throw new Error("Sender not found");
+
+      const receiver = await userModel.findById(receiverId);
+      if (!receiver) throw new Error("Receiver not found");
+
+      if (!message) throw new Error("Message cannot be empty");
+
+      const now = await getDateTime();
+
+      // date is automatically set to the current date
+      const newMessage = await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
+
+      // send notification
+      const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
+      await addNotification(receiver, newNotification);
+
+      return newMessage;
+    },
+
+    async getChat(senderId, receiverId) {
+      const sender = await userModel.findById(senderId);
+      if (!sender) throw new Error("Sender not found");
+
+      const receiver = await userModel.findById(receiverId);
+      if (!receiver) throw new Error("Receiver not found");
+
+      const chat = await chatModel.find({ $or: [{ sender: senderId, receiver: receiverId }, { sender: receiverId, receiver: senderId }] });
+      return chat.sort((a, b) => a.createdAt - b.createdAt);
+    },
+
+    // get all users that the current user has chatted with and the last message
+    async getChats(uid) {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      let chats = [];
+
+      const messages = await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+
+      for (const message of messages) {
+        // Identify the other user in the conversation (either sender or receiver)
+        const otherUserId = message.sender.equals(uid) ? message.receiver : message.sender;
+        const otherUser = await userModel.findById(otherUserId);
+
+        // Check if the other user is already in the `chats` array
+        let chat = chats.find((c) => c.username === otherUser.username);
+
+        if (!chat) {
+          chat = {
+            username: otherUser.username,  // The user that the current user chatted with
+            lastMessage: message.message  // The current message is the last message in this chat
+          };
+          chats.push(chat);
+        } else {
+          // If chat exists, check if this message is more recent than the stored last message
+          if (message.createdAt > chat.lastMessage.createdAt) {
+            chat.lastMessage = message;
+          }
+        }
+      }
+
+      return chats;
+    }
+
+    /* end Messages */
+  }
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, createSubActivity, getActivities, deleteActivity, deleteSubActivity, chatService, verifyEmail };
 }

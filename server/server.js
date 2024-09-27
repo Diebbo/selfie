@@ -13,12 +13,12 @@ const __dirname = path.dirname(__filename); // get the name of the directory
 const PORT = process.env.PORT || 3000;
 
 // connect to the database
-console.log('server.js: createDataBase');
 try{
     var db = await createDataBase();
+    console.log('server.js: connected to database');
 }catch(err){
     console.log(err);
-    process.exit(1);
+    exit(1);
 }
 
 // start the notification worker
