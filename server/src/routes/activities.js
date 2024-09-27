@@ -53,11 +53,14 @@ function createActivityRouter(db) {
     const projectId = null; //user activity
     const subActivityId = req.query.fields ? req.query.fields : null;
 
+    console.log("subId: ", subActivityId);
     try {
-      if(!subActivityId) {
+      if(subActivityId === null) {
+        console.log("deleteActivity");
         await db.deleteActivity(uid, parentId, projectId);
       } else {
-        await db.deleteSubActivity(uid, parentId, subActivityId, projectId);  
+        console.log("deleteSubActivity");
+        await db.deleteSubActivity(uid, parentId, projectId, subActivityId);  
       }
     } catch (e) {
       return res.status(400).json({ message: e.message });
