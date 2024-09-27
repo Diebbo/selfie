@@ -15,6 +15,7 @@ export function createAuthRouter(db) {
       email: user.email,
       username: user.username,
       role: user.role,
+      isVerified: user.isVerified,
     };
   }
   function createToken(user) {
@@ -31,7 +32,7 @@ export function createAuthRouter(db) {
     var dbuser;
 
     try {
-      dbuser = await db.login({ username, email, password });
+      dbuser = await db.login({ username, email });
       console.log(`User logging in: ${dbuser.username}`);
     } catch (e) {
       console.error(e.message)
