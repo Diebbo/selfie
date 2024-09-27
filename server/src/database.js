@@ -700,8 +700,10 @@ export async function createDataBase() {
 
         if (!chat) {
           chat = {
+            uid: otherUser._id,
             username: otherUser.username,  // The user that the current user chatted with
-            lastMessage: message.message  // The current message is the last message in this chat
+            lastMessage: message.message,  // The current message is the last message in this chat
+            date: message.createdAt
           };
           chats.push(chat);
         } else {
