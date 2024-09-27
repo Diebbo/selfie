@@ -579,10 +579,10 @@ const modifyEvent = async (uid, event, eventId) => {
     console.log(addedActivity);
 
     if(!projectId) {
-      user.activities.push(addedActivity);
+      user.activities.push(addedActivity._id);
       await user.save();
     } else {
-      project.activities.push(addedActivity);
+      project.activities.push(addedActivity._id);
       await project.save();
     }
 
@@ -609,7 +609,7 @@ const modifyEvent = async (uid, event, eventId) => {
     const addedSubActivity = await activityModel.create({...subactivity, uid: uid, parentId: parentId});
     console.log(addedSubActivity);
     console.log("id: ", addedSubActivity._id);
-    parent.subActivity.push(addedSubActivity._id);
+    parent.subActivity.push(addedSubActivity);
     await parent.save();
 
     //ADD NOTIFICATION
@@ -644,7 +644,10 @@ const modifyEvent = async (uid, event, eventId) => {
       await projectModel.findByIdAndUpdate(projectId, { $pull: { activities: activityId } });
     }
 
-    // Delete the activity and subactivities related
+    // Delete all subactivities of the parent
+    await activityModel.updateMany({}, { $set: { "parent.subActivity": [] } });
+
+    // Delete the activity related to this Id
     await activityModel.findByIdAndDelete(activityId);
 
     /* Implementa diego poi vediamo
@@ -659,22 +662,20 @@ const modifyEvent = async (uid, event, eventId) => {
     const parent = await activityModel.findById(parentId);
     if (!parent) throw new Error("Event not found");
 
-    const subActivity = await activityModel.findById(parentId, { subActivity: { $elemMatch: { id: subActivityId } } });
+    const subActivity = await activityModel.findById(subActivityId);
     if (!subActivity) throw new Error("Event not found");
 
-    //tolgo la sottoattività dall'array delle sottoattività del padre (user/proj)
-    if (!projectId) {
-      await userModel.findByIdAndUpdate(uid, { $pull: { activities: { subActivity: subActivityId } }});
-    } else {
-      await projectModel.findByIdAndUpdate(projectId, { $pull: { activities: { subActivity: subActivityId } }});
-    }
-
     //tolgo la sotto attività anche dalla collezione di attività
-    await activityModel.findByIdAndDelete(subActivityId);
-    console.log("sono qua");
+    console.log("sotto-attività: ", subActivity);
+    await activityModel.findByIdAndDelete(subActivity._id);
 
     //tolgo la sotto attività dall'array delle sottoattività del padre
-    await activityModel.findByIdAndUpdate(parentId, { $pull: { subActivity: { id: subActivityId } } });
+    console.log(parentId);
+
+    // !!non funziona la rimozione della sotto-attività dall'array di attività!!
+    await activityModel.updateOne({ _id: parentId }, { $pull: { "parent.subActivity": { _id: subActivityId } } });
+
+    await parent.save();
 
     /* Implementa diego poi vediamo
      * Remove any notifications related to this activity 
