@@ -14,12 +14,13 @@ function createActivityRouter(db) {
     console.log("activity1: ", activity);
 
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
+    let result;
 
     try {
       if(!parentId) {
-        var result = await db.createActivity(uid, projectId, activity);
+        result = await db.createActivity(uid, projectId, activity);
       } else {
-        var result = await db.createSubActivity(uid, projectId, parentId, activity);
+        result = await db.createSubActivity(uid, projectId, parentId, activity);
       }
       console.log("result: ", result);
     } catch (e) { 
@@ -51,22 +52,21 @@ function createActivityRouter(db) {
     const uid = req.user._id;
     const parentId = req.params.id;
     const projectId = null; //user activity
-    const subActivityId = req.query.fields ? req.query.fields : null;
-
-    console.log("subId: ", subActivityId);
+    const subActivityId = req.query.child;
+    let result;
     try {
       if(subActivityId === null) {
         console.log("deleteActivity");
         await db.deleteActivity(uid, parentId, projectId);
       } else {
-        console.log("deleteSubActivity");
-        await db.deleteSubActivity(uid, parentId, projectId, subActivityId);  
+        console.log("deleteSubActivity", subActivityId);
+        result = await db.deleteSubActivity(uid, parentId, projectId, subActivityId);  
       }
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json("Activity deleted successfully");
+    return res.status(200).json({message:"Activity deleted successfully", result});
   });
 
   //patch attività
