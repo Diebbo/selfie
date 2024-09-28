@@ -1,12 +1,14 @@
 // module to decrypt jwt token
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 
-function decrypt(token: string, secret: string) {
+async function decrypt(token: string, secret: string) {
   try {
-    // Verify and decode the token
-    const decoded = jwt.verify(token, secret);
-    return decoded; // Return the decoded payload
+    // Convert the secret to a Uint8Array
+    const secretKey = new TextEncoder().encode(secret);
+    const { payload } = await jwtVerify(token, secretKey);
+    return payload; 
   } catch (error) {
+    console.log(error);
     // Handle the error, such as token expiration or invalid signature
     throw new Error('Invalid token'); // You can customize the error message as needed
   }
