@@ -3,8 +3,8 @@ import { decrypt } from '@/helpers/crypto'
 import { cookies } from 'next/headers'
 
 // 1. Specify protected and public routes
-const protectedRoutes = ['/dashboard']
-const publicRoutes = ['/login', '/register', '/']
+const protectedRoutes = ['/dashboard', '/']
+const publicRoutes = ['/login', '/register', '/verifyemail']
 
 export default async function middleware(req: NextRequest) {
   // 2. Check if the current route is protected or public
@@ -12,20 +12,27 @@ export default async function middleware(req: NextRequest) {
   const isProtectedRoute = protectedRoutes.includes(path)
   const isPublicRoute = publicRoutes.includes(path)
   
-  if (isPublicRoute) {
-    return NextResponse.next()
-  }
+  
 
   let session, cookie;
   // 3. Decrypt the session from the cookie
   try {
     cookie = cookies().get('token')?.value
-    if (cookie)
-      session = decrypt(cookie, process.env.JWT_SECRET)
-    // 4. Redirect to /login if the user is not authenticated
+    if (cookie) {
+      session = await decrypt(cookie, process.env.JWT_SECRET as string)
+    }
+    // La logica di redirect è da ricontrollare!!!!
+    console.log(session)
+    if (session && !session.isVerified && isProtectedRoute) {
+      return NextResponse.redirect(new URL('/verifyemail', req.nextUrl))
+    }
+    if (isPublicRoute) {
+      return NextResponse.next()
+    }
     if (isProtectedRoute && !session?._id) {
       return NextResponse.redirect(new URL('/login', req.nextUrl))
     }
+    
   } catch (error) {
     // token is invalid
     return NextResponse.redirect(new URL('/login', req.nextUrl))

@@ -16,6 +16,7 @@
     "clsx": "^2.0.0",
     "formik": "^2.4.6",
     "framer-motion": "^10.18.0",
+    "jose": "^5.9.3",
     "jsonwebtoken": "^9.0.2",
     "next": "^14.0.4",
     "next-client-cookies": "^1.1.1",
@@ -26,6 +27,7 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
