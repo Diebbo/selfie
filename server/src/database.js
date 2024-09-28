@@ -44,9 +44,10 @@ export async function createDataBase() {
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
 
+    let res = await userModel.create({ ...user });
+
     // send verification email
-    addNotification(user, { title: "Verify your email", description: "verificati", method: "email" });
-    const res = await userModel.create({ ...user });
+    addNotification(res, { title: "Verify your email", description: "verificati", method: "email" , when: new Date() });
     return res;
   };
 

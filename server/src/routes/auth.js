@@ -3,7 +3,6 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { sendNotification } from "../notifications.js";
 
 const router = express.Router();
 
@@ -69,11 +68,12 @@ export function createAuthRouter(db) {
       ...req.body,
       password: hashedPassword,
       emailtoken: emailToken,
+      isVerified: false,
       role: "user",
     };
     console.log(`User registering: ${newUser.username}`);
 
-    var dbuser;
+    let dbuser;
 
     try {
       dbuser = await db.register(newUser);
@@ -89,9 +89,9 @@ export function createAuthRouter(db) {
     res.cookie("token", token, {
       httpOnly: true,
       sameSite: "Lax",
-      secure: true, // Enable in production
+      // secure: true, // Enable in production
       // maxAge: 3600000, // 1 hour
-      signed: true, // Enable if using signed cookies
+      // signed: true, // Enable if using signed cookies
     });
 
     res.json({ user, token });
