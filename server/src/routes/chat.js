@@ -16,9 +16,9 @@ export default function createChatRouter(db) {
   });
 
   // get all messages between two users
-  router.get('/messages/:id',cookieJwtAuth, async (req, res) => {
+  router.get('/messages/:username',cookieJwtAuth, async (req, res) => {
     const sender = req.user._id;
-    const receiver = req.params.id;
+    const receiver = req.params.username;
     try {
       const messages = await db.chatService.getChat(sender, receiver);
       res.status(200).json(messages);
