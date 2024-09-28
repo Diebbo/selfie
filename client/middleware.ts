@@ -3,7 +3,7 @@ import { decrypt } from '@/helpers/crypto'
 import { cookies } from 'next/headers'
 
 // 1. Specify protected and public routes
-const protectedRoutes = ['/dashboard', '/']
+const protectedRoutes = ['/dashboard', '/', '/timemachine']
 const publicRoutes = ['/login', '/register', '/verifyemail']
 
 export default async function middleware(req: NextRequest) {
@@ -13,16 +13,19 @@ export default async function middleware(req: NextRequest) {
   const isPublicRoute = publicRoutes.includes(path)
   
   
+  if (isPublicRoute) {
+    return NextResponse.next()
+  }
 
   let session, cookie;
   // 3. Decrypt the session from the cookie
   try {
-    cookie = cookies().get('token')?.value
+    cookie = cookies().get('token')?.value;
     if (cookie) {
       session = await decrypt(cookie, process.env.JWT_SECRET as string)
+      console.log(session)
     }
     // La logica di redirect è da ricontrollare!!!!
-    console.log(session)
     if (session && !session.isVerified && isProtectedRoute) {
       return NextResponse.redirect(new URL('/verifyemail', req.nextUrl))
     }
