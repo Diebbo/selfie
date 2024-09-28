@@ -2,13 +2,7 @@ import { Avatar, Card, CardBody } from "@nextui-org/react";
 import React from "react";
 import { useRouter } from 'next/navigation';
 import { Button } from "@nextui-org/react";
-
-interface ChatModel {
-  id: string;
-  username: string;
-  lastMessage: string;
-  date: Date;
-}
+import { ChatModel } from "@/helpers/types";
 
 interface PropContent {
   chats: ChatModel[];
@@ -18,7 +12,7 @@ export const CardChats = ({ chats }: PropContent) => {
   const router = useRouter();
   const handleClick = (chat: ChatModel) => {
     try {
-      const path = `/chat/${chat.id}`;
+      const path = `/chat/${chat.uid}`;
       router.push(path);
     } catch (error) {
       console.error(error);
