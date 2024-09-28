@@ -650,11 +650,11 @@ export async function createDataBase() {
       return await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
     },
 
-    async sendMessage(senderId, receiverId, message) {
+    async sendMessage(senderId, receiverUsername, message) {
       const sender = await userModel.findById(senderId);
       if (!sender) throw new Error("Sender not found");
 
-      const receiver = await userModel.findById(receiverId);
+      const receiver = await userModel.findOne({ username: receiverUsername });
       if (!receiver) throw new Error("Receiver not found");
 
       if (!message) throw new Error("Message cannot be empty");
@@ -662,24 +662,38 @@ export async function createDataBase() {
       const now = await getDateTime();
 
       // date is automatically set to the current date
-      const newMessage = await chatModel.create({ sender: senderId, receiver: receiverId, message: message, createdAt: now });
+      const newMessage = await chatModel.create({ sender: senderId, receiver: receiver._id, message: message, createdAt: now });
 
       // send notification
       const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
       await addNotification(receiver, newNotification);
 
-      return newMessage;
+      return { createdAt:newMessage.createdAt, message:newMessage.message, sender: sender.username, receiver: receiverUsername };
     },
 
-    async getChat(senderId, receiverId) {
+    async getChat(senderId, receiverUsername) {
       const sender = await userModel.findById(senderId);
       if (!sender) throw new Error("Sender not found");
-
-      const receiver = await userModel.findById(receiverId);
+      
+      const receiver = await userModel.findOne({ username: receiverUsername });
       if (!receiver) throw new Error("Receiver not found");
 
-      const chat = await chatModel.find({ $or: [{ sender: senderId, receiver: receiverId }, { sender: receiverId, receiver: senderId }] });
-      return chat.sort((a, b) => a.createdAt - b.createdAt);
+      let chat = await chatModel.find(
+        { $or: [
+          { sender: senderId, receiver: receiver._id }, 
+          { sender: receiver._id, receiver: senderId }
+        ] })
+        .sort({ createdAt: 1 });
+      
+      // update the chat to return username instead of id
+      return chat.map((message) => {
+        return {
+          sender: message.sender.toString() === senderId ? sender.username : receiverUsername,
+          receiver: message.receiver.toString() === senderId ? sender.username : receiverUsername,
+          message: message.message,
+          createdAt: message.createdAt
+        };
+      });
     },
 
     // get all users that the current user has chatted with and the last message
