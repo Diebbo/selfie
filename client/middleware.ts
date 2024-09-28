@@ -13,9 +13,6 @@ export default async function middleware(req: NextRequest) {
   const isPublicRoute = publicRoutes.includes(path)
   
   
-  if (isPublicRoute) {
-    return NextResponse.next()
-  }
 
   let session, cookie;
   // 3. Decrypt the session from the cookie
@@ -23,8 +20,11 @@ export default async function middleware(req: NextRequest) {
     cookie = cookies().get('token')?.value;
     if (cookie) {
       session = await decrypt(cookie, process.env.JWT_SECRET as string)
-      console.log(session)
     }
+    if (session && session.isVerified && isPublicRoute) {
+      return NextResponse.redirect(new URL('/change_account', req.nextUrl))
+    }
+
     // La logica di redirect è da ricontrollare!!!!
     if (session && !session.isVerified && isProtectedRoute) {
       return NextResponse.redirect(new URL('/verifyemail', req.nextUrl))
