@@ -18,6 +18,7 @@ export const createAuthCookie = async (token: string) => {
 export const deleteAuthCookie = async () => {
 	cookies().delete("token");
 };
+
 // Purpose: Handles the login process.
 export async function login(user: LoginFormType) {
 	const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
@@ -50,6 +51,18 @@ export async function register(user: RegisterType) {
 		const error = await response.json();
 		throw new Error(error.message || "Registration failed");
 	}
+
+	return response.json();
+}
+
+export async function verification(emailToken: string) {
+	const response = await fetch(`${getBaseUrl()}/api/auth/verifyemail?emailToken=${emailToken}`, {
+		method: "PATCH",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
 
 	return response.json();
 }

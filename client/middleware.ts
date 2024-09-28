@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 
 // 1. Specify protected and public routes
 const protectedRoutes = ['/dashboard', '/', '/timemachine']
-const publicRoutes = ['/login', '/register', '/verifyemail']
+const publicRoutes = ['/login', '/register', '/verifyemail', '/verification']
 
 export default async function middleware(req: NextRequest) {
   // 2. Check if the current route is protected or public
@@ -28,9 +28,6 @@ export default async function middleware(req: NextRequest) {
     // La logica di redirect è da ricontrollare!!!!
     if (session && !session.isVerified && isProtectedRoute) {
       return NextResponse.redirect(new URL('/verifyemail', req.nextUrl))
-    }
-    if (isPublicRoute) {
-      return NextResponse.next()
     }
     if (isProtectedRoute && !session?._id) {
       return NextResponse.redirect(new URL('/login', req.nextUrl))
