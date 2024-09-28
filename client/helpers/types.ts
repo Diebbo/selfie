@@ -1,4 +1,18 @@
 // FORMS
+export interface ChatModel {
+  uid: string;
+  username: string;
+  lastMessage: string;
+  date: Date;
+}
+
+export interface MessageModel {
+  _id: string;
+  message: string;
+  sender: string;
+  receiver: string;
+  createdAt: Date;
+}
 
 export type LoginFormType = {
   email: string;
