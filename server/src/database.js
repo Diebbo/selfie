@@ -59,7 +59,7 @@ export async function createDataBase() {
     user.emailtoken = null; // Clear the token after verification
     await user.save();
 
-    return { message: "Email verified successfully" };
+    return user;
   };
 
   const changeDateTime = async (time) => {

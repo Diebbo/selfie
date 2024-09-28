@@ -103,10 +103,23 @@ export function createAuthRouter(db) {
       return res.status(400).json({ error: "No Token provided" });
     }
     try {
-      const result = await db.verifyEmail(emailToken);
+      const dbuser = await db.verifyEmail(emailToken);
+
+      const user = userCast(dbuser);
+
+      const token = createToken(user);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
       return res
         .status(200)
-        .json({ result, emessage: "User verified successfully" });
+        .json({ user, token });
     } catch (e) {
       return res
         .status(400)
