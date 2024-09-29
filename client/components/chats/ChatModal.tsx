@@ -42,11 +42,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername, initialMessages
     };
 
     const handleClose = () => {
+        router.refresh();  // Refresh the page
         router.push('/chats');  // Go back to the main chats page
     };
 
     return (
-        <Modal backdrop="blur" scrollBehavior="inside" placement="center" isOpen={true} onClose={handleClose}>
+        <Modal backdrop="blur" scrollBehavior="inside" placement="center" isOpen={true} onClose={handleClose} isDismissable={false}>
             <ModalContent>
                 <ModalHeader>{receiverUsername}</ModalHeader>
                 <ModalBody>
