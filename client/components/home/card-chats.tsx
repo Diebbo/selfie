@@ -12,7 +12,7 @@ export const CardChats = ({ chats }: PropContent) => {
   const router = useRouter();
   const handleClick = (chat: ChatModel) => {
     try {
-      const path = `/chat/${chat.uid}`;
+      const path = `/chats/${chat.username}`;
       router.push(path);
     } catch (error) {
       console.error(error);
