@@ -56,9 +56,8 @@ export async function createDataBase() {
     if (!user) throw new Error("Invalid token");
 
     user.isVerified = true;
-    user.emailtoken = undefined;
+    user.emailtoken = "";
     await user.save();
-    console.log("Email verified for user", user.username);
 
     return user;
   };
