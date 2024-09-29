@@ -751,6 +751,7 @@ export async function createDataBase() {
       if (!friend) throw new Error("Friend's user not found");
       if (uid === friend._id) throw new Error("Cannot add yourself as a friend");
       if (user.friends.includes(friend._id)) throw new Error("User is already a friend");
+      user.friends.push(friend._id);
       await user.save();
       return friend;
     },
