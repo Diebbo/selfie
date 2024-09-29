@@ -67,7 +67,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername, initialMessages
                 <ModalFooter>
                     <div className="flex flex-flow-row gap-5">
                         <Input
-                            className="m-r-5 max-w-[220px]"
+                            className="m-r-5 lg:min-w-[300px] w-full"
                             radius="full"
                             type="text"
                             placeholder="Type your message"
