@@ -86,6 +86,12 @@ export const userSchema = new mongoose.Schema({
         date: [Date] //date in cui la risorsa è prenotata
     },
 
+    //campi per amici
+    friends: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+
     
     // lista di notifiche
     inboxNotifications: [{

@@ -737,5 +737,36 @@ export async function createDataBase() {
     /* end Messages */
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, getActivities, chatService };
+  const friendService = {
+    async get(id) {
+      const user = await userModel.findById(id);
+      if (!user) throw new Error("User not found");
+      return await userModel.find({ _id: { $in: user.friends } });
+    },
+
+    async add(uid, friendUsername) {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      const friend = await userModel.findOne({ username: friendUsername });
+      if (!friend) throw new Error("Friend's user not found");
+      if (uid === friend._id) throw new Error("Cannot add yourself as a friend");
+      if (user.friends.includes(friend._id)) throw new Error("User is already a friend");
+      await user.save();
+      return friend;
+    },
+
+    async delete(uid , friendId) {
+      if (uid === friendId) throw new Error("Cannot delete yourself as a friend");
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      if (!user.friends.includes(friendId)) throw new Error("User is not a friend")
+      const friend = await userModel.findById(friendId);
+      if (!friend) throw new Error("Friend's user not found");
+      user.friends = user.friends.filter(f => f.toString() !== friendId);
+      await user.save();
+      return user.friends;
+    }
+  }
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, getActivities, chatService, friendService };
 }
