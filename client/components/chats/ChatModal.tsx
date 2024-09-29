@@ -74,7 +74,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername, initialMessages
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                         />
-                        <Button color="primary" radius="full" size="sm" variant="solid" onPress={handleSendMessage}>
+                        <Button color="primary" radius="full" size="sm" variant="solid" onPress={() => handleSendMessage()}>
                             Send
                         </Button>
                     </div>
