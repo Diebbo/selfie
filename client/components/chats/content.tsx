@@ -2,25 +2,62 @@
 
 import React from "react";
 import { useRouter } from 'next/navigation';
-import { ChatModel } from '@/helpers/types';
-import { Card, CardHeader, CardBody, Avatar, Button } from "@nextui-org/react";
+import { ChatModel, People } from '@/helpers/types';
+import { Card, CardHeader, CardBody, Avatar, Button, Popover, PopoverTrigger, PopoverContent } from "@nextui-org/react";
 
 interface PropContent {
 	chats: ChatModel[];
+	friends: People;
 }
 
-export const Content: React.FC<PropContent> = ({ chats }) => {
+export const Content: React.FC<PropContent> = ({ chats, friends }) => {
 	const router = useRouter();
 
 	const handleClick = (chat: ChatModel) => {
 		router.push(`/chats/${chat.username}`);
 	};
 
+	const handleNewChat = async (username:string) => {
+		const res = await fetch(`/api/chats/messages/${username}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ message: 'You started a new Chat' })
+		});
+		const data = await res.json();
+		if (!res.ok) {
+			console.error(data);
+			return;
+		}
+		router.push(`/chats/${username}`);
+	};
+
 	return (
 		<>
 			<div className="p-5">
 				<h3 className="text-xl font-semibold">Chats</h3>
-				<Button color="success" radius="full" size="sm" variant="solid" className="max-w-[130px]" onPress={() => router.push('/chats/new')}>New Chat</Button>
+				<Popover>
+					<PopoverTrigger>
+						<Button color="success" radius="full" size="sm" variant="solid" className="max-w-[130px]">New Chat</Button>
+					</PopoverTrigger>
+					<PopoverContent>
+						<div className="flex flex-col gap-2 p-5">
+							{friends.map((friend, index) => (
+								<Button
+									key={index}
+									color="default"
+									radius="full"
+									size="sm"
+									variant="shadow"
+									onPress={() => handleNewChat(friend.username)}
+								>
+									{friend.username}
+								</Button>
+							))}
+						</div>
+					</PopoverContent>
+				</Popover>
 			</div>
 			<div className="flex flex-row p-5 gap-5 w-[100%] flex-wrap">
 				{chats.length > 0 ? (
