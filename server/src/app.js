@@ -18,6 +18,7 @@ import createPomodoroRouter from "./routes/pomodoro.js";
 import createMusicRouter from "./routes/musicplayer.js";
 import createActivityRouter from "./routes/activities.js";
 import createChatRouter from "./routes/chat.js";
+import { createFriendRouter } from "./routes/friend.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -46,6 +47,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/musicplayer", createMusicRouter(database));
   app.use("/api/activities", createActivityRouter(database));
   app.use("/api/chats", createChatRouter(database));
+  app.use("/api/friends", createFriendRouter(database));
 
   return app;
 }
