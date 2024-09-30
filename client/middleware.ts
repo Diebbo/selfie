@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { decrypt } from '@/helpers/crypto'
 import { cookies } from 'next/headers'
 import { isVerified } from './actions/auth.action'
 

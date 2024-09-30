@@ -1,4 +1,6 @@
 // module to decrypt jwt token
+// NO MORE NEEDED 
+/*
 import { jwtVerify } from 'jose';
 
 async function decrypt(token: string, secret: string) {
@@ -15,3 +17,4 @@ async function decrypt(token: string, secret: string) {
 }
 
 export { decrypt };
+*/
