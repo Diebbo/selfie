@@ -5,13 +5,12 @@ function createActivityRouter(db) {
   const router = express.Router();
   
   //put attività
-  //URL: ?fields=parentId
+  //URL: ?parent=parentId
   router.put('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const activity = req.body.activity;
     const projectId = null; //user activity 
-    const parentId = req.query.fields ? req.query.fields : null;
-    console.log("activity1: ", activity);
+    const parentId = req.query.parent ? req.query.parent : null;
 
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
     let result;
@@ -70,6 +69,29 @@ function createActivityRouter(db) {
   });
 
   //patch attività
+  //URL: /:id/?child={childId}
+  router.patch('/:id', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const activityId = req.params.id;
+    const activity = req.body.activity;
+    const projectId = null; //user activity
+    const childId = req.query.child ? req.query.child : null;
+    let result;
+
+    try {
+      if(childId === null) {
+        console.log("modifyActivity");
+        result = await db.modifyActivity(uid, activity, activityId, projectId);
+      } else {
+        console.log("modifySubActivity", activity);
+        result = await db.modifySubActivity(uid, activity, activityId, childId, projectId);
+      }
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    return res.status(200).json({message:"Activity modified successfully", result});
+  });
 
   return router;
 }
