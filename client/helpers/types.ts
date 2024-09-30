@@ -42,7 +42,7 @@ export interface RegisterFormType extends RegisterType {
 
 // EVENTS
 export interface Person extends RegisterType {
-  id: string;
+  _id: string;
   avatar: string; // URL
   friends: Person[]; // is this performance frinedly?
 }
