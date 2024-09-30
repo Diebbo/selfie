@@ -1,17 +1,13 @@
-
+'use server';
 import { Content } from '@/components/chats/content';
-import { getChats } from '@/actions/chats';
 import { getFriends } from '@/actions/friends';
 
-export const fetchCache = 'force-no-store';
-
 export default async function Page() {
-  const [chats, friends] = await Promise.all([
-    getChats(),
+  const [friends] = await Promise.all([
     getFriends(),
   ]);
 
   return (
-    <Content initialChats={chats} friends={friends} />
+    <Content friends={friends} />
   );
 }
