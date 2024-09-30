@@ -14,9 +14,12 @@ export const projectSchema = new mongoose.Schema({
             ref: 'User'
         }
     ],
-    activities: [
-        activitySchema
-    ],
+    activities: [{
+        activityId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Activity'
+        }
+    }],
     creationDate: Date,
     deadline: Date,
 });
