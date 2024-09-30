@@ -51,5 +51,16 @@ export default function createChatRouter(db) {
     }
   });
 
+  router.post('/:username',cookieJwtAuth, async (req, res) => {
+    const id = req.user._id;
+    const friend = req.params.username;
+    try {
+      const r = await db.chatService.addChat(id, friend);
+      res.status(200).json(r);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
   return router;
 }
