@@ -5,7 +5,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { MessageModel } from '@/helpers/types';
 import { Modal, ModalContent, Input, ModalHeader, ModalBody, ModalFooter, Avatar, Button } from "@nextui-org/react";
-import { navigate } from 'next/navigation';
 
 interface ChatModalProps {
     receiverUsername: string;
