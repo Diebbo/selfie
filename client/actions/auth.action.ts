@@ -70,3 +70,34 @@ export async function verification(emailToken: string) {
 
 	return await response.json();
 }
+
+export async function isVerified() {
+	const cookieStore = cookies();
+	const token = cookieStore.get('token')?.value;
+
+	if (!token) {
+		return false;
+	}
+
+	const response = await fetch(`${getBaseUrl()}/api/auth/isVerified`, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+			'Cookie': `token=${token.toString()}`,
+		},
+		credentials: "include",
+	});
+
+	if (response.status === 200) {
+		return true;
+	} else {
+		return false;
+	}
+
+	if (!response.ok) {
+		const error = await response.json();
+		throw new Error(error.message || "Verification failed");
+	}
+
+	return await response.json();
+}

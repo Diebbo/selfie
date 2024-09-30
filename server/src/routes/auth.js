@@ -3,6 +3,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 
 const router = express.Router();
 
@@ -124,6 +125,23 @@ export function createAuthRouter(db) {
       return res
         .status(400)
         .json({ error: e.message });
+    }
+  });
+
+  // Endpoint to check if the user is verified
+  router.get("/isVerified", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      if (user.isVerified) {
+        return res.status(200).json({ message: "User is verified" });
+      } else {
+        return res.status(401).json({ message: "User is not verified" });
+      }
+    } catch (e) {
+      return res.status(401).json({ message: e.message });
     }
   });
 
