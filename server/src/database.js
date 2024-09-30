@@ -671,6 +671,18 @@ export async function createDataBase() {
       return { createdAt: newMessage.createdAt, message: newMessage.message, sender: sender.username, receiver: receiverUsername };
     },
 
+    async addChat(senderId, receiverUsername) {
+      const sender = await userModel.findById(senderId);
+      if (!sender) throw new Error("Sender not found");
+
+      const receiver = await userModel.findOne({ username: receiverUsername });
+      if (!receiver) throw new Error("Receiver not found");
+      
+      await this.sendMessage(senderId, receiverUsername, "You started a new chat");
+
+      return this.getChats(senderId);
+    },
+
     async getChat(senderId, receiverUsername) {
       const sender = await userModel.findById(senderId);
       if (!sender) throw new Error("Sender not found");
