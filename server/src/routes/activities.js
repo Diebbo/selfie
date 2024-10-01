@@ -5,31 +5,29 @@ function createActivityRouter(db) {
   const router = express.Router();
   
   //put attività
-  //URL: /?parent=parentId
+  //URL: /?parent=parentId per la sotto attività
   router.put('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const activity = req.body.activity;
     const projectId = null; //user activity 
     const parentId = req.query.parent ? req.query.parent : null;
 
-    if (!activity) return res.status(400).json({ message: "Attività non fornita" });
+    if (!activity) return res.status(400).json({ message: "activity was not provided" });
     let result;
 
     try {
       if(!parentId) {
-        console.log("uid: ", uid);
         result = await db.createActivity(uid, projectId, activity);
       } else {
         result = await db.createSubActivity(uid, projectId, parentId, activity);
       }
-      console.log("result: ", result);
     } catch (e) { 
       return res.status(400).json({ message: e.message });
     }
 
-    if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
+    if (!result) return res.status(404).json({ message: "error during creation of activty" });
 
-    res.status(200).json({ message: "Activity Added Succesfully", result });
+    res.status(200).json({ message: "Activity has been Added Succesfully", result });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
@@ -41,7 +39,7 @@ function createActivityRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    if (!result) return res.status(404).json({ message: "Nessun attività creata" });
+    if (!result) return res.status(404).json({ message: "no activity has been created" });
 
     return res.status(200).json(result);
   });
@@ -54,17 +52,16 @@ function createActivityRouter(db) {
     const projectId = null; //user activity
     let result;
     try {
-      console.log("deleteActivity: ", activityId);
       result = await db.deleteActivity(uid, activityId, projectId);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({message:"Activity deleted successfully", result});
+    return res.status(200).json({message:"Activity has been Deleted Successfully", result});
   });
 
   //patch attività
-  //URL: /:id
+  //URL: /:id attività o sotto-attività
   router.patch('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const activityId = req.params.id;
@@ -77,7 +74,7 @@ function createActivityRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({message:"Activity modified successfully", result});
+    return res.status(200).json({message:"Activity has been Modified Successfully", result});
   });
 
   return router;

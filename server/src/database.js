@@ -709,9 +709,7 @@ export async function createDataBase() {
     // Delete the activity related to this Id
     await activityModel.findByIdAndDelete(activityId);
 
-    /* Implementa diego poi vediamo
-     * Remove any notifications related to this activity 
-     */
+    // Remove any notifications related to this activity 
     await userModel.updateMany(
       { 'inboxNotifications.fromTask': activityId },
       { $pull: { inboxNotifications: { fromTask: activityId } } }
@@ -730,11 +728,13 @@ export async function createDataBase() {
     const parent = await activityModel.findById(activity.parentId);
     if (!parent) throw new Error("Father Activity not found");
    
-    //cancello la sotto attività
+    // cancello la sotto attività
     await activityModel.findByIdAndDelete(activityId);
 
-    //cancello la sotto attività dal parent
+    // cancello la sotto attività dal parent
     parent.subActivity = parent.subActivity.filter((sub) => sub._id.toString() !== activityId.toString());
+
+    // manca la cancellazione delle notifiche
 
     return await parent.save();
   }
@@ -752,8 +752,6 @@ export async function createDataBase() {
     }
     
     //check se la subactivity è mia
-    console.log(oldActivity.uid.toString());
-    console.log(uid);
     if (oldActivity.uid.toString() != uid) throw new Error("Activity does not belong to user");
 
     try {
