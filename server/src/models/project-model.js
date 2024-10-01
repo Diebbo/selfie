@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { activitySchema } from './event-model.js'
 
 export const projectSchema = new mongoose.Schema({
     title: String,
@@ -13,12 +14,12 @@ export const projectSchema = new mongoose.Schema({
             ref: 'User'
         }
     ],
-    activities: [
-        {
+    activities: [{
+        activityId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Activity'
         }
-    ],
+    }],
     creationDate: Date,
     deadline: Date,
 });
