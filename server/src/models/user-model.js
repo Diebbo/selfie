@@ -71,9 +71,12 @@ export const userSchema = new mongoose.Schema({
         likedSongs: [String] 
     },
 
-    activities: [
-        activitySchema
-    ],
+    activities: [{
+        activityId: { 
+            type: mongoose.Schema.Types.ObjectId, //chi ha prenotato risorsa
+            ref: 'Activity'
+        }
+    }],
     
     //campi per risorse
     resource: {

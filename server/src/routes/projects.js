@@ -34,8 +34,46 @@ export function createProjectRouter(db) {
   //delete projects
 
   //add activity inside project
-  router.put('/:id/activities', cookieJwtAuth, async function(req, res) {
-    console.log("TODO");   
+  // es di URL: /:projectId/activities/?fields=parentId
+  router.put('/:projectId/activities', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const activity = req.body.activity;
+    const projectId = req.params.projectId;
+    const parentId = req.query.fields ? req.query.fields : null;
+
+    if (!activity) return res.status(400).json({ message: "Attività non fornita" });
+
+    try {
+      if(!parentId) {
+        var result = await db.createActivity(uid, projectId, activity);
+      } else {
+        var result = await db.createSubActivity(uid, projectId, parentId, activity);
+      }
+      console.log("result: ", result);
+    } catch (e) { 
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
+
+    res.status(200).json({ message: "attività aggiunta correttamente" , result });
+  });
+
+  //get attività (da user o da project)
+  //CHECKARE SE È UNA SOTTO ATTIVITÀ
+  router.get('/:projectId/activities', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.query.projectId;
+
+    try {
+      var result = await db.getActivities(uid, projectId);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Nessun attività creata" });
+
+    return res.status(200).json(result);
   });
 
   return router;
