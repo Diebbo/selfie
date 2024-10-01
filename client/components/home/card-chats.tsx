@@ -46,7 +46,7 @@ export const CardChats = ({ chats }: PropContent) => {
                     {item.username}
                   </span>
                   <div>
-                    <span className="text-success text-xs">{item.lastMessage}</span>
+                    <span className="text-success text-xs">{item.lastMessage.slice(0,13) + (item.lastMessage.length > 13 ? "..." : "")}</span>
                   </div>
                   <div>
                     <span className="text-default-500 text-xs">{new Date(item.date).toLocaleTimeString()}</span>

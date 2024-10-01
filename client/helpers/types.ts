@@ -14,6 +14,14 @@ export interface MessageModel {
   createdAt: Date;
 }
 
+export interface NoteModel {
+  _id?: string;
+  title: string;
+  content: string;
+  date?: Date;
+  tags: string[];
+}
+
 export type LoginFormType = {
   email: string;
   password: string;
@@ -42,7 +50,7 @@ export interface RegisterFormType extends RegisterType {
 
 // EVENTS
 export interface Person extends RegisterType {
-  id: string;
+  _id: string;
   avatar: string; // URL
   friends: Person[]; // is this performance frinedly?
 }
@@ -50,31 +58,31 @@ export interface Person extends RegisterType {
 export type People = Person[];
 
 export interface SelfieEvent {
-    title: String,
-    summary: String,
-    uid: String,
-    sequence: Number,
-    status: {
-        type: String,
-        enum: ['confirmed', 'tentative', 'cancelled']
-    },
-    transp: String,
-    rrule: {
-        freq: {
-            type: String,
-            enum: ['daily', 'weekly', 'monthly', 'yearly']
-        },
-        interval: Number,
-        bymonth: Number,
-        bymonthday: Number
-    },
-    dtstart: Date,
-    dtend: Date,
-    dtstamp: String,
-    categories: [String],
-    location: String,
-    geo: [Number],
-    description: String,
-    URL: String,
-    participants: People,
+  title: String;
+  summary: String;
+  uid: String;
+  sequence: Number;
+  status: {
+    type: String;
+    enum: ["confirmed", "tentative", "cancelled"];
+  };
+  transp: String;
+  rrule: {
+    freq: {
+      type: String;
+      enum: ["daily", "weekly", "monthly", "yearly"];
+    };
+    interval: Number;
+    bymonth: Number;
+    bymonthday: Number;
+  };
+  dtstart: Date;
+  dtend: Date;
+  dtstamp: String;
+  categories: [String];
+  location: String;
+  geo: [Number];
+  description: String;
+  URL: String;
+  participants: People;
 }
