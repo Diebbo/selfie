@@ -72,7 +72,7 @@ function createActivityRouter(db) {
     const projectId = null; //user activity
 
     try {
-      let result = await db.modifyActivity(uid, activity, activityId, projectId);
+      var result = await db.modifyActivity(uid, activity, activityId, projectId);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
