@@ -623,17 +623,18 @@ export async function createDataBase() {
     }
 
     var addedActivity = await activityModel.create({ ...activity, uid: uid, parentId: "root" });
+    console.log(addedActivity);
 
     if(!projectId) {
       user.activities.push(addedActivity._id);
       console.log("prova");
-      generateNotificationsForActivity(addedActivity, [user]);
       await user.save();
+      generateNotificationsForActivity(addedActivity, [user]);
     } else {
       project.activities.push(addedActivity._id);
       var participants = await userModel.find( { _id: { $in: addedActivity.participants } });
-      generateNotificationsForActivity(addedActivity, [participants]);
       await project.save();
+      generateNotificationsForActivity(addedActivity, [participants]);
     }
 
     return addedActivity;
@@ -655,18 +656,15 @@ export async function createDataBase() {
     }
 
     const addedSubActivity = await activityModel.create({...subactivity, uid: uid, parentId: parentId});
-    console.log(addedSubActivity);
-    console.log("id: ", addedSubActivity._id);
-    parent.subActivity.push(addedSubActivity);
+    parent.subActivity.push(addedSubActivity._id);
     await parent.save();
 
     if(!projectId) {
       generateNotificationsForActivity(addedSubActivity, [user]);
-      await user.save();
     } else {
       var participants = await userModel.find( { _id: { $in: addedSubActivity.participants } });
-      generateNotificationsForActivity(addedSubActivity, [participants]);
       await project.save();
+      generateNotificationsForActivity(addedSubActivity, [participants]);
     }
 
     return addedSubActivity;
@@ -691,16 +689,21 @@ export async function createDataBase() {
     if (!user) throw new Error("User not found");
 
     const activity = await activityModel.findById(activityId);
-    if (!activity) throw new Error("Event not found");
+    if (!activity) throw new Error("Activity not found");
+    console.log("activity: ", activity);
 
-    if (!projectId) {
-      await userModel.findByIdAndUpdate(uid, { $pull: { activities: activityId } });
-    } else {
-      await projectModel.findByIdAndUpdate(projectId, { $pull: { activities: activityId } });
+    if(activity.parentId !== "root") {
+      return deleteSubActivity(uid, activityId, projectId); 
     }
 
-    // Delete all subactivities of the parent
-    await activityModel.updateMany({}, { $set: { "parent.subActivity": [] } });
+    if (!projectId) {
+      await userModel.findByIdAndUpdate(uid, { $pull: { activities: { _id: activityId } } });
+    } else {
+      await projectModel.findByIdAndUpdate(projectId, { $pull: { activities: { _id: activityId } } });
+      const project = await projectModel.findById(projectId);
+      if (!project) throw new Error("Project not found");
+      await project.save();
+    }
 
     // Delete the activity related to this Id
     await activityModel.findByIdAndDelete(activityId);
@@ -712,37 +715,53 @@ export async function createDataBase() {
       { 'inboxNotifications.fromTask': activityId },
       { $pull: { inboxNotifications: { fromTask: activityId } } }
     );
+    // Delete all subactivities of the parent
+    await activityModel.deleteMany({ _id: { $in: activity.subActivities } });
   };
 
-  const deleteSubActivity = async (uid, parentId, projectId, subActivityId) => {
+  const deleteSubActivity = async (uid, activityId, projectId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    const parent = await activityModel.findById(parentId);
+    const activity = await activityModel.findById(activityId);
+    if (!activity) throw new Error("Activity not found");
+
+    const parent = await activityModel.findById(activity.parentId);
     if (!parent) throw new Error("Father Activity not found");
    
-    await activityModel.findByIdAndDelete(subActivityId);
+    //cancello la sotto attività
+    await activityModel.findByIdAndDelete(activityId);
 
-    parent.subActivity = parent.subActivity.filter((sub) => sub._id.toString() !== subActivityId.toString());
+    //cancello la sotto attività dal parent
+    parent.subActivity = parent.subActivity.filter((sub) => sub._id.toString() !== activityId.toString());
 
     return await parent.save();
   }
 
-  const modifyActivity = async (uid, activity, oldActivityId) => {
+  const modifyActivity = async (uid, activity, activityId, projectId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
+    const oldActivity = await activityModel.findById(activityId);
+    if (!oldActivity) throw new Error("User not found");
+
+    if(oldActivity.parentId !== "root") {
+      console.log("modifySubActivity");
+      return modifySubActivity(uid, activity, activityId, projectId); 
+    }
+    
     //check se la subactivity è mia
-    const oldActivity = await userActivity.findById(activity._id);
-    if (oldActivity.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+    console.log("prova");
+    console.log(oldActivity.uid.toString());
+    console.log(uid.toString());
+    if (oldActivity.uid.toString() !== uid.toString()) throw new Error("Activity does not belong to user");
 
     try {
-      const replacedActivity = await activityModel.replaceOne({ _id: activity._id }, { ...activity, uid: uid });
+      const replacedActivity = await activityModel.replaceOne({ _id: activity._id }, { ...activity, uid: uid, parentId: "root"});
       if (replacedActivity.modifiedCount === 0) {
         throw new Error("Activity replace failed");
       }
 
-      // Non modifico l'array delle sotto-attività perchè ci sono solo gli objId
       if(!projectId) {
         // Aggiorno le notifiche di ogni partecipante all'attività
         const updatedUsers = await userModel.updateMany(
@@ -750,7 +769,6 @@ export async function createDataBase() {
           { $set: { inboxNotifications: { fromTask: activityId } } }
         );
       } else {
-          
         const project = await projectModel.findById(projectId);
         if (!project) throw new Error("Project not found");
 
@@ -759,36 +777,32 @@ export async function createDataBase() {
           { $set: { inboxNotifications: { fromTask: activityId } } }
         );
       }
+      await user.save();
 
       return { replacedActivity, updatedUsers };
     } catch (e) {
-      throw new Error("Event did not get changed: " + e.message);
+      throw new Error("Activity did not get changed: " + e.message);
     }
   };
 
-
-  const modifySubActivity = async (uid, subActivity, parentId, subActivityId, projectId) => {
+  const modifySubActivity = async (uid, subActivity, subActivityId, projectId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    //check se la subactivity è mia
-    /*const oldActivity = await activityModel.findById(subActivity._id);
-    if (oldActivity.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
-    */
+    console.log("oldActivity.uid: ", oldActivity.uid);
+    const oldActivity = await activityModel.findById(subActivityId);
+    if (oldActivity.uid.toString() !== uid.toString()) throw new Error("Subactivity does not belong to user");
 
     const replacedSubActivity = await activityModel.replaceOne({ _id: subActivityId }, { ...subActivity, uid: uid, parentId: parentId });
     if (replacedSubActivity.modifiedCount === 0) {
       throw new Error("Activity replace failed");
     }
 
-    // tolgo la sotto attività dal padre
-    const parent = await activityModel.findById(parentId);
+    const parent = await activityModel.findById(subActivity.parentId);
     if (!parent) throw new Error("Parent not found");
-    console.log(parent.subActivity);
-    //non funziona
-    parent.subActivity = parent.subActivity.filter((sub) => sub._id.toString() !== subActivity._id.toString());
-    // riaggiungo la sotto attività modificata
-    parent.subActivity.push(replacedSubActivity);
+
+    //rimpiazza nel padre la sotto attività
+    parent.subActivity = parent.subActivity.filter(sub => sub._id.toString() !== subActivity._id.toString()).concat(replacedSubActivity);
 
     //cancello le vecchie notifiche
     if(!projectId) {
@@ -809,17 +823,17 @@ export async function createDataBase() {
     }
 
     //genero le nuove notifiche
+    /*
     if(!projectId) {
       generateNotificationsForActivity(replacedSubActivity, [user]);
-      await user.save();
       return { replacedSubActivity, user };
     } else {
       var participants = await userModel.find( { _id: { $in: addedSubActivity.participants } });
+      if (!participants) throw new Error("Participants not found");
       generateNotificationsForActivity(replacedSubActivity, [participants]);
-      await project.save();
       return { replacedSubActivity, participants };
     }
-      
+    */  
   };
 
   const chatService = {
@@ -899,5 +913,5 @@ export async function createDataBase() {
     /* end Messages */
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, createSubActivity, getActivities, deleteActivity, deleteSubActivity, modifyActivity, modifySubActivity, chatService, verifyEmail };
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, createActivity, createSubActivity, getActivities, deleteActivity, modifyActivity, modifySubActivity, chatService, verifyEmail };
 }
