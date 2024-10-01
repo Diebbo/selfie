@@ -5,19 +5,33 @@ function createNoteRouter(db) {
   const router = express.Router();
 
   // Crea una nuova nota o modifica una esistente
-  router.post('/post', cookieJwtAuth, async function(req, res) {
-    const uid = req.user._id;
-    const note = req.body.note;
+// Rotta per creare una nuova nota
+router.post('/', cookieJwtAuth, async function(req, res) {
+  const uid = req.user._id;
+  const note = req.body.note;
 
-    try {
-      const result = await db.postNote(uid, note);
-      if (note._id) return res.status(200).json({ message: "nota modificata correttamente" , result});
-      else res.status(200).json({ message: "nota aggiunta correttamente" , result});
-    } catch (e) {
-      console.error("Error creating note:", e);
-      return res.status(400).json({ message: e.message });
-    }
-  });
+  try {
+    const result = await db.postNote(uid, note);
+    res.status(201).json({ message: "Nota aggiunta correttamente", result });
+  } catch (e) {
+    console.error("Error creating note:", e);
+    return res.status(400).json({ message: e.message });
+  }
+});
+
+// Rotta per aggiornare una nota esistente
+router.put('/:id', cookieJwtAuth, async function(req, res) {
+  const uid = req.user._id;
+  const note = req.body.note;
+
+  try {
+    const result = await db.postNote(uid, note);
+    res.status(200).json({ message: "Nota modificata correttamente", result });
+  } catch (e) {
+    console.error("Error updating note:", e);
+    return res.status(400).json({ message: e.message });
+  }
+});
 
   // Ritorna tutte le note: con il parametro fields nell'URL si possono specificare i campi
   // Es: /note/list?fields=title,date
