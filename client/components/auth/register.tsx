@@ -138,7 +138,7 @@ export const Register = () => {
                   type="date"
                   value={values.birthDate.toString()}
                   isInvalid={!!errors.birthDate && !!touched.birthDate}
-                  errorMessage={errors.birthDate}
+                  errorMessage={"Invalid date"}
                   onChange={handleChange("birthDate")}
                 />
                 <Input

@@ -8,7 +8,6 @@ import { CardTransactions } from "./card-transactions";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
 import { SelfieEvent } from "@/helpers/types";
-import dummy from "@/helpers/dummyvar";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
 
@@ -48,12 +47,6 @@ export const Content = (props: ContentProps) => {
                   <div className="text-success">No future events</div> // Your alternative content here
                 )
               }
-              {/*<EventCard data={dummy.dummyEvents[0]} theme={5}/>
-            <EventCard data={dummy.dummyEvents[1]} theme={1}/>
-            <EventCard data={dummy.dummyEvents[2]} theme={0}/>*/}
-              {/*<CardBalance1 />
-            <CardBalance2 />
-            <CardBalance3 /> */}
             </div>
             <h4 className="text-l font-semibold">Participating Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">

@@ -1,4 +1,4 @@
-import { NoteModel } from "../helpers/types";
+import { NoteModel } from "@/helpers/types";
 const NOTES_API_URL = "/api/notes";
 
 export const fetchNotes = async (): Promise<NoteModel[]> => {

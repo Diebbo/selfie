@@ -35,7 +35,7 @@ export const SidebarWrapper = () => {
         })}
       >
         <div className={Sidebar.Header()}>
-          <CompaniesDropdown />
+          {/* Sidebar Header */}
         </div>
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>

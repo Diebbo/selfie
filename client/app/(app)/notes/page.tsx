@@ -6,13 +6,13 @@ import {
   fetchNoteById,
   saveNote,
   deleteNote,
-  Note,
 } from "@/actions/notes";
 import NoteCard from "@/components/notes/NoteCard";
+import { NoteModel } from "@/helpers/types";
 
 const NotePage: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [notes, setNotes] = useState<NoteModel[]>([]);
+  const [selectedNote, setSelectedNote] = useState<NoteModel | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
@@ -21,7 +21,7 @@ const NotePage: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [initialMouseX, setInitialMouseX] = useState(0);
   const [initialPanelWidth, setInitialPanelWidth] = useState(300);
-  const [showNoteList, setShowNoteList] = useState(false); // New state for showing note list
+  const [showNoteList, setShowNoteList] = useState(false); // New state for showing NoteModel list
   const [showNotification, setShowNotification] = useState(false); // State for notification
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,13 +65,13 @@ const NotePage: React.FC = () => {
   }, [isResizing, initialMouseX, initialPanelWidth]);
 
   const handleSave = async () => {
-    const note = {
+    const NoteModel = {
       title,
       content,
       tags: tags.split(",").map((tag) => tag.trim()),
     };
 
-    const success = await saveNote(note, selectedNote?._id);
+    const success = await saveNote(NoteModel, selectedNote?._id);
     if (success) {
       setTitle("");
       setContent("");
@@ -89,7 +89,7 @@ const NotePage: React.FC = () => {
 
     const success = await deleteNote(id);
     if (success) {
-      setNotes(notes.filter((note) => note._id !== id));
+      setNotes(notes.filter((NoteModel) => NoteModel._id !== id));
     }
   };
 
@@ -98,7 +98,7 @@ const NotePage: React.FC = () => {
     setTitle("");
     setContent("");
     setTags("");
-    setShowNoteList(false); // Hide note list when creating a new note
+    setShowNoteList(false); // Hide NoteModel list when creating a new NoteModel
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -112,12 +112,12 @@ const NotePage: React.FC = () => {
     setSelectedNote(null);
   };
 
-  const handleCardClick = (note: Note) => {
-    setSelectedNote(note);
-    setTitle(note.title);
-    setContent(note.content);
-    setTags(note.tags.join(", "));
-    setShowNoteList(false); // Hide note list when a note is selected
+  const handleCardClick = (NoteModel: NoteModel) => {
+    setSelectedNote(NoteModel);
+    setTitle(NoteModel.title);
+    setContent(NoteModel.content);
+    setTags(NoteModel.tags.join(", "));
+    setShowNoteList(false); // Hide NoteModel list when a NoteModel is selected
   };
 
   return (
@@ -138,7 +138,7 @@ const NotePage: React.FC = () => {
         style={{ width: leftPanelWidth }}
       >
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-          Le tue note
+          Le tue NoteModel
         </h2>
         <div className="flex mb-4">
           <button
@@ -151,12 +151,12 @@ const NotePage: React.FC = () => {
             onClick={handleShowNoteList}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            Lista Note
+            Lista NoteModel
           </button>
         </div>
         <input
           type="text"
-          placeholder="Cerca note..."
+          placeholder="Cerca NoteModel..."
           value={searchQuery}
           onChange={handleSearchChange}
           className="w-full mb-4 p-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -164,37 +164,37 @@ const NotePage: React.FC = () => {
         <ul>
           {notes
             .filter(
-              (note) =>
-                note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                note.tags.some((tag) =>
+              (NoteModel) =>
+                NoteModel.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                NoteModel.tags.some((tag) =>
                   tag.toLowerCase().includes(searchQuery.toLowerCase()),
                 ),
             )
-            .map((note) => (
+            .map((NoteModel) => (
               <li
-                key={note._id}
+                key={NoteModel._id}
                 className="mb-2 flex justify-between items-center group"
               >
                 <span
                   className="cursor-pointer hover:text-blue-500 text-gray-900 dark:text-gray-100"
                   onClick={() => {
-                    if (note._id) {
-                      fetchNoteById(note._id).then((fetchedNote) => {
+                    if (NoteModel._id) {
+                      fetchNoteById(NoteModel._id).then((fetchedNote) => {
                         if (fetchedNote) {
                           setSelectedNote(fetchedNote);
                           setTitle(fetchedNote.title);
                           setContent(fetchedNote.content);
                           setTags(fetchedNote.tags.join(", "));
-                          setShowNoteList(false); // Hide note list when a note is selected from the sidebar
+                          setShowNoteList(false); // Hide NoteModel list when a NoteModel is selected from the sidebar
                         }
                       });
                     }
                   }}
                 >
-                  {note.title}
+                  {NoteModel.title}
                 </span>
                 <button
-                  onClick={() => handleDelete(note._id)}
+                  onClick={() => handleDelete(NoteModel._id)}
                   className="ml-2 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 >
                   🗑️
@@ -210,10 +210,10 @@ const NotePage: React.FC = () => {
       <div className="w-full p-4">
         {showNoteList ? (
           <div className="grid grid-cols-3 gap-4">
-            {notes.map((note) => (
+            {notes.map((NoteModel) => (
               <NoteCard
-                key={note._id}
-                note={note}
+                key={NoteModel._id}
+                note={NoteModel}
                 onClick={handleCardClick}
                 onDelete={handleDelete}
               />
