@@ -4,7 +4,7 @@ import { isVerified } from './actions/auth.action'
 
 // 1. Specify protected and public routes
 // const protectedRoutes = ['/dashboard', '/', '/timemachine']
-const publicRoutes = ['/login', '/register', '/verifyemail', '/verification', '/reset-login', '/change_account']
+const publicRoutes = ['/login', '/register', '/verifyemail', '/verification', '/reset-login']
 
 export default async function middleware(req: NextRequest) {
   // 2. Check if the current route is protected or public
@@ -17,15 +17,22 @@ export default async function middleware(req: NextRequest) {
   try {
     cookie = cookies().get('token')?.value;
     if (cookie) {
-      console.log('cookie');
       try {
         const res = await isVerified();
-        console.log(res);
-        if (!res && isProtectedRoute) {
-          return NextResponse.redirect(new URL('/verifyemail', req.nextUrl));
-        }
-        if (res && isPublicRoute) {
-          return NextResponse.redirect(new URL('/change_account', req.nextUrl));
+        switch (res) {
+          case 200: // token is valid and email is verified
+            if (isPublicRoute) {
+              return NextResponse.redirect(new URL('/change_account', req.nextUrl));
+            }
+            return NextResponse.next();
+          case 403: // token is valid but email is not verified
+            return NextResponse.redirect(new URL('/verifyemail', req.nextUrl));
+          case 401: // token is invalid
+          default:
+            if (path === '/login' || path === '/register' || path === "/change_account") { // forward without redirects
+              return NextResponse.next();
+            }
+            return NextResponse.redirect(new URL('/login', req.nextUrl));
         }
       } catch (err) {
         console.log(err);
