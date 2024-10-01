@@ -5,7 +5,7 @@ function createActivityRouter(db) {
   const router = express.Router();
   
   //put attività
-  //URL: ?parent=parentId
+  //URL: /?parent=parentId
   router.put('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const activity = req.body.activity;
@@ -17,6 +17,7 @@ function createActivityRouter(db) {
 
     try {
       if(!parentId) {
+        console.log("uid: ", uid);
         result = await db.createActivity(uid, projectId, activity);
       } else {
         result = await db.createSubActivity(uid, projectId, parentId, activity);
@@ -28,7 +29,7 @@ function createActivityRouter(db) {
 
     if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
 
-    res.status(200).json({ message: "attività aggiunta correttamente" , result });
+    res.status(200).json({ message: "Activity Added Succesfully", result });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
@@ -46,21 +47,15 @@ function createActivityRouter(db) {
   });
 
   //delete attività (da user o da project)
-  // es di URL: :id/?fields=subActivityId
+  // es di URL: /:id attività o sotto-attività
   router.delete('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
-    const parentId = req.params.id;
+    const activityId = req.params.id;
     const projectId = null; //user activity
-    const subActivityId = req.query.child;
     let result;
     try {
-      if(subActivityId === null) {
-        console.log("deleteActivity");
-        await db.deleteActivity(uid, parentId, projectId);
-      } else {
-        console.log("deleteSubActivity", subActivityId);
-        result = await db.deleteSubActivity(uid, parentId, projectId, subActivityId);  
-      }
+      console.log("deleteActivity: ", activityId);
+      result = await db.deleteActivity(uid, activityId, projectId);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -69,23 +64,15 @@ function createActivityRouter(db) {
   });
 
   //patch attività
-  //URL: /:id/?child={childId}
+  //URL: /:id
   router.patch('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const activityId = req.params.id;
     const activity = req.body.activity;
     const projectId = null; //user activity
-    const childId = req.query.child ? req.query.child : null;
-    let result;
 
     try {
-      if(childId === null) {
-        console.log("modifyActivity");
-        result = await db.modifyActivity(uid, activity, activityId, projectId);
-      } else {
-        console.log("modifySubActivity", activity);
-        result = await db.modifySubActivity(uid, activity, activityId, childId, projectId);
-      }
+      let result = await db.modifyActivity(uid, activity, activityId, projectId);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }

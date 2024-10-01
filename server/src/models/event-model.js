@@ -25,6 +25,11 @@ const activitySchema = new mongoose.Schema({
     subActivity: [
         // should be an array of activitySchema but it's not defined yet
     ],
+    uid: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    parentId: {} 
 });
 
 const eventSchema = new mongoose.Schema({
