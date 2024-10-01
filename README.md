@@ -69,3 +69,12 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Omar Ayache
 - Emanuele Argonni
 - Diego Barbieri
+## Docker Deploy
+```bash
+docker build -t selfie .
+docker run -p 3000:3000 -p 3001:3001 selfie
+```
+# Documentation
+
+[NextJS](https://nextjs.org/)
+[NextUI](https://nextui.org/)
