@@ -47,16 +47,16 @@ export async function createDataBase() {
     let res = await userModel.create({ ...user });
 
     // send verification email
-    addNotification(res, { title: "Verify your email", description: "verificati", method: "email" , when: new Date() });
+    addNotification(res, { title: "Verify your email", description: "verificati", method: "email", when: new Date() });
     return res;
   };
 
-  const verifyEmail = async (emailToken) => {
-    const user = await userModel.findOne({ emailtoken: emailToken });
+  const verifyEmail = async (emailtoken) => {
+    const user = await userModel.findOne({ emailtoken: emailtoken });
     if (!user) throw new Error("Invalid token");
 
     user.isVerified = true;
-    user.emailtoken = null; // Clear the token after verification
+    user.emailtoken = "";
     await user.save();
 
     return user;
@@ -668,23 +668,37 @@ export async function createDataBase() {
       const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
       await addNotification(receiver, newNotification);
 
-      return { createdAt:newMessage.createdAt, message:newMessage.message, sender: sender.username, receiver: receiverUsername };
+      return { createdAt: newMessage.createdAt, message: newMessage.message, sender: sender.username, receiver: receiverUsername };
+    },
+
+    async addChat(senderId, receiverUsername) {
+      const sender = await userModel.findById(senderId);
+      if (!sender) throw new Error("Sender not found");
+
+      const receiver = await userModel.findOne({ username: receiverUsername });
+      if (!receiver) throw new Error("Receiver not found");
+      
+      await this.sendMessage(senderId, receiverUsername, "You started a new chat");
+
+      return this.getChats(senderId);
     },
 
     async getChat(senderId, receiverUsername) {
       const sender = await userModel.findById(senderId);
       if (!sender) throw new Error("Sender not found");
-      
+
       const receiver = await userModel.findOne({ username: receiverUsername });
       if (!receiver) throw new Error("Receiver not found");
 
       let chat = await chatModel.find(
-        { $or: [
-          { sender: senderId, receiver: receiver._id }, 
-          { sender: receiver._id, receiver: senderId }
-        ] })
+        {
+          $or: [
+            { sender: senderId, receiver: receiver._id },
+            { sender: receiver._id, receiver: senderId }
+          ]
+        })
         .sort({ createdAt: 1 });
-      
+
       // update the chat to return username instead of id
       return chat.map((message) => {
         return {
@@ -735,5 +749,37 @@ export async function createDataBase() {
     /* end Messages */
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, getActivities, chatService };
+  const friendService = {
+    async get(id) {
+      const user = await userModel.findById(id);
+      if (!user) throw new Error("User not found");
+      return await userModel.find({ _id: { $in: user.friends } });
+    },
+
+    async add(uid, friendUsername) {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      const friend = await userModel.findOne({ username: friendUsername });
+      if (!friend) throw new Error("Friend's user not found");
+      if (uid === friend._id) throw new Error("Cannot add yourself as a friend");
+      if (user.friends.includes(friend._id)) throw new Error("User is already a friend");
+      user.friends.push(friend._id);
+      await user.save();
+      return friend;
+    },
+
+    async delete(uid , friendId) {
+      if (uid === friendId) throw new Error("Cannot delete yourself as a friend");
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      if (!user.friends.includes(friendId)) throw new Error("User is not a friend")
+      const friend = await userModel.findById(friendId);
+      if (!friend) throw new Error("Friend's user not found");
+      user.friends = user.friends.filter(f => f.toString() !== friendId);
+      await user.save();
+      return user.friends;
+    }
+  }
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, getActivities, chatService, friendService };
 }

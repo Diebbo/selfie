@@ -42,11 +42,12 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername, initialMessages
     };
 
     const handleClose = () => {
-        router.push('/chats');  // Go back to the main chats page
+        router.refresh();  // Refresh the page
+        router.push('/chats');  // Redirect to the chats page
     };
 
     return (
-        <Modal backdrop="blur" scrollBehavior="inside" placement="center" isOpen={true} onClose={handleClose}>
+        <Modal backdrop="blur" scrollBehavior="inside" placement="center" isOpen={true} onClose={handleClose} isDismissable={false}>
             <ModalContent>
                 <ModalHeader>{receiverUsername}</ModalHeader>
                 <ModalBody>
@@ -74,7 +75,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername, initialMessages
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                         />
-                        <Button color="primary" radius="full" size="sm" variant="solid" onPress={handleSendMessage}>
+                        <Button color="primary" radius="full" size="sm" variant="solid" onPress={() => handleSendMessage()}>
                             Send
                         </Button>
                     </div>

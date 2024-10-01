@@ -6,10 +6,11 @@ import {
   DropdownSection,
   DropdownTrigger,
 } from "@nextui-org/react";
-import React, { useState } from "react";
-import { AcmeIcon } from "../icons/acme-icon";
+import React, { useState, useEffect } from "react";
+import { AcmeIcon, CalendarIcon } from "../icons/acme-icon";
 import { AcmeLogo } from "../icons/acmelogo";
 import { BottomIcon } from "../icons/sidebar/bottom-icon";
+import { getUsername } from "@/actions/auth.action";
 
 interface Company {
   name: string;
@@ -20,9 +21,26 @@ interface Company {
 export const CompaniesDropdown = () => {
   const [company, setCompany] = useState<Company>({
     name: "Acme Co.",
-    location: "Palo Alto, CA",
+    location: "Selfie Calendar",
     logo: <AcmeIcon />,
   });
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const response = await getUsername();
+        setCompany((prevCompany) => ({
+          ...prevCompany,
+          name: response.username, // Assuming the response contains a username field
+        }));
+      } catch (error) {
+        console.error("Failed to fetch username:", error);
+      }
+    };
+
+    fetchUsername();
+  }, []);
+
   return (
     <Dropdown
       classNames={{
