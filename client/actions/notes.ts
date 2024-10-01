@@ -1,14 +1,7 @@
-export interface Note {
-  _id?: string;
-  title: string;
-  content: string;
-  date?: Date;
-  tags: string[];
-}
-
+import { NoteModel } from "../helpers/types";
 const NOTES_API_URL = "/api/notes";
 
-export const fetchNotes = async (): Promise<Note[]> => {
+export const fetchNotes = async (): Promise<NoteModel[]> => {
   try {
     const response = await fetch(
       `${NOTES_API_URL}/list?fields=_id,title,date,tags,content`,
@@ -17,7 +10,7 @@ export const fetchNotes = async (): Promise<Note[]> => {
       const data = await response.json();
       // Sort notes by date in descending order
       return data.sort(
-        (a: Note, b: Note) =>
+        (a: NoteModel, b: NoteModel) =>
           new Date(b.date!).getTime() - new Date(a.date!).getTime(),
       );
     } else {
@@ -30,7 +23,7 @@ export const fetchNotes = async (): Promise<Note[]> => {
   }
 };
 
-export const fetchNoteById = async (id: string): Promise<Note | null> => {
+export const fetchNoteById = async (id: string): Promise<NoteModel | null> => {
   try {
     const response = await fetch(`${NOTES_API_URL}/${id}`);
     if (response.ok) {
@@ -46,7 +39,7 @@ export const fetchNoteById = async (id: string): Promise<Note | null> => {
 };
 
 export const saveNote = async (
-  note: Note,
+  note: NoteModel,
   noteId?: string,
 ): Promise<boolean> => {
   try {
