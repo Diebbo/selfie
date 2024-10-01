@@ -19,7 +19,10 @@ export function createAuthRouter(db) {
     };
   }
   function createToken(user) {
-    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION || "1h", issuer: "selfie app" });
+    return jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRATION || "1h",
+      issuer: "selfie app",
+    });
   }
 
   router.post("/login", async (req, res) => {
@@ -35,7 +38,7 @@ export function createAuthRouter(db) {
       dbuser = await db.login({ username, email });
       console.log(`User logging in: ${dbuser.username}`);
     } catch (e) {
-      console.error(e.message)
+      console.error(e.message);
       return res.status(401).json({ message: e.message });
     }
 
@@ -79,7 +82,7 @@ export function createAuthRouter(db) {
     try {
       dbuser = await db.register(newUser);
     } catch (e) {
-      console.error(e.message)
+      console.error(e.message);
       return res.status(400).json({ message: e.message });
     }
 
@@ -118,13 +121,9 @@ export function createAuthRouter(db) {
         // signed: true, // Enable if using signed cookies
       });
 
-      return res
-        .status(200)
-        .json({ user, token });
+      return res.status(200).json({ user, token });
     } catch (e) {
-      return res
-        .status(400)
-        .json({ error: e.message });
+      return res.status(400).json({ error: e.message });
     }
   });
 
@@ -143,6 +142,23 @@ export function createAuthRouter(db) {
     } catch (e) {
       return res.status(401).json({ message: e.message });
     }
+  });
+
+  // Funzione che ritorna la email dell'utente loggato usando il middleware cookieJwtAuth
+  router.get("/email", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    return res.status(200).json({ email: user.email });
+  });
+
+  router.get("/username", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    return res.status(200).json({ username: user.username });
   });
 
   return router;
