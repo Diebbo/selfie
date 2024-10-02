@@ -3,10 +3,10 @@ import { Sidebar } from "./sidebar.styles";
 import { Avatar, Tooltip } from "@nextui-org/react";
 import { CompaniesDropdown } from "./companies-dropdown";
 import { HomeIcon } from "../icons/sidebar/home-icon";
-import { PaymentsIcon } from "../icons/sidebar/payments-icon";
+import { PomodoroIcon } from "../icons/sidebar/pomodoro-icon";
 import { BalanceIcon } from "../icons/sidebar/balance-icon";
 import { NotesIcon } from "../icons/sidebar/notes-icon";
-import { CustomersIcon } from "../icons/sidebar/customers-icon";
+import { ChatsIcon } from "../icons/sidebar/chats-icon";
 import { ProductsIcon } from "../icons/sidebar/products-icon";
 import { ReportsIcon } from "../icons/sidebar/reports-icon";
 import { DevIcon } from "../icons/sidebar/dev-icon";
@@ -53,9 +53,10 @@ export const SidebarWrapper = () => {
                 href="notes"
               />
               <SidebarItem
-                isActive={pathname === "/payments"}
-                title="Payments"
-                icon={<PaymentsIcon />}
+                isActive={pathname === "/pomodoro"}
+                title="Pomodoro"
+                icon={<PomodoroIcon />}
+                href="pomodoro"
               />
               <CollapseItems
                 icon={<BalanceIcon />}
@@ -63,9 +64,10 @@ export const SidebarWrapper = () => {
                 title="Balances"
               />
               <SidebarItem
-                isActive={pathname === "/customers"}
-                title="Customers"
-                icon={<CustomersIcon />}
+                isActive={pathname === "/chats"}
+                title="Chats"
+                icon={<ChatsIcon />}
+                href="chats"
               />
               <SidebarItem
                 isActive={pathname === "/products"}
