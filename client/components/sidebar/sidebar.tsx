@@ -6,7 +6,7 @@ import { HomeIcon } from "../icons/sidebar/home-icon";
 import { PomodoroIcon } from "../icons/sidebar/pomodoro-icon";
 import { BalanceIcon } from "../icons/sidebar/balance-icon";
 import { NotesIcon } from "../icons/sidebar/notes-icon";
-import { ChatsIcon } from "../icons/sidebar/chats-icon";
+import ChatsIcon from "../icons/sidebar/chats-icon";
 import { ProductsIcon } from "../icons/sidebar/products-icon";
 import { ReportsIcon } from "../icons/sidebar/reports-icon";
 import { DevIcon } from "../icons/sidebar/dev-icon";

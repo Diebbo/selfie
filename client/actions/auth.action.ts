@@ -90,18 +90,7 @@ export async function isVerified() {
     credentials: "include",
   });
 
-  if (response.status === 200) {
-    return true;
-  } else {
-    return false;
-  }
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Verification failed");
-  }
-
-  return await response.json();
+  return response.status;
 }
 
 export async function getEmail() {
