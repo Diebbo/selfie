@@ -13,7 +13,7 @@ const cookieJwtAuth = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     if (!req.user.isVerified) {
-      return res.status(401).json({ error: 'Access Denied: Email not verified' });
+      return res.status(403).json({ error: 'Access Denied: Email not verified' });
     }
     next();
   } catch (err) {
