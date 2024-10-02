@@ -3,6 +3,7 @@ import { Sidebar } from "./sidebar.styles";
 import { Avatar, Tooltip } from "@nextui-org/react";
 import { CompaniesDropdown } from "./companies-dropdown";
 import { HomeIcon } from "../icons/sidebar/home-icon";
+import ChatsIcon from "../icons/sidebar/chats-icon";
 import { PaymentsIcon } from "../icons/sidebar/payments-icon";
 import { BalanceIcon } from "../icons/sidebar/balance-icon";
 import { NotesIcon } from "../icons/sidebar/notes-icon";
@@ -53,9 +54,10 @@ export const SidebarWrapper = () => {
                 href="notes"
               />
               <SidebarItem
-                isActive={pathname === "/payments"}
-                title="Payments"
-                icon={<PaymentsIcon />}
+                isActive={pathname === "/chats"}
+                title="Chats"
+                icon={<ChatsIcon />}
+                href="chats"
               />
               <CollapseItems
                 icon={<BalanceIcon />}
