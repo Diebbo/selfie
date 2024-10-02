@@ -1,4 +1,4 @@
-import { Avatar, Card, CardBody, Popover, PopoverTrigger, PopoverContent, Input, Button, CardHeader } from "@nextui-org/react";
+import { Avatar, Card, CardBody, Popover, PopoverTrigger, PopoverContent, Input, Button } from "@nextui-org/react";
 import React from "react";
 import { People, Person } from "@/helpers/types";
 
@@ -44,17 +44,17 @@ export const CardAgents = ({ friends, setFriends }: CardAgentsProps) => {
             </span>
           </div>
         </div>
-        <div className="flex flex-flow-row-wrap gap-6">
+        <div className="flex flex-row flex-wrap gap-6">
           {
             friends && friends.length > 0 ? friends.map((item: Person, index: number) => (
-              <Popover key={index} showArrow placement="bottom">
+              <Popover key={index} showArrow placement="bottom" color="secondary">
                 <PopoverTrigger>
-                  <Avatar src={pictureUsers[index % pictureUsers.length]} />
+                  <Avatar src={pictureUsers[index % pictureUsers.length]} className="min-w-[40px]" />
                 </PopoverTrigger>
-                <PopoverContent className="p-1">
+                <PopoverContent className="p-3 border-solid">
                   <div className="flex flex-col gap-2">
                     <h4 className="text-lg font-semibold">{item.username}</h4>
-                    <p className="text-default-400 text-sm">
+                    <p className="text-sm text-italic">
                       {item.email}
                     </p>
                   </div>
