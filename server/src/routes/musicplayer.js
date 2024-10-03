@@ -54,6 +54,30 @@ function createMusicRouter(db){
         }
     });
 
+    router.post("/like", cookieJwtAuth, async (req, res) => {
+        const uid = req.user._id;
+        const songId = req.body.songId;
+        try {
+            const result = await db.addLike(uid, songId);
+            res.status(200).json({ message: "Like added successfully", result });
+        } catch (error) {
+            console.error("Error adding like:", error);
+            res.status(400).json({ message: error.message });
+        }
+    });
+
+    router.delete("/like", cookieJwtAuth, async (req, res) => {
+        const uid = req.user._id;
+        const songId = req.body.songId;
+        try {
+            const result = await db.removeLike(uid, songId);
+            res.status(200).json({ message: "Like removed successfully", result });
+        } catch (error) {
+            console.error("Error removing like:", error);
+            res.status(400).json({ message: error.message });
+        }
+    });
+
     return router;
 }
 
