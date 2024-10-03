@@ -86,3 +86,17 @@ export interface SelfieEvent {
   URL: String;
   participants: People;
 }
+
+export interface PomodoSettings {
+  studyDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+}
+/*
+ *       setFocusTimeInput(data.studyDuration);
+      setBreakTimeInput(data.shortBreakDuration);
+      setLongBreakTimeInput(data.longBreakDuration);
+      setTimeLeft(data.studyDuration * 60);
+      setFocusTime(data.studyDuration);
+      setBreakTime(data.shortBreakDuration);
+*/
