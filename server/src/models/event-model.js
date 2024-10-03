@@ -15,7 +15,10 @@ const notificationSchema = new mongoose.Schema({
 const activitySchema = new mongoose.Schema({
     name: String,
     dueDate: Date,
-    completed: Boolean,
+    completed: {
+        type: Boolean,
+        default: false
+    },
     //notifiche per attività
     notification: notificationSchema,
     participants: [{
