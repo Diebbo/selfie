@@ -37,7 +37,6 @@ export async function createDataBase() {
     return res;
   };
 
-
   const register = async (user) => {
     const emailUser = await userModel.findOne({ email: user.email });
     if (emailUser) throw new Error("Email already used");
@@ -47,7 +46,12 @@ export async function createDataBase() {
     let res = await userModel.create({ ...user });
 
     // send verification email
-    addNotification(res, { title: "Verify your email", description: "verificati", method: "email", when: new Date() });
+    addNotification(res, {
+      title: "Verify your email",
+      description: "verificati",
+      method: "email",
+      when: new Date(),
+    });
     return res;
   };
 
@@ -78,7 +82,6 @@ export async function createDataBase() {
     return new Date(res.time);
   };
 
-
   const postNote = async (uid, note) => {
     try {
       const user = await userModel.findById(uid);
@@ -91,7 +94,8 @@ export async function createDataBase() {
       if (!note.tags) note.tags = [];
       note.date = new Date(); // update the last modified date with current date
 
-      if (note._id) { // Modify existing note
+      if (note._id) {
+        // Modify existing note
         const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
         const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
         if (noteIndex !== -1) {
@@ -99,12 +103,13 @@ export async function createDataBase() {
           user.notes[noteIndex] = {
             ...user.notes[noteIndex].toObject(),
             ...note,
-            _id: noteId // Ensure we keep the original ObjectId
+            _id: noteId, // Ensure we keep the original ObjectId
           };
         } else {
           throw new Error("Note with provided ID not found");
         }
-      } else { // New note
+      } else {
+        // New note
         user.notes.push(note);
       }
 
@@ -116,12 +121,11 @@ export async function createDataBase() {
     }
   };
 
-
   const getNotes = async (uid, fields = null) => {
-    let projection = { 'notes._id': 1 }; // Sempre includi l'ID della nota
+    let projection = { "notes._id": 1 }; // Sempre includi l'ID della nota
 
     if (Array.isArray(fields) && fields.length > 0) {
-      fields.forEach(field => {
+      fields.forEach((field) => {
         projection[`notes.${field}`] = 1;
       });
     } else {
@@ -131,10 +135,10 @@ export async function createDataBase() {
     const user = await userModel.findById(uid, projection);
     if (!user) throw new Error("User not found");
 
-    return user.notes.map(note => {
+    return user.notes.map((note) => {
       if (Array.isArray(fields) && fields.length > 0) {
         const filteredNote = { _id: note._id };
-        fields.forEach(field => {
+        fields.forEach((field) => {
           if (note[field] !== undefined) {
             filteredNote[field] = note[field];
           }
@@ -166,7 +170,9 @@ export async function createDataBase() {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      const noteIndex = user.notes.findIndex(note => note._id.toString() === noteId);
+      const noteIndex = user.notes.findIndex(
+        (note) => note._id.toString() === noteId
+      );
       if (noteIndex === -1) throw new Error("Note not found");
 
       user.notes.splice(noteIndex, 1);
@@ -178,7 +184,6 @@ export async function createDataBase() {
       throw error;
     }
   };
-
 
   const getEvents = async (uid) => {
     var user = await userModel.findById(uid);
@@ -212,7 +217,9 @@ export async function createDataBase() {
     var err = "Invited users not found: ";
     if (event.invitedUsers) {
       event.invitedUsers.forEach(async (invitedUser) => {
-        const invitedUserDoc = await userModel.findOne({ username: invitedUser });
+        const invitedUserDoc = await userModel.findOne({
+          username: invitedUser,
+        });
         if (!invitedUserDoc) err += invitedUser + ", ";
         else {
           invitedUserDoc.invitedEvents.push(addedEvent._id);
@@ -226,7 +233,7 @@ export async function createDataBase() {
     await generateNotificationsForEvent(addedEvent, [user]);
 
     return addedEvent;
-  }
+  };
 
   const addNotification = async (user, notification) => {
     if (!user.inobxNotifications) user.inboxNotifications = [];
@@ -347,7 +354,8 @@ export async function createDataBase() {
     const event = await eventModel.findById(eventId);
     if (!event) throw new Error("Event not found");
 
-    if (event.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+    if (event.uid.toString() !== uid.toString())
+      throw new Error("Event does not belong to user");
 
     // Remove event from user's events
     await userModel.findByIdAndUpdate(uid, { $pull: { events: eventId } });
@@ -363,7 +371,7 @@ export async function createDataBase() {
 
     // Remove any notifications related to this event
     await userModel.updateMany(
-      { 'inboxNotifications.fromEvent': eventId },
+      { "inboxNotifications.fromEvent": eventId },
       { $pull: { inboxNotifications: { fromEvent: eventId } } }
     );
   };
@@ -375,11 +383,15 @@ export async function createDataBase() {
     const oldEvent = await eventModel.findById(eventId);
     if (!oldEvent) throw new Error("Event not found");
 
-    if (oldEvent.uid.toString() !== uid.toString()) throw new Error("Event does not belong to user");
+    if (oldEvent.uid.toString() !== uid.toString())
+      throw new Error("Event does not belong to user");
 
     try {
       // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
-      const replacedEvent = await eventModel.replaceOne({ _id: eventId }, { ...event, uid: uid });
+      const replacedEvent = await eventModel.replaceOne(
+        { _id: eventId },
+        { ...event, uid: uid }
+      );
       if (replacedEvent.modifiedCount === 0) {
         throw new Error("Event replace failed");
       }
@@ -391,7 +403,6 @@ export async function createDataBase() {
       );
 
       return { replacedEvent, updatedUsers };
-
     } catch (e) {
       throw new Error("Event did not get changed: " + e.message);
     }
@@ -405,9 +416,12 @@ export async function createDataBase() {
     if (!event) throw new Error("Event not found");
 
     // Check if user is already participating
-    if (user.participatingEvents.includes(eventId)) throw new Error("User is already participating in this event");
+    if (user.participatingEvents.includes(eventId))
+      throw new Error("User is already participating in this event");
     user.participatingEvents.push(eventId);
-    user.invitedEvents = user.invitedEvents.filter((e) => e.toString() !== eventId.toString());
+    user.invitedEvents = user.invitedEvents.filter(
+      (e) => e.toString() !== eventId.toString()
+    );
     await user.save();
 
     // add notifications for the event
@@ -418,7 +432,9 @@ export async function createDataBase() {
 
   const getProjects = async (uid) => {
     // ritorno tutti i progetti creati dall'utente o a cui partecipa
-    return await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
+    return await projectModel.find({
+      $or: [{ creator: uid }, { members: uid }],
+    });
   };
 
   const createProject = async (uid, project) => {
@@ -434,10 +450,16 @@ export async function createDataBase() {
     // check if all the sub activities are valid:
     // the start date must be before the end date, and the start date must be after the previous end date
     var err = "Invalid sub activities: ";
-    if (project.activities) { // TODO: check if this is correct
+    if (project.activities) {
+      // TODO: check if this is correct
       for (let i = 0; i < project.activities.length; i++) {
         const activity = project.activities[i];
-        if (!activity.title || !activity.description || !activity.start || !activity.end) {
+        if (
+          !activity.title ||
+          !activity.description ||
+          !activity.start ||
+          !activity.end
+        ) {
           err += activity.title + ", ";
         } else {
           if (i > 0 && project.activities[i - 1].end > activity.start) {
@@ -468,7 +490,8 @@ export async function createDataBase() {
         if (!memberDoc) err += member + ", ";
       });
     }
-    if (err !== "Members not found: ") throw new Error("Project created but " + err);
+    if (err !== "Members not found: ")
+      throw new Error("Project created but " + err);
 
     return addedProject;
   };
@@ -518,7 +541,6 @@ export async function createDataBase() {
     }
   };
 
-
   const getCurrentSong = async (uid) => {
     try {
       const user = await userModel.findById(uid);
@@ -553,16 +575,25 @@ export async function createDataBase() {
         throw new Error("No songs in the database");
       }
 
-      let currentSongIndex = songs.findIndex(song => song._id.equals(user.musicPlayer.songPlaying));
+      let currentSongIndex = songs.findIndex((song) =>
+        song._id.equals(user.musicPlayer.songPlaying)
+      );
       if (currentSongIndex === -1) {
         throw new Error("Error song index");
       }
       console.log("currentSongIndex", currentSongIndex);
       let nextSongIndex = (currentSongIndex + 1) % songs.length;
-      user.musicPlayer.songPlaying = songs[nextSongIndex]._id;
+      const nextSong = songs[nextSongIndex];
+
+      user.musicPlayer.songPlaying = nextSong._id;
       await user.save();
 
-      return songs[nextSongIndex];
+      // Ensure likedSongs is an array
+      const likedSongs = user.musicPlayer.likedSongs || [];
+
+      const isLiked = likedSongs.includes(nextSong._id);
+
+      return { ...nextSong.toObject(), isLiked };
     } catch (error) {
       console.error("Error getting next song:", error);
       throw error;
@@ -579,7 +610,9 @@ export async function createDataBase() {
         throw new Error("No songs in the database");
       }
 
-      let currentSongIndex = songs.findIndex(song => song._id.equals(user.musicPlayer.songPlaying));
+      let currentSongIndex = songs.findIndex((song) =>
+        song._id.equals(user.musicPlayer.songPlaying)
+      );
       if (currentSongIndex === -1) {
         throw new Error("Error song index");
       }
@@ -587,8 +620,7 @@ export async function createDataBase() {
       let previousSongIndex = 0;
       if (currentSongIndex === 0) {
         previousSongIndex = songs.length - 1;
-      }
-      else {
+      } else {
         previousSongIndex = (currentSongIndex - 1) % songs.length;
       }
       user.musicPlayer.songPlaying = songs[previousSongIndex]._id;
@@ -611,49 +643,96 @@ export async function createDataBase() {
     }
   };
 
+  const addLike = async (uid, songId) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const song = await songModel.findById(songId);
+      if (!song) throw new Error("Song not found");
+
+      if (!user.musicPlayer.likedSongs) user.musicPlayer.likedSongs = [];
+      if (!user.musicPlayer.likedSongs.includes(song._id)) {
+        user.musicPlayer.likedSongs.push(song._id);
+      }
+      await user.save();
+    } catch (error) {
+      console.error("Error adding like:", error);
+      throw error;
+    }
+  };
+
+  const removeLike = async (uid, songId) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const song = await songModel.findById(songId);
+      if (!song) throw new Error("Song not found");
+
+      if (!user.musicPlayer.likedSongs) user.musicPlayer.likedSongs = [];
+
+      // Correctly update the likedSongs array
+      user.musicPlayer.likedSongs = user.musicPlayer.likedSongs.filter(
+        (id) => id !== songId
+      );
+
+      await user.save();
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting like:", error);
+      throw error;
+    }
+  };
+
   const getNextNotifications = async () => {
     const users = await userModel.find({});
     let notifications = { email: [], pushNotification: [] };
     const currentDateTime = await getDateTime();
 
-    await Promise.all(users.map(async (user) => {
-      if (user.inboxNotifications.length > 0) {
-        const notification = user.inboxNotifications[0];
+    await Promise.all(
+      users.map(async (user) => {
+        if (user.inboxNotifications.length > 0) {
+          const notification = user.inboxNotifications[0];
 
-        if (new Date(notification.when) - currentDateTime <= 30000) {
-          let event, activity, notificationDescription;
+          if (new Date(notification.when) - currentDateTime <= 30000) {
+            let event, activity, notificationDescription;
 
-          if (notification.fromEvent) {
-            event = await eventModel.findById(notification.fromEvent);
-            notificationDescription = 'reminder for event taking place on ' + event.dtstart;
-          } else if (notification.fromActivity) {
-            activity = await activityModel.findById(notification.fromTask);
-            notificationDescription = 'reminder for activity due on ' + activity.dueDate;
+            if (notification.fromEvent) {
+              event = await eventModel.findById(notification.fromEvent);
+              notificationDescription =
+                "reminder for event taking place on " + event.dtstart;
+            } else if (notification.fromActivity) {
+              activity = await activityModel.findById(notification.fromTask);
+              notificationDescription =
+                "reminder for activity due on " + activity.dueDate;
+            }
+
+            // Override the default notification description if it's provided
+            notificationDescription =
+              notification.description || notificationDescription;
+
+            let removedNotification = user.inboxNotifications.shift();
+
+            if (removedNotification.method === "email") {
+              notifications.email.push({
+                to: user.email,
+                subject: removedNotification.title,
+                body: notificationDescription,
+              });
+            } else {
+              notifications.pushNotification.push({
+                username: user.username,
+                title: removedNotification.title,
+                body: notificationDescription,
+              });
+            }
+
+            await user.save();
           }
-
-          // Override the default notification description if it's provided
-          notificationDescription = notification.description || notificationDescription;
-
-          let removedNotification = user.inboxNotifications.shift();
-
-          if (removedNotification.method === 'email') {
-            notifications.email.push({
-              to: user.email,
-              subject: removedNotification.title,
-              body: notificationDescription
-            });
-          } else {
-            notifications.pushNotification.push({
-              username: user.username,
-              title: removedNotification.title,
-              body: notificationDescription
-            });
-          }
-
-          await user.save();
         }
-      }
-    }));
+      })
+    );
 
     return notifications;
   };
@@ -686,7 +765,7 @@ export async function createDataBase() {
     }
 
     return addedActivity;
-  }
+  };
 
   const createSubActivity = async (uid, projectId, parentId, subactivity) => {
     const user = await userModel.findById(uid);
@@ -724,11 +803,13 @@ export async function createDataBase() {
     if (!projectId) {
       var activity = await activityModel.find({ _id: { $in: user.activities } });
     } else {
-      var activity = await activityModel.find({ _id: { $in: project.activities } });
+      var activity = await activityModel.find({
+        _id: { $in: project.activities },
+      });
     }
 
     return { activity: activity };
-  }
+  };
 
   // delete activity from user or project
   const deleteActivity = async (uid, activityId, projectId) => {
@@ -744,9 +825,13 @@ export async function createDataBase() {
     }
 
     if (!projectId) {
-      await userModel.findByIdAndUpdate(uid, { $pull: { activities: { _id: activityId } } });
+      await userModel.findByIdAndUpdate(uid, {
+        $pull: { activities: { _id: activityId } },
+      });
     } else {
-      await projectModel.findByIdAndUpdate(projectId, { $pull: { activities: { _id: activityId } } });
+      await projectModel.findByIdAndUpdate(projectId, {
+        $pull: { activities: { _id: activityId } },
+      });
       const project = await projectModel.findById(projectId);
       if (!project) throw new Error("Project not found");
       await project.save();
@@ -755,9 +840,9 @@ export async function createDataBase() {
     // Delete the activity related to this Id
     await activityModel.findByIdAndDelete(activityId);
 
-    // Remove any notifications related to this activity 
+    // Remove any notifications related to this activity
     await userModel.updateMany(
-      { 'inboxNotifications.fromTask': activityId },
+      { "inboxNotifications.fromTask": activityId },
       { $pull: { inboxNotifications: { fromTask: activityId } } }
     );
     // Delete all subactivities of the parent
@@ -778,12 +863,14 @@ export async function createDataBase() {
     await activityModel.findByIdAndDelete(activityId);
 
     // cancello la sotto attività dal parent
-    parent.subActivity = parent.subActivity.filter((sub) => sub._id.toString() !== activityId.toString());
+    parent.subActivity = parent.subActivity.filter(
+      (sub) => sub._id.toString() !== activityId.toString()
+    );
 
     // manca la cancellazione delle notifiche
 
     return await parent.save();
-  }
+  };
 
   const modifyActivity = async (uid, activity, activityId, projectId) => {
     const user = await userModel.findById(uid);
@@ -798,10 +885,14 @@ export async function createDataBase() {
     }
 
     //check se la subactivity è mia
-    if (oldActivity.uid.toString() != uid) throw new Error("Activity does not belong to user");
+    if (oldActivity.uid.toString() != uid)
+      throw new Error("Activity does not belong to user");
 
     try {
-      const replacedActivity = await activityModel.replaceOne({ _id: activityId }, { ...activity, uid: uid, parentId: "root" });
+      const replacedActivity = await activityModel.replaceOne(
+        { _id: activityId },
+        { ...activity, uid: uid, parentId: "root" }
+      );
       if (replacedActivity.modifiedCount === 0) {
         throw new Error("Activity replace failed");
       }
@@ -820,7 +911,7 @@ export async function createDataBase() {
         if (!project) throw new Error("Project not found");
 
         updatedUsers = await userModel.updateMany(
-          { 'project.activities': activityId },
+          { "project.activities": activityId },
           { $set: { inboxNotifications: { fromTask: activityId } } }
         );
       }
@@ -832,15 +923,24 @@ export async function createDataBase() {
     }
   };
 
-  const modifySubActivity = async (uid, subActivity, subActivityId, projectId) => {
+  const modifySubActivity = async (
+    uid,
+    subActivity,
+    subActivityId,
+    projectId
+  ) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
     const oldActivity = await activityModel.findById(subActivityId);
 
-    if (oldActivity.uid.toString() !== uid.toString()) throw new Error("Subactivity does not belong to user");
+    if (oldActivity.uid.toString() !== uid.toString())
+      throw new Error("Subactivity does not belong to user");
 
-    const replacedSubActivity = await activityModel.replaceOne({ _id: subActivityId }, { ...subActivity, uid: uid, parentId: oldActivity.parentId });
+    const replacedSubActivity = await activityModel.replaceOne(
+      { _id: subActivityId },
+      { ...subActivity, uid: uid, parentId: oldActivity.parentId }
+    );
     if (replacedSubActivity.modifiedCount === 0) {
       throw new Error("Activity replace failed");
     }
@@ -851,7 +951,9 @@ export async function createDataBase() {
     if (!parent) throw new Error("Parent not found");
 
     //rimpiazza nel padre la sotto attività
-    parent.subActivity = parent.subActivity.filter(sub => sub._id !== subActivity._id).concat(replacedSubActivity);
+    parent.subActivity = parent.subActivity
+      .filter((sub) => sub._id !== subActivity._id)
+      .concat(replacedSubActivity);
 
     //cancello le vecchie notifiche
     if (!projectId) {
@@ -866,7 +968,7 @@ export async function createDataBase() {
       if (!project) throw new Error("Project not found");
 
       const updatedUsers = await userModel.updateMany(
-        { 'project.activities': activityId },
+        { "project.activities": activityId },
         { $set: { inboxNotifications: { fromTask: activityId } } }
       );
     }
@@ -891,7 +993,9 @@ export async function createDataBase() {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      return await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
+      return await chatModel.find({
+        $or: [{ sender: uid }, { receiver: uid }],
+      });
     },
 
     async sendMessage(senderId, receiverUsername, message) {
@@ -906,13 +1010,29 @@ export async function createDataBase() {
       const now = await getDateTime();
 
       // date is automatically set to the current date
-      const newMessage = await chatModel.create({ sender: senderId, receiver: receiver._id, message: message, createdAt: now });
+      const newMessage = await chatModel.create({
+        sender: senderId,
+        receiver: receiver._id,
+        message: message,
+        createdAt: now,
+      });
 
       // send notification
-      const newNotification = { title: "New message", description: message, fromMessage: newMessage._id, when: now, method: "email" };
+      const newNotification = {
+        title: "New message",
+        description: message,
+        fromMessage: newMessage._id,
+        when: now,
+        method: "email",
+      };
       await addNotification(receiver, newNotification);
 
-      return { createdAt: newMessage.createdAt, message: newMessage.message, sender: sender.username, receiver: receiverUsername };
+      return {
+        createdAt: newMessage.createdAt,
+        message: newMessage.message,
+        sender: sender.username,
+        receiver: receiverUsername,
+      };
     },
 
     async addChat(senderId, receiverUsername) {
@@ -934,22 +1054,28 @@ export async function createDataBase() {
       const receiver = await userModel.findOne({ username: receiverUsername });
       if (!receiver) throw new Error("Receiver not found");
 
-      let chat = await chatModel.find(
-        {
+      let chat = await chatModel
+        .find({
           $or: [
             { sender: senderId, receiver: receiver._id },
-            { sender: receiver._id, receiver: senderId }
-          ]
+            { sender: receiver._id, receiver: senderId },
+          ],
         })
         .sort({ createdAt: 1 });
 
       // update the chat to return username instead of id
       return chat.map((message) => {
         return {
-          sender: message.sender.toString() === senderId ? sender.username : receiverUsername,
-          receiver: message.receiver.toString() === senderId ? sender.username : receiverUsername,
+          sender:
+            message.sender.toString() === senderId
+              ? sender.username
+              : receiverUsername,
+          receiver:
+            message.receiver.toString() === senderId
+              ? sender.username
+              : receiverUsername,
           message: message.message,
-          createdAt: message.createdAt
+          createdAt: message.createdAt,
         };
       });
     },
@@ -1003,10 +1129,10 @@ export async function createDataBase() {
       }).filter(chat => chat !== null);
 
       return chats;
-    }
+    },
 
     /* end Messages */
-  }
+  };
 
   const friendService = {
     async get(id) {
@@ -1020,25 +1146,29 @@ export async function createDataBase() {
       if (!user) throw new Error("User not found");
       const friend = await userModel.findOne({ username: friendUsername });
       if (!friend) throw new Error("Friend's user not found");
-      if (uid === friend._id) throw new Error("Cannot add yourself as a friend");
-      if (user.friends.includes(friend._id)) throw new Error("User is already a friend");
+      if (uid === friend._id)
+        throw new Error("Cannot add yourself as a friend");
+      if (user.friends.includes(friend._id))
+        throw new Error("User is already a friend");
       user.friends.push(friend._id);
       await user.save();
       return friend;
     },
 
     async delete(uid, friendId) {
-      if (uid === friendId) throw new Error("Cannot delete yourself as a friend");
+      if (uid === friendId)
+        throw new Error("Cannot delete yourself as a friend");
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
-      if (!user.friends.includes(friendId)) throw new Error("User is not a friend")
+      if (!user.friends.includes(friendId))
+        throw new Error("User is not a friend");
       const friend = await userModel.findById(friendId);
       if (!friend) throw new Error("Friend's user not found");
-      user.friends = user.friends.filter(f => f.toString() !== friendId);
+      user.friends = user.friends.filter((f) => f.toString() !== friendId);
       await user.save();
       return user.friends;
-    }
-  }
+    },
+  };
 
   const userService = {
     async getById(id) {
@@ -1049,5 +1179,37 @@ export async function createDataBase() {
     //TODO: add other methods
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, createSubActivity, getActivities, deleteActivity, modifyActivity, chatService, friendService, userService };
+  return {
+    login,
+    register,
+    changeDateTime,
+    createEvent,
+    postNote,
+    getNotes,
+    getNoteById,
+    removeNoteById,
+    getEvents,
+    deleteEvent,
+    partecipateEvent,
+    getProjects,
+    getUserById,
+    createProject,
+    setPomodoroSettings,
+    getCurrentSong,
+    getNextSong,
+    getPrevSong,
+    addSong,
+    getNextNotifications,
+    getDateTime,
+    verifyEmail,
+    createActivity,
+    createSubActivity,
+    getActivities,
+    deleteActivity,
+    modifyActivity,
+    chatService,
+    friendService,
+    addLike,
+    removeLike,
+    userService };
 }
