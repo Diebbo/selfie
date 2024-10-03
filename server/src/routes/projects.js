@@ -5,10 +5,8 @@ export function createProjectRouter(db) {
   const router = express.Router();
 
   router.put('/', cookieJwtAuth, async function(req, res) {
-    const project = {...req.body.project, creator: req.user._id, creationDate: new Date()};
-
     try {
-      var result = await db.createProject(project);
+      var result = await db.createProject(req.user._id, req.body.project);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -43,13 +41,14 @@ export function createProjectRouter(db) {
 
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
 
+    let result;
+  
     try {
       if(!parentId) {
-        var result = await db.createActivity(uid, projectId, activity);
+        result = await db.createActivity(uid, projectId, activity);
       } else {
-        var result = await db.createSubActivity(uid, projectId, parentId, activity);
+        result = await db.createSubActivity(uid, projectId, parentId, activity);
       }
-      console.log("result: ", result);
     } catch (e) { 
       return res.status(400).json({ message: e.message });
     }
@@ -64,9 +63,10 @@ export function createProjectRouter(db) {
   router.get('/:projectId/activities', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const projectId = req.query.projectId;
+    let result;
 
     try {
-      var result = await db.getActivities(uid, projectId);
+      result = await db.getActivities(uid, projectId);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
