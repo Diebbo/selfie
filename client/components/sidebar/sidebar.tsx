@@ -76,9 +76,10 @@ export const SidebarWrapper = () => {
                 href="music-player"
               />
               <SidebarItem
-                isActive={pathname === "/reports"}
-                title="Reports"
+                isActive={pathname === "/calendar"}
+                title="Calendar"
                 icon={<ReportsIcon />}
+                href="/calendar"
               />
             </SidebarMenu>
 
