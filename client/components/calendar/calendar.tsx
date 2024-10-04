@@ -1,6 +1,8 @@
 "use client";
-import { Calendar } from "@nextui-org/react";
+import { Calendar, Chip } from "@nextui-org/react";
+import leftArrowIcon  from "../icons/calendar";
 import React, { useState, useEffect } from 'react';
+import EventAdder from "@/components/calendar/event";
 /*
 import {
   fetchEvents,
@@ -48,7 +50,7 @@ const CalendarPage = () => {
           week.push(<td key={`empty-end-${j}`} className="p-1 md:p-2 border-b border-gray-700 text-center text-gray-500 hover:bg-red-300"></td>);
         } else {
           week.push(
-            <td key={day} className="md:p-2 border-b border-gray-300 text-center align-top text-white hover:bg-lime-300 hover:text-lime-600 hover:font-bold">
+            <td key={day} className="md:p-2 border-b border-gray-300 text-right align-top text-white hover:bg-lime-400 hover:text-black">
               {day}
             </td>
           );
@@ -78,10 +80,9 @@ const CalendarPage = () => {
             <button onClick={() => changeMonth(-1)} className="text-white hover:text-yellow-300 text-xl md:text-2xl">
               &lt;
             </button>
-            <h2 className="text-lg md:text-2xl font-semibold text-white">
+            <Chip variant="shadow" className="bg-gradient-to-br from-indigo-500 to-pink-500" >
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              &nbsp; Aggiungere components di NextUI e togliere i &lt; e &gt;
-            </h2>
+            </Chip>
             <button onClick={() => changeMonth(1)} className="text-white hover:text-yellow-300 text-xl md:text-2xl">
               &gt;
             </button>
@@ -111,8 +112,10 @@ const CalendarPage = () => {
             aria-label="Sidebar Calendar" 
             showMonthAndYearPickers 
           />
-          Bottone Aggiunta: Eventi, Attività, Progetto
-        </div>
+          <div className="relative text-right h-full">
+            <EventAdder aria-label="Event Adder Button" className=""/>
+          </div>
+         </div> 
       )}
     </div>
   );
