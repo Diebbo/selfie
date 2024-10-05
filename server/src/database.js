@@ -633,6 +633,40 @@ export async function createDataBase() {
     }
   };
 
+  const getRandomSong = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const songs = await songModel.find({});
+      if (songs.length === 0) {
+        throw new Error("No songs in the database");
+      }
+
+      let currentSongIndex = songs.findIndex((song) =>
+        song._id.equals(user.musicPlayer.songPlaying)
+      );
+
+      if (currentSongIndex === -1) {
+        throw new Error("Error song index");
+      }
+
+      let randomIndex = Math.floor(Math.random() * songs.length);
+      while (randomIndex === currentSongIndex) {
+        randomIndex = Math.floor(Math.random() * songs.length);
+      }
+      const randomSong = songs[randomIndex];
+
+      user.musicPlayer.songPlaying = randomSong._id;
+      await user.save();
+
+      return randomSong;
+    } catch (error) {
+      console.error("Error getting random song:", error);
+      throw error;
+    } 
+  };
+
   // For now only for testing (to add song to the DB)
   const addSong = async (uid, song) => {
     try {
@@ -1198,6 +1232,7 @@ export async function createDataBase() {
     getCurrentSong,
     getNextSong,
     getPrevSong,
+    getRandomSong,
     addSong,
     getNextNotifications,
     getDateTime,
