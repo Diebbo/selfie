@@ -40,6 +40,17 @@ function createMusicRouter(db){
         }
     });
 
+    router.get("/randomsong", cookieJwtAuth, async (req, res) => {
+        const uid = req.user._id;
+        try {
+            const song = await db.getRandomSong(uid);
+            res.status(200).json(song);
+        } catch (error) {
+            console.error("Error getting random song:", error);
+            res.status(400).json({ message: error.message });
+        }
+    });
+
 
     router.post("/addsong", cookieJwtAuth, async (req, res) => {
         const uid = req.user._id;

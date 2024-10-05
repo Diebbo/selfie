@@ -96,6 +96,16 @@ export interface PomodoSettings {
   shortBreakDuration: number;
   longBreakDuration: number;
 }
+
+export interface Song {
+  title: string;
+  album: string;
+  duration: string;
+  progress: string;
+  cover: string;
+  id?: string;
+  liked: boolean;
+}
 /*
  *       setFocusTimeInput(data.studyDuration);
       setBreakTimeInput(data.shortBreakDuration);

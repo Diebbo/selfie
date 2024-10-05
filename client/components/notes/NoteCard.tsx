@@ -15,7 +15,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick, onDelete }) => {
       style={{ height: "150px", overflow: "hidden" }}
       onClick={() => onClick(note)}
     >
-      <h3 className="font-bold mb-2">{note.title}</h3>
+      <h3 className="font-bold mb-2 text-black">{note.title}</h3>
       <p className="text-sm text-gray-700 truncate">{note.content}</p>
       <span className="absolute top-2 right-2 text-xs text-gray-600">
         {new Date(note.date!).toLocaleDateString("it-IT")}
