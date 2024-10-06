@@ -1,20 +1,25 @@
 "use client";
-import { Calendar, Chip } from "@nextui-org/react";
+import { Calendar, Chip, Button } from "@nextui-org/react";
 import leftArrowIcon  from "../icons/calendar";
 import React, { useState, useEffect } from 'react';
-import EventAdder from "@/components/calendar/event";
-/*
-import {
-  fetchEvents,
-  fetchEventById,
-  saveEvent,
-  deleteEvent
-} from "@/actions/calendar";
-*/
+import NewElementAdder from "@/components/calendar/event";
+import { getEvents } from "@/actions/events";
 
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
+  const [today, setToday] = useState(new Date());
+  const [events, setEvents] = useState();
+
+  /*
+  useEffect(() => {
+    const fetchAllEvents = async () => {
+      const events = await getEvents();
+      setEvents(events);
+    };
+    fetchAllEvents();
+  }, []);
+  */
 
   useEffect(() => {
     const checkMobile = () => {
@@ -25,6 +30,15 @@ const CalendarPage = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    // Aggiorna 'today' ogni giorno a mezzanotte
+    const timer = setInterval(() => {
+      setToday(new Date());
+    }, 1000 * 60 * 60 * 24);
+
+    return () => clearInterval(timer);
+  }, []);
+  
   const daysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -49,8 +63,11 @@ const CalendarPage = () => {
         } else if (day > totalDays) {
           week.push(<td key={`empty-end-${j}`} className="p-1 md:p-2 border-b border-gray-700 text-center text-gray-500 hover:bg-red-300"></td>);
         } else {
+          const isToday = day === today.getDate() && 
+                          currentDate.getMonth() === today.getMonth() && 
+                          currentDate.getFullYear() === today.getFullYear();
           week.push(
-            <td key={day} className="md:p-2 border-b border-gray-300 text-right align-top text-white hover:bg-lime-400 hover:text-black">
+            <td key={day} className={`md:p-2 border-b border-gray-300 text-right align-top ${isToday ? 'bg-teal-300 text-black hover:bg-lime-400 hover:text-black' : 'text-white hover:bg-lime-400 hover:text-black'}`}>
               {day}
             </td>
           );
@@ -67,22 +84,27 @@ const CalendarPage = () => {
     "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
     "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
   ];
-
+  
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  }
+  
   const changeMonth = (increment) => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + increment, 1));
   };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen" aria-label="Back Ground Calendar" >
-      <div className="flex-grow p-2 md:p-4">
-        <div className="bg-black h-full flex flex-col">
+      <div className="flex-grow">
+        <div className="bg-black h-screen flex flex-col">
           <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-zinc-900">
             <button onClick={() => changeMonth(-1)} className="text-white hover:text-yellow-300 text-xl md:text-2xl">
               &lt;
             </button>
-            <Chip variant="shadow" className="bg-gradient-to-br from-indigo-500 to-pink-500" >
+            <Chip variant="shadow" className="rounded-xl py-5 bg-gradient-to-br from-indigo-500 to-pink-500" >
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </Chip>
+            <Button variant="shadow" onClick={handleToday} className="text-white rounded-xl transition-all duration-500 bg-gradient-to-tl from-pink-500 via-red-500 to-yellow-400"> Today </Button> 
             <button onClick={() => changeMonth(1)} className="text-white hover:text-yellow-300 text-xl md:text-2xl">
               &gt;
             </button>
@@ -112,10 +134,10 @@ const CalendarPage = () => {
             aria-label="Sidebar Calendar" 
             showMonthAndYearPickers 
           />
-          <div className="relative text-right h-full">
-            <EventAdder aria-label="Event Adder Button" className=""/>
+          <div className="relative text-center">
+            <NewElementAdder aria-label="Event Adder Button" className=""/>
           </div>
-         </div> 
+          </div>
       )}
     </div>
   );
