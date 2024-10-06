@@ -3,23 +3,19 @@ import { Calendar, Chip, Button } from "@nextui-org/react";
 import leftArrowIcon  from "../icons/calendar";
 import React, { useState, useEffect } from 'react';
 import NewElementAdder from "@/components/calendar/event";
-import { getEvents } from "@/actions/events";
+import { fetchEvents } from "@/actions/events";
 
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
   const [today, setToday] = useState(new Date());
-  const [events, setEvents] = useState();
 
-  /*
   useEffect(() => {
-    const fetchAllEvents = async () => {
-      const events = await getEvents();
-      setEvents(events);
+    const fetchAllNotes = async () => {
+      const notes = await fetchEvents();
     };
-    fetchAllEvents();
+    fetchAllNotes();
   }, []);
-  */
 
   useEffect(() => {
     const checkMobile = () => {

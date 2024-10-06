@@ -19,6 +19,7 @@ function createCalendarRouter(db) {
     }
   });
 
+  // TODO: fare un get per :eventId
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     console.log(uid);
