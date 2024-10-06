@@ -79,7 +79,7 @@ export const SidebarWrapper = () => {
                 isActive={pathname === "/calendar"}
                 title="Calendar"
                 icon={<ReportsIcon />}
-                href="/calendar"
+                href="calendar"
               />
             </SidebarMenu>
 
