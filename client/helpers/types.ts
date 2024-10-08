@@ -53,6 +53,10 @@ export interface Person extends RegisterType {
   _id: string;
   avatar: string; // URL
   friends: Person[]; // is this performance frinedly?
+  events:{
+    createdEvents: SelfieEvent[];
+    participatingEvents: SelfieEvent[];
+  }
 }
 
 export type People = Person[];

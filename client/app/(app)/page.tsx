@@ -1,20 +1,19 @@
 // page.tsx (Server-Side Component)
 
-import { getEvents } from "@/actions/events";
 import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
-import { getFriends } from "@/actions/friends";
+import { getUser } from "@/actions/user";
+import { ChatModel, Person } from "@/helpers/types";
 
 export default async function Home() {
   try {
-    const [events, chats, friends] = await Promise.all([
-      getEvents(),
+    const [user, chats]: [Person, ChatModel[]] = await Promise.all([
+      getUser(),
       getChats(),
-      getFriends()
     ]);
-    
+
     // Pass the fetched data to the client-side component
-    return <Content events={events} chats={chats} friends={friends} />;
+    return <Content events={user.events} chats={chats} friends={user.friends} />;
 
   } catch (error: any) {
     console.error('Unexpected error:', error);

@@ -33,8 +33,14 @@ export const CardChats = ({ chats }: PropContent) => {
           {
             chats && chats.length > 0 ? (
               chats.map((item, index) => (
-                <Button key={index} color="default" variant="ghost" className="grid grid-cols-4 w-full py-4 h-20" onClick={() => handleClick(item)}>
-                  <div className="w-full">
+                <Button
+                  key={index}
+                  color="default"
+                  variant="ghost"
+                  className="flex flex-nowrap flex-row gap-5 justify-start w-full py-4 h-20"
+                  onClick={() => handleClick(item)}
+                >
+                  <div >
                     <Avatar
                       isBordered
                       color="secondary"
@@ -42,14 +48,20 @@ export const CardChats = ({ chats }: PropContent) => {
                     />
                   </div>
 
-                  <span className="text-default-900  font-semibold">
+                  <span className="text-default-900 font-semibold max-w-[6rem] overflow-hidden text-ellipsis whitespace-nowrap">
                     {item.username}
                   </span>
-                  <div>
-                    <span className="text-success text-xs">{item.lastMessage.slice(0,13) + (item.lastMessage.length > 13 ? "..." : "")}</span>
+
+                  <div className="max-w-[8rem] overflow-hidden text-ellipsis whitespace-nowrap">
+                    <span className="text-success text-xs">
+                      {item.lastMessage}
+                    </span>
                   </div>
-                  <div>
-                    <span className="text-default-500 text-xs">{new Date(item.date).toLocaleTimeString()}</span>
+
+                  <div className="max-w-[4rem] ml-auto">
+                    <span className="text-default-500 text-xs">
+                      {new Date(item.date).toLocaleTimeString()}
+                    </span>
                   </div>
                 </Button>
               ))
