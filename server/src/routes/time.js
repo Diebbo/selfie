@@ -18,7 +18,7 @@ function createTimeRouter(db) {
       console.log('Time has been changed to', req.body.date);
       res.status(200).json({message: `Time has been changed to ${req.body.date}`});
     } catch (error) {
-      next(error);
+      res.status(500).json({message: 'Error changing time'});
     }
   });
 
