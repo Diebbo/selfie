@@ -184,10 +184,11 @@ export async function createDataBase() {
     var user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    var createdEvents = await eventModel.find({ _id: { $in: user.events } });
-    var partecipatingEvents = await eventModel.find({ _id: { $in: user.participatingEvents } });
+    const created = await eventModel.find({ _id: { $in: user.events } });
+    const partecipating = await eventModel.find({ _id: { $in: user.participatingEvents } });
 
-    return { createdEvents: createdEvents, partecipatingEvents: partecipatingEvents };
+    const events = { created, partecipating };
+    return events;
   }
 
   const createEvent = async (uid, event) => {
