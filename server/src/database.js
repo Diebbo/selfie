@@ -955,37 +955,52 @@ export async function createDataBase() {
     },
 
     // get all users that the current user has chatted with and the last message
-    async getChats(uid) {
+    async getChats(uid, limit = 20) {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      let chats = [];
-
-      const messages = await chatModel.find({ $or: [{ sender: uid }, { receiver: uid }] });
-
-      for (const message of messages) {
-        // Identify the other user in the conversation (either sender or receiver)
-        const otherUserId = message.sender.equals(uid) ? message.receiver : message.sender;
-        const otherUser = await userModel.findById(otherUserId);
-
-        // Check if the other user is already in the `chats` array
-        let chat = chats.find((c) => c.username === otherUser.username);
-
-        if (!chat) {
-          chat = {
-            uid: otherUser._id,
-            username: otherUser.username,  // The user that the current user chatted with
-            lastMessage: message.message,  // The current message is the last message in this chat
-            date: message.createdAt
-          };
-          chats.push(chat);
-        } else {
-          // If chat exists, check if this message is more recent than the stored last message
-          if (message.createdAt > chat.lastMessage.createdAt) {
-            chat.lastMessage = message;
+      const messages = await chatModel.aggregate([
+        {
+          $match: {
+            $or: [
+              { sender: new mongoose.Types.ObjectId(uid) },
+              { receiver: new mongoose.Types.ObjectId(uid) }
+            ]
           }
+        },
+        {
+          $sort: { createdAt: -1 }
+        },
+        {
+          $group: {
+            _id: {
+              $cond: [
+                { $eq: ["$sender", new mongoose.Types.ObjectId(uid)] },
+                "$receiver",
+                "$sender"
+              ]
+            },
+            lastMessage: { $first: "$message" },
+            date: { $first: "$createdAt" }
+          }
+        },
+        {
+          $limit: limit
         }
-      }
+      ]);
+
+      const otherUserIds = messages.map((m) => m._id);
+      const otherUsers = await userModel.find({ _id: { $in: otherUserIds } });
+
+      const chats = messages.map((msg) => {
+        const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
+        return otherUser ? {
+          uid: otherUser._id,
+          username: otherUser.username,
+          lastMessage: msg.lastMessage,
+          date: msg.date
+        } : null;
+      }).filter(chat => chat !== null);
 
       return chats;
     }
