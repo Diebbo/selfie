@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import {
@@ -19,15 +19,19 @@ import {
   BeakerIcon,
   CogIcon,
 } from "@heroicons/react/24/solid";
-import { Card, CardHeader, CardBody, CardFooter } from "@nextui-org/react";
+import { Card, CardBody } from "@nextui-org/react";
+import Wave from "react-wavify";
 
-export default function Content() {
+function pomodoro() {
   const [focusTime, setFocusTime] = useState(25); // 25 minuti
   const [breakTime, setBreakTime] = useState(5); // 5 minuti
   const [timeLeft, setTimeLeft] = useState(focusTime * 60);
   const [percentage, setPercentage] = useState(100);
   const [isRunning, setIsRunning] = useState(false);
   const [isFocusTime, setIsFocusTime] = useState(true);
+  const [targetHeight, setTargetHeight] = useState(2000);
+  const [currentHeight, setCurrentHeight] = useState(2000);
+  const animationRef = useRef<number>();
 
   const [focusTimeInput, setFocusTimeInput] = useState(focusTime);
   const [breakTimeInput, setBreakTimeInput] = useState(breakTime);
@@ -39,11 +43,11 @@ export default function Content() {
     let interval: NodeJS.Timeout;
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft((prevTime) => prevTime - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
+        setTimeLeft((prevTime) => prevTime - 0.1); // Aggiorna ogni 100ms per l'animazione dell'onda
+      }, 100);
+    } else if (timeLeft <= 0) {
       setIsFocusTime(!isFocusTime);
-      setTimeLeft(isFocusTime ? breakTime : focusTime);
+      setTimeLeft(isFocusTime ? breakTime * 60 : focusTime * 60);
     }
     return () => clearInterval(interval as NodeJS.Timeout);
   }, [isRunning, timeLeft, isFocusTime]);
@@ -52,7 +56,12 @@ export default function Content() {
     const focusTimeInSeconds = focusTime * 60;
     const breakTimeInSeconds = breakTime * 60;
     setPercentage(
-      (timeLeft / (isFocusTime ? focusTimeInSeconds : breakTimeInSeconds)) * 100
+      (timeLeft / (isFocusTime ? focusTimeInSeconds : breakTimeInSeconds)) *
+        100,
+    );
+    setTargetHeight(
+      (timeLeft / (isFocusTime ? focusTimeInSeconds : breakTimeInSeconds)) *
+        820,
     );
   }, [timeLeft, isFocusTime, focusTime, breakTime]);
 
@@ -69,6 +78,42 @@ export default function Content() {
     };
 
     fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const animateHeight = () => {
+      setCurrentHeight((prevHeight) => {
+        const diff = targetHeight - prevHeight;
+        const newHeight = prevHeight + diff * 0.1; // Adjust the 0.1 for faster/slower animation
+        if (Math.abs(newHeight - targetHeight) < 0.1) {
+          return targetHeight;
+        }
+        return newHeight;
+      });
+      animationRef.current = requestAnimationFrame(animateHeight);
+    };
+
+    animationRef.current = requestAnimationFrame(animateHeight);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [targetHeight]);
+
+  useEffect(() => {
+    const updateWaveHeight = () => {
+      const screenHeight = window.innerHeight;
+      setTargetHeight(screenHeight);
+      setCurrentHeight(screenHeight);
+    };
+
+    window.addEventListener("resize", updateWaveHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateWaveHeight);
+    };
   }, []);
 
   const handleButtonClick = () => {
@@ -99,9 +144,9 @@ export default function Content() {
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    const remainingSeconds = Math.floor(seconds % 60);
     return `${String(minutes).padStart(2, "0")}:${String(
-      remainingSeconds
+      remainingSeconds,
     ).padStart(2, "0")}`;
   };
 
@@ -116,10 +161,26 @@ export default function Content() {
         backgroundColor: !isRunning
           ? "#E0FFFF" // Azzurro molto chiaro quando il timer è fermo
           : isFocusTime
-          ? "#FFE4E1" // Rosso molto chiaro quando è Focus Time
-          : "#F0FFF0", // Verde molto chiaro quando è Break Time
+            ? "#FFF3E2" // Giallo molto chiaro quando è Focus Time
+            : "#F0FFF0", // Verde molto chiaro quando è Break Time
       }}
     >
+      <Wave
+        fill="#ff6363"
+        paused={false}
+        style={{
+          display: "flex",
+          position: "absolute",
+          bottom: 0,
+          height: "100%",
+        }}
+        options={{
+          height: currentHeight,
+          amplitude: 20,
+          speed: 0.16,
+          points: 4,
+        }}
+      />
       <Card style={{ padding: "15px" }}>
         <CardBody
           style={{
@@ -138,33 +199,35 @@ export default function Content() {
               backgroundColor: !isRunning
                 ? "#E0FFFF" // Azzurro molto chiaro quando il timer è fermo
                 : isFocusTime
-                ? "#FFFACD" // Giallo chiaro quando è Focus Time
-                : "#FFDAB9", // Pesca chiaro quando è Break Time
+                  ? "#FFFACD" // Giallo chiaro quando è Focus Time
+                  : "#FFDAB9", // Pesca chiaro quando è Break Time
               border: `2px solid ${
                 !isRunning
                   ? "#00CED1" // Turchese scuro quando il timer è fermo
                   : isFocusTime
-                  ? "#FFD700" // Oro quando è Focus Time
-                  : "#FF6347" // Rosso arancio quando è Break Time
+                    ? "#FFD700" // Oro quando è Focus Time
+                    : "#FF6347" // Rosso arancio quando è Break Time
               }`,
               marginBottom: "20px",
             }}
           >
             {!isRunning ? (
-              <span>Pomodoro Timer</span>
+              <p className="text-black">Pomodoro Timer</p>
             ) : isFocusTime ? (
               <>
                 <BookOpenIcon
                   style={{ width: 20, height: 20, marginRight: 10 }}
+                  className="text-black"
                 />
-                <span>Focus Time</span>
+                <p className="text-black">Focus Time</p>
               </>
             ) : (
               <>
                 <BeakerIcon
                   style={{ width: 20, height: 20, marginRight: 10 }}
+                  className="text-black"
                 />
-                <span>Break Time</span>
+                <p className="text-black">Break Time</p>
               </>
             )}
           </div>
@@ -183,7 +246,6 @@ export default function Content() {
               styles={buildStyles({
                 pathTransitionDuration: 1,
                 textSize: "25px",
-                textColor: "#000000",
               })}
             />
           </div>
@@ -255,3 +317,4 @@ export default function Content() {
   );
 }
 
+export default pomodoro;
