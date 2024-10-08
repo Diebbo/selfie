@@ -9,7 +9,7 @@ export const createAuthCookie = async (token: string) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    domain: "localhost", // Change this in production
+    domain: "", // Change this in production
     path: "/",
   });
 };
@@ -34,7 +34,7 @@ export async function login(user: LoginFormType) {
     throw new Error(error.message || "Login failed");
   }
 
-  return response.json();
+  return await response.json();
 }
 
 export async function register(user: RegisterType) {
