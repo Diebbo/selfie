@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardBody, Image, Button, Slider, Divider } from "@nextui-org/react";
+import {
+  Card,
+  CardBody,
+  Image,
+  Button,
+  Slider,
+  Divider,
+} from "@nextui-org/react";
 import { HeartIcon } from "./HeartIcon";
 import { PauseCircleIcon } from "./PauseCircleIcon";
 import { NextIcon } from "./NextIcon";
@@ -8,7 +15,7 @@ import { RepeatOneIcon } from "./RepeatOneIcon";
 import { ShuffleIcon } from "./ShuffleIcon";
 import { Song } from "../../helpers/types";
 import AudioVisualizer from "./AudioVisualizer";
-
+import { VolumeOffIcon, VolumeUpIcon } from "./VolumeIcons";
 
 export default function MusicPlayer() {
   const [currentSong, setCurrentSong] = React.useState<Song>({
@@ -26,13 +33,23 @@ export default function MusicPlayer() {
   const [duration, setDuration] = React.useState(0);
   const [repeat, setRepeat] = React.useState(false);
   const [shuffle, setShuffle] = React.useState(false);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
+    null,
+  );
+  const [volume, setVolume] = React.useState(1);
+  const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
+  const [isInteractingWithSlider, setIsInteractingWithSlider] = useState(false);
 
   useEffect(() => {
     fetchSong("/api/musicplayer/currentsong");
   }, []);
 
-  
+  useEffect(() => {
+    if (sound && isPlaying) {
+      sound.play();
+    }
+  }, [sound, isPlaying]);
+
   useEffect(() => {
     const newSound = new Audio(`/song/${currentSong.title}.wav`);
     setSound(newSound);
@@ -46,14 +63,25 @@ export default function MusicPlayer() {
       setCurrentTime(newSound.currentTime);
     };
 
+    const handleSongEnd = () => {
+      if (repeat) {
+        newSound.currentTime = 0;
+        newSound.play();
+      } else {
+        handleNextSong();
+      }
+    };
+
     newSound.addEventListener("loadedmetadata", handleLoadedMetadata);
     newSound.addEventListener("timeupdate", handleTimeUpdate);
+    newSound.addEventListener("ended", handleSongEnd);
 
     return () => {
       newSound.removeEventListener("loadedmetadata", handleLoadedMetadata);
       newSound.removeEventListener("timeupdate", handleTimeUpdate);
+      newSound.removeEventListener("ended", handleSongEnd);
     };
-  }, [currentSong]);
+  }, [currentSong, repeat]);
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -67,11 +95,20 @@ export default function MusicPlayer() {
   const handleClickRepeat = () => {
     sound.loop = !repeat;
     setRepeat(!repeat);
-  }
+  };
 
   const handleClickShuffle = () => {
     setShuffle(!shuffle);
-  }
+  };
+
+  const handleVolumeChange = (value: number) => {
+    const newVolume = value / 100;
+    setVolume(newVolume);
+    if (sound) {
+      sound.volume = newVolume;
+    }
+    setIsInteractingWithSlider(true);
+  };
 
   const fetchSong = async (endpoint: string) => {
     try {
@@ -101,19 +138,29 @@ export default function MusicPlayer() {
   };
 
   const handleNextSong = () => {
+    if (isPlaying) {
+      sound.pause();
+    }
     if (shuffle) {
       fetchSong("/api/musicplayer/randomsong");
+      setIsPlaying(true);
     } else {
       fetchSong("/api/musicplayer/nextsong");
+      setIsPlaying(true);
     }
-  }
+  };
   const handlePrevSong = () => {
+    if (isPlaying) {
+      sound.pause();
+    }
     if (shuffle) {
       fetchSong("/api/musicplayer/randomsong");
+      setIsPlaying(true);
     } else {
       fetchSong("/api/musicplayer/prevsong");
+      setIsPlaying(true);
     }
-  }
+  };
   const handleAddLike = () => (liked ? removeLike() : addLike());
 
   const addLike = async () => {
@@ -162,10 +209,16 @@ export default function MusicPlayer() {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-
-
   return (
-    <div style={{ width: "100%", height: "80vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "80vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
       <AudioVisualizer audio={audioElement} />
       <Card
         isBlurred
@@ -187,9 +240,15 @@ export default function MusicPlayer() {
             <div className="flex flex-col col-span-6 md:col-span-8 h-full">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-0">
-                  <h3 className="font-semibold text-foreground/90">{currentSong.album}</h3>
-                  <p className="text-small text-foreground/80">Selfie Music Player</p>
-                  <h1 className="text-large font-medium mt-4">{currentSong.title}</h1>
+                  <h3 className="font-semibold text-foreground/90">
+                    {currentSong.album}
+                  </h3>
+                  <p className="text-small text-foreground/80">
+                    Selfie Music Player
+                  </p>
+                  <h1 className="text-large font-medium mt-4">
+                    {currentSong.title}
+                  </h1>
                 </div>
                 <Button
                   isIconOnly
@@ -203,7 +262,6 @@ export default function MusicPlayer() {
                     fill={liked ? "currentColor" : "none"}
                   />
                 </Button>
-               
               </div>
 
               <div className="flex flex-col mt-6 gap-1">
@@ -211,20 +269,22 @@ export default function MusicPlayer() {
                   aria-label="Music progress"
                   classNames={{
                     track: "bg-default-500/30",
-                    thumb: "w-2 h-2 after:w-2 after:h-2 after:bg-foreground",
+                    thumb: "w-0 h-0",
                   }}
                   color="foreground"
                   value={(currentTime / duration) * 100}
                   onChange={(value) => {
                     if (sound) {
-                      sound.currentTime = (value / 100) * duration;
+                      sound.currentTime = ((value as number) / 100) * duration;
                     }
                   }}
                   size="sm"
                 />
                 <div className="flex justify-between">
                   <p className="text-small">{formatTime(currentTime)}</p>
-                  <p className="text-small text-foreground/50">{formatTime(duration)}</p>
+                  <p className="text-small text-foreground/50">
+                    {formatTime(duration)}
+                  </p>
                 </div>
               </div>
 
@@ -236,7 +296,11 @@ export default function MusicPlayer() {
                   variant="light"
                   onPress={handleClickRepeat}
                 >
-                  <RepeatOneIcon className={repeat ? "text-blue-500/80" : "text-foreground/80"} />
+                  <RepeatOneIcon
+                    className={
+                      repeat ? "text-blue-500/80" : "text-foreground/80"
+                    }
+                  />
                 </Button>
                 <Button
                   isIconOnly
@@ -272,14 +336,68 @@ export default function MusicPlayer() {
                   variant="light"
                   onPress={handleClickShuffle}
                 >
-                  <ShuffleIcon className= {shuffle ? "text-blue-500/80" : "text-foreground/80"} />
+                  <ShuffleIcon
+                    className={
+                      shuffle ? "text-blue-500/80" : "text-foreground/80"
+                    }
+                  />
                 </Button>
+              </div>
+              <div className="flex flex-col items-center mt-4">
+                <div
+                  className="relative flex items-center justify-center w-full"
+                  onMouseEnter={() => setIsVolumeSliderVisible(true)}
+                  onMouseLeave={() => {
+                    if (!isInteractingWithSlider) {
+                      setIsVolumeSliderVisible(false);
+                    }
+                  }}
+                >
+                  <div
+                    className={`flex items-center justify-center gap-2 transition-all duration-300 ease-in-out ${isVolumeSliderVisible || isInteractingWithSlider ? "w-full" : "w-auto"}`}
+                  >
+                    <VolumeOffIcon
+                      className="text-foreground/80 transition-all duration-300 ease-in-out"
+                      width={20}
+                      height={20}
+                    />
+                    <div
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${isVolumeSliderVisible || isInteractingWithSlider ? "w-full opacity-100" : "w-0 opacity-0"}`}
+                    >
+                      <Slider
+                        aria-label="Volume"
+                        size="sm"
+                        color="primary"
+                        value={volume * 100}
+                        onChange={(value: number) => handleVolumeChange(value)}
+                        onChangeStart={() => setIsInteractingWithSlider(true)}
+                        onChangeEnd={() => {
+                          setIsInteractingWithSlider(false);
+                          if (!isVolumeSliderVisible) {
+                            setTimeout(
+                              () => setIsVolumeSliderVisible(false),
+                              1000,
+                            );
+                          }
+                        }}
+                        className="w-full"
+                        classNames={{
+                          track: "h-1",
+                        }}
+                      />
+                    </div>
+                    <VolumeUpIcon
+                      className="text-foreground/80 transition-all duration-300 ease-in-out"
+                      width={20}
+                      height={20}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </CardBody>
       </Card>
-      
     </div>
   );
 }
