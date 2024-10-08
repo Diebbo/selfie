@@ -1024,5 +1024,14 @@ export async function createDataBase() {
     }
   }
 
-  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, createSubActivity, getActivities, deleteActivity, modifyActivity, chatService, friendService };
+  const userService = {
+    async getById(id) {
+      const user = await userModel.findById(id);
+      if (!user) throw new Error("User not found");
+      return user;
+    }
+    //TODO: add other methods
+  }
+
+  return { login, register, changeDateTime, createEvent, postNote, getNotes, getNoteById, removeNoteById, getEvents, deleteEvent, partecipateEvent, getProjects, getUserById, createProject, setPomodoroSettings, getCurrentSong, getNextSong, getPrevSong, addSong, getNextNotifications, getDateTime, verifyEmail, createActivity, createSubActivity, getActivities, deleteActivity, modifyActivity, chatService, friendService, userService };
 }

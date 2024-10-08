@@ -19,6 +19,7 @@ import createMusicRouter from "./routes/musicplayer.js";
 import createActivityRouter from "./routes/activities.js";
 import createChatRouter from "./routes/chat.js";
 import { createFriendRouter } from "./routes/friend.js";
+import createUserRouter from "./routes/user.js";
 
 export function createApp({ dirpath, database }) {
   // loading environment variables
@@ -48,6 +49,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/activities", createActivityRouter(database));
   app.use("/api/chats", createChatRouter(database));
   app.use("/api/friends", createFriendRouter(database));
+  app.use("/api/users", createUserRouter(database));
 
   return app;
 }
