@@ -4,16 +4,17 @@ import cookieJwtAuth from './middleware/cookieJwtAuth.js';
 export default function createUserRouter(db) {
   const router = express.Router();
 
-  router.get('/:id', cookieJwtAuth, async (req, res) => {
-    if (req.user._id !== req.params.id) {
-      return res.status(403).json({message: 'You are not authorized to view this user'});
-    }
-
+  router.get('/id', cookieJwtAuth, async (req, res) => {
     try {
-      const user = await db.userService.getById(req.params.id);
+      const dbuser = (await db.userService.getById(req.user._id)).toObject();
+      const events = await db.getEvents(req.user._id);
+      const friends = await db.friendService.get(req.user._id);
+
+      const user = { ...dbuser, events, friends };
+
       return res.status(200).json(user);
     } catch (error) {
-      return res.status(404).json({message: 'User not found'});
+      return res.status(404).json({message: error.message});
     }
   });
 
