@@ -4,11 +4,9 @@ import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardAgents } from "./card-agents";
-import { CardTransactions } from "./card-transactions";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
 import { SelfieEvent } from "@/helpers/types";
-import dummy from "@/helpers/dummyvar";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
 
@@ -21,8 +19,8 @@ const Chart = dynamic(
 
 interface ContentProps {
   events: {
-    createdEvents: any[];
-    participatingEvents: any[];
+    created: SelfieEvent[];
+    participating: SelfieEvent[];
   };
   chats: any[];
   friends: People;
@@ -40,8 +38,8 @@ export const Content = (props: ContentProps) => {
             <h4 className="text-l font-semibold">Your Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
               {
-                Array.isArray(props.events.createdEvents) && props.events.createdEvents.length > 0 ? (
-                  props.events.createdEvents.slice(0, 5).map((event: SelfieEvent, index: number) => (
+                Array.isArray(props.events.created) && props.events.created.length > 0 ? (
+                  props.events.created.slice(0, 5).map((event: SelfieEvent, index: number) => (
                     <EventCard data={event} theme={index} key={index} />
                   ))
                 ) : (
@@ -58,8 +56,8 @@ export const Content = (props: ContentProps) => {
             <h4 className="text-l font-semibold">Participating Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
               {
-                Array.isArray(props.events.participatingEvents) && props.events.participatingEvents.length > 0 ? (
-                  props.events.participatingEvents.slice(0, 5).map((event: SelfieEvent, index: number) => (
+                Array.isArray(props.events.participating) && props.events.participating.length > 0 ? (
+                  props.events.participating.slice(0, 5).map((event: SelfieEvent, index: number) => (
                     <EventCard data={event} theme={index} key={index} />
                   ))
                 ) : (
@@ -83,7 +81,7 @@ export const Content = (props: ContentProps) => {
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardAgents friends={friends} setFriends={setFriends}/>
+            <CardAgents friends={friends} setFriends={setFriends} />
             <CardChats chats={props.chats} />
           </div>
         </div>
