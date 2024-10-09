@@ -4,6 +4,7 @@ import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
 import { getUser } from "@/actions/user";
 import { ChatModel, Person } from "@/helpers/types";
+import PushNotificationTest from "@/components/auth/PushNotificationTest";
 
 export default async function Home() {
   try {
@@ -13,11 +14,14 @@ export default async function Home() {
     ]);
 
     // Pass the fetched data to the client-side component
-    return <Content events={user.events} chats={chats} friends={user.friends} />;
-
+    return (
+      <>
+        <Content events={user.events} chats={chats} friends={user.friends} />
+        <PushNotificationTest />
+      </>
+    );
   } catch (error: any) {
-    console.error('Unexpected error:', error);
+    console.error("Unexpected error:", error);
     return <div>Unexpected error occurred. Please try again later.</div>;
-
   }
 }
