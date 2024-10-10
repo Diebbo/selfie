@@ -20,14 +20,45 @@ import {
 } from "@nextui-org/react";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
+import SelfieEvent from "@/helpers/types.ts";
 import {parseZonedDateTime} from "@internationalized/date";
-import createEvent from "@/actions/events"
+const EVENTS_API_URL = "/api/events";
+
+async function createEvent (
+  event: SelfieEvent,
+) : Promise<boolean> {
+  try {
+    const res = await fetch(`${EVENTS_API_URL}`, {
+      method: "PUT",
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ event: event }),
+      cache: 'no-store' // This ensures fresh data on every request
+    });
+
+    if (res.status === 401) {
+      throw new AuthenticationError('Unauthorized, please login.');
+    } else if (res.status >= 500) {
+      throw new ServerError(`Server error: ${res.statusText}`);
+    } else if (!res.ok) {
+      throw new Error('Failed to create events');
+    }
+
+  } catch (error) {
+    console.error("Error saving note:", error);
+    return false;
+  }
+
+  return await res.json;
+}
 
 export default function NewElementAdder() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalType, setModalType] = useState("");
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
+  const [eventData, setEventData] = useState<SelfieEvent>(null);
 
   const handleOpen = (type) => {
     setModalType(type);
@@ -39,11 +70,16 @@ export default function NewElementAdder() {
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
     // Qui puoi aggiungere la logica per gestire l'invio del form
-    
-    //const success = await createEvent(event);
-    console.log("Form submitted");
+
+    console.log("event: ", event);
+    try {  
+      const success = createEvent(event);
+
+      console.log("Form submitted");
+    } catch (e) {
+      throw new Error('Error submitting event', e.message);
+    }
     handleClose();
   };
 
@@ -53,7 +89,7 @@ export default function NewElementAdder() {
         <DropdownTrigger>
           <Button 
             variant="bordered" 
-            className="rounded-full text-size-80 hover:bg-blue-400"
+            className="rounded-full text-size-80 transition-all duration-500 bg-gradient-to-bl from-blue-600 from-20% via-sky-500 via-40% to-emerald-600 to-90% hover:text-slate-700"
           >
             Nuovo ...
           </Button>
@@ -79,7 +115,7 @@ export default function NewElementAdder() {
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">Nuovo {modalType}</ModalHeader>
           <ModalBody>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={(e) => handleSubmit(e)}>
               <Input
                 label="Titolo"
                 placeholder="Inserisci il titolo"
