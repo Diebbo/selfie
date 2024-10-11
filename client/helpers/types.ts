@@ -53,10 +53,10 @@ export interface Person extends RegisterType {
   _id: string;
   avatar: string; // URL
   friends: Person[]; // is this performance frinedly?
-  events:{
-    createdEvents: SelfieEvent[];
-    participatingEvents: SelfieEvent[];
-  }
+  events: {
+    created: SelfieEvent[];
+    participating: SelfieEvent[];
+  };
 }
 
 export type People = Person[];
@@ -66,10 +66,7 @@ export interface SelfieEvent {
   summary: String;
   uid: String;
   sequence: Number;
-  status: {
-    type: String;
-    enum: ["confirmed", "tentative", "cancelled"];
-  };
+  status: String;
   transp: String;
   rrule: {
     freq: {
@@ -91,7 +88,7 @@ export interface SelfieEvent {
   participants: People;
 }
 
-export interface PomodoSettings {
+export interface PomodoroSettings {
   studyDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;

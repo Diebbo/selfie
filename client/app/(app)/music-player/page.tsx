@@ -1,9 +1,8 @@
 "use client";
 import React from "react";
-import { Card, Button, Slider, Image, CardBody } from "@nextui-org/react";
 import MusicPlayer from "@/components/music-player/MusicPlayer";
 
-const Page: React.FC = () => {
+const MusicPlayerPage: React.FC = () => {
   return (
     <div
       style={{
@@ -33,4 +32,4 @@ const Page: React.FC = () => {
   );
 };
 
-export default Page;
+export default MusicPlayerPage;

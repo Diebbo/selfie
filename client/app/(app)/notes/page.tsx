@@ -6,13 +6,13 @@ import {
   fetchNoteById,
   saveNote,
   deleteNote,
-  Note,
 } from "@/actions/notes";
+import { NoteModel } from "@/helpers/types";
 import NoteCard from "@/components/notes/NoteCard";
 
 const NotePage: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null); // Nota selezionata da mostrare nel form
+  const [notes, setNotes] = useState<NoteModel[]>([]);
+  const [selectedNote, setSelectedNote] = useState<NoteModel | null>(null); // Nota selezionata da mostrare nel form
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
@@ -136,7 +136,7 @@ const NotePage: React.FC = () => {
     setSelectedNote(null);
   };
 
-  const handleCardClick = (note: Note) => {
+  const handleCardClick = (note: NoteModel) => {
     setSelectedNote(note);
     setTitle(note.title);
     setContent(note.content);

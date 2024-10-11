@@ -570,16 +570,6 @@ export async function createDataBase() {
     }
   };
 
-  const get = async () => {
-    try {
-      const songs = await songModel.find({});
-      return songs;
-    } catch (error) {
-      console.error("Error getting songs:", error);
-      throw error;
-    }
-  };
-
   const getCurrentSong = async (uid) => {
     try {
       const user = await userModel.findById(uid);

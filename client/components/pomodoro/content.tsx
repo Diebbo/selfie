@@ -22,7 +22,7 @@ import {
 import { Card, CardBody } from "@nextui-org/react";
 import Wave from "react-wavify";
 
-function pomodoro() {
+function Pomodoro() {
   const [focusTime, setFocusTime] = useState(25); // 25 minuti
   const [breakTime, setBreakTime] = useState(5); // 5 minuti
   const [timeLeft, setTimeLeft] = useState(focusTime * 60);
@@ -317,4 +317,4 @@ function pomodoro() {
   );
 }
 
-export default pomodoro;
+export default Pomodoro;

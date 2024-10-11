@@ -1,7 +1,6 @@
 import { PomodoroSettings } from "@/helpers/types";
 
-const getSettings = (): PomodoroSettings => {
+function getSettings() {
   // TODO
-};
-
-export default { getSettings };
+  return null;
+}
