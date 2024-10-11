@@ -66,6 +66,24 @@ export async function createDataBase() {
     return user;
   };
 
+  const saveSubscription = async (uid, subscription) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    user.subscription = subscription;
+    await user.save();
+    return user;
+  };
+
+  const getSubscription = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user || !user.subscription) {
+      throw new Error("User not found or not subscribed");
+    }
+    console.log("Retrieved subscription:", user.subscription);
+    return user.subscription;
+  };
+
   const changeDateTime = async (time) => {
     let filter = { name: "timemachine" };
     let update = { time: time };
@@ -171,7 +189,7 @@ export async function createDataBase() {
       if (!user) throw new Error("User not found");
 
       const noteIndex = user.notes.findIndex(
-        (note) => note._id.toString() === noteId
+        (note) => note._id.toString() === noteId,
       );
       if (noteIndex === -1) throw new Error("Note not found");
 
@@ -190,11 +208,13 @@ export async function createDataBase() {
     if (!user) throw new Error("User not found");
 
     const created = await eventModel.find({ _id: { $in: user.events } });
-    const partecipating = await eventModel.find({ _id: { $in: user.participatingEvents } });
+    const partecipating = await eventModel.find({
+      _id: { $in: user.participatingEvents },
+    });
 
     const events = { created, partecipating };
     return events;
-  }
+  };
 
   const createEvent = async (uid, event) => {
     const user = await userModel.findById(uid);
@@ -239,7 +259,7 @@ export async function createDataBase() {
     if (!user.inobxNotifications) user.inboxNotifications = [];
     user.inboxNotifications.push(notification);
     await user.save();
-  }
+  };
   /* Explanation of the generateNotifications function:
   O(log n) Insertion: We've implemented a binary search function findInsertionIndex that finds the correct insertion point for each new notification in O(log n) time.
   Minimized Database Writes: Instead of updating each user individually, we now use a batch update approach. The batchUpdateUsers function creates a bulk write operation that updates all users in a single database call.
@@ -247,23 +267,26 @@ export async function createDataBase() {
   Single Database Operation: All updates for all users are now performed in a single bulkWrite operation, significantly reducing the number of database writes.
   Memory Efficiency: We don't create a full copy of the inboxNotifications array in memory. Instead, we work directly with the database to insert the new notifications at the correct positions.
   This implementation addresses your concerns by:
-  
+
   Ensuring O(log n) computational time for inserting new notifications into the sorted array.
   Fetching all new inbox notifications at once.
   Minimizing the number of database writes by using a bulk operation.
   Note that this implementation assumes you're using MongoDB (based on the bulkWrite operation). If you're using a different database, you might need to adjust the batch update function accordingly.
   */
-  async function generateNotifications({ eventId, activityId, startDate, notification, title }, users) {
+  async function generateNotifications(
+    { eventId, activityId, startDate, notification, title },
+    users,
+  ) {
     const eventStartDate = new Date(startDate);
     const notificationDate = new Date(notification.fromDate);
     const notificationTimes = [];
 
     const { freq, interval } = notification.repetition;
     const incrementDate = {
-      daily: date => date.setDate(date.getDate() + interval),
-      weekly: date => date.setDate(date.getDate() + 7 * interval),
-      monthly: date => date.setMonth(date.getMonth() + interval),
-      yearly: date => date.setFullYear(date.getFullYear() + interval)
+      daily: (date) => date.setDate(date.getDate() + interval),
+      weekly: (date) => date.setDate(date.getDate() + 7 * interval),
+      monthly: (date) => date.setMonth(date.getMonth() + interval),
+      yearly: (date) => date.setFullYear(date.getFullYear() + interval),
     };
 
     while (notificationDate < eventStartDate) {
@@ -271,15 +294,18 @@ export async function createDataBase() {
       incrementDate[freq](notificationDate);
     }
 
-    const newNotifications = notificationTimes.map(notificationTime => ({
+    const newNotifications = notificationTimes.map((notificationTime) => ({
       fromEvent: eventId,
       fromTask: activityId,
       when: notificationTime,
       title: notification.title || title,
-      method: notification.type || 'email'
+      method: notification.type || "email",
     }));
 
-    console.log('New notifications:', newNotifications.map(n => n.when));
+    console.log(
+      "New notifications:",
+      newNotifications.map((n) => n.when),
+    );
 
     // Binary search function for O(log n) insertion
     function findInsertionIndex(arr, notification) {
@@ -298,25 +324,30 @@ export async function createDataBase() {
 
     // Batch update function
     async function batchUpdateUsers(users, newNotifications) {
-      const bulkOperations = users.map(user => {
-        const update = { $push: { inboxNotifications: { $each: [], $sort: { when: 1 } } } };
+      const bulkOperations = users.map((user) => {
+        const update = {
+          $push: { inboxNotifications: { $each: [], $sort: { when: 1 } } },
+        };
 
-        newNotifications.forEach(notification => {
+        newNotifications.forEach((notification) => {
           if (!user.inboxNotifications) {
             user.inboxNotifications = [];
           }
-          const insertIndex = findInsertionIndex(user.inboxNotifications, notification);
+          const insertIndex = findInsertionIndex(
+            user.inboxNotifications,
+            notification,
+          );
           update.$push.inboxNotifications.$each.push({
             $position: insertIndex,
-            ...notification
+            ...notification,
           });
         });
 
         return {
           updateOne: {
             filter: { _id: user._id },
-            update: update
-          }
+            update: update,
+          },
         };
       });
 
@@ -330,21 +361,27 @@ export async function createDataBase() {
   }
 
   async function generateNotificationsForEvent(event, users) {
-    return await generateNotifications({
-      eventId: event._id,
-      startDate: event.dtstart,
-      notification: event.notification,
-      title: event.title
-    }, users);
+    return await generateNotifications(
+      {
+        eventId: event._id,
+        startDate: event.dtstart,
+        notification: event.notification,
+        title: event.title,
+      },
+      users,
+    );
   }
 
   async function generateNotificationsForActivity(activity, users) {
-    return await generateNotifications({
-      activityId: activity._id,
-      startDate: activity.dueDate,
-      notification: activity.notification,
-      title: activity.name
-    }, users);
+    return await generateNotifications(
+      {
+        activityId: activity._id,
+        startDate: activity.dueDate,
+        notification: activity.notification,
+        title: activity.name,
+      },
+      users,
+    );
   }
 
   const deleteEvent = async (uid, eventId) => {
@@ -363,7 +400,7 @@ export async function createDataBase() {
     // Remove event from invited and participating users
     await userModel.updateMany(
       { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
-      { $pull: { invitedEvents: eventId, participatingEvents: eventId } }
+      { $pull: { invitedEvents: eventId, participatingEvents: eventId } },
     );
 
     // Delete the event
@@ -372,7 +409,7 @@ export async function createDataBase() {
     // Remove any notifications related to this event
     await userModel.updateMany(
       { "inboxNotifications.fromEvent": eventId },
-      { $pull: { inboxNotifications: { fromEvent: eventId } } }
+      { $pull: { inboxNotifications: { fromEvent: eventId } } },
     );
   };
 
@@ -390,7 +427,7 @@ export async function createDataBase() {
       // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
       const replacedEvent = await eventModel.replaceOne(
         { _id: eventId },
-        { ...event, uid: uid }
+        { ...event, uid: uid },
       );
       if (replacedEvent.modifiedCount === 0) {
         throw new Error("Event replace failed");
@@ -399,7 +436,7 @@ export async function createDataBase() {
       // Aggiorno le notifiche di ogni partecipante
       const updatedUsers = await userModel.updateMany(
         { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
-        { $set: { inboxNotifications: { fromEvent: eventId } } }
+        { $set: { inboxNotifications: { fromEvent: eventId } } },
       );
 
       return { replacedEvent, updatedUsers };
@@ -420,7 +457,7 @@ export async function createDataBase() {
       throw new Error("User is already participating in this event");
     user.participatingEvents.push(eventId);
     user.invitedEvents = user.invitedEvents.filter(
-      (e) => e.toString() !== eventId.toString()
+      (e) => e.toString() !== eventId.toString(),
     );
     await user.save();
 
@@ -445,7 +482,6 @@ export async function createDataBase() {
     if (!project.title || !project.description) {
       throw new Error("Project must have a title and description");
     }
-
 
     // check if all the sub activities are valid:
     // the start date must be before the end date, and the start date must be after the previous end date
@@ -486,7 +522,10 @@ export async function createDataBase() {
     err = "Members not found: ";
     if (project.members) {
       project.members.forEach(async (member) => {
-        const memberDoc = await userModel.findOneAndUpdate({ username: member }, { $push: { projects: addedProject._id } });
+        const memberDoc = await userModel.findOneAndUpdate(
+          { username: member },
+          { $push: { projects: addedProject._id } },
+        );
         if (!memberDoc) err += member + ", ";
       });
     }
@@ -507,7 +546,7 @@ export async function createDataBase() {
         !settings.longBreakDuration
       ) {
         throw new Error(
-          "Settings must have studyDuration, shortBreakDuration, and longBreakDuration"
+          "Settings must have studyDuration, shortBreakDuration, and longBreakDuration",
         );
       }
 
@@ -576,7 +615,7 @@ export async function createDataBase() {
       }
 
       let currentSongIndex = songs.findIndex((song) =>
-        song._id.equals(user.musicPlayer.songPlaying)
+        song._id.equals(user.musicPlayer.songPlaying),
       );
       if (currentSongIndex === -1) {
         throw new Error("Error song index");
@@ -611,7 +650,7 @@ export async function createDataBase() {
       }
 
       let currentSongIndex = songs.findIndex((song) =>
-        song._id.equals(user.musicPlayer.songPlaying)
+        song._id.equals(user.musicPlayer.songPlaying),
       );
       if (currentSongIndex === -1) {
         throw new Error("Error song index");
@@ -644,7 +683,7 @@ export async function createDataBase() {
       }
 
       let currentSongIndex = songs.findIndex((song) =>
-        song._id.equals(user.musicPlayer.songPlaying)
+        song._id.equals(user.musicPlayer.songPlaying),
       );
 
       if (currentSongIndex === -1) {
@@ -664,7 +703,7 @@ export async function createDataBase() {
     } catch (error) {
       console.error("Error getting random song:", error);
       throw error;
-    } 
+    }
   };
 
   // For now only for testing (to add song to the DB)
@@ -708,7 +747,7 @@ export async function createDataBase() {
 
       // Correctly update the likedSongs array
       user.musicPlayer.likedSongs = user.musicPlayer.likedSongs.filter(
-        (id) => id !== songId
+        (id) => id !== songId,
       );
 
       await user.save();
@@ -765,7 +804,7 @@ export async function createDataBase() {
             await user.save();
           }
         }
-      })
+      }),
     );
 
     return notifications;
@@ -783,17 +822,24 @@ export async function createDataBase() {
       throw new Error("Activity must have a dueDate");
     }
 
-    var addedActivity = await activityModel.create({ ...activity, uid: uid, parentId: "root" });
-
+    var addedActivity = await activityModel.create({
+      ...activity,
+      uid: uid,
+      parentId: "root",
+    });
 
     if (!projectId) {
       user.activities.push(addedActivity._id);
       await user.save();
       await generateNotificationsForActivity(addedActivity, [user]);
     } else {
-      const project = await projectModel.findByIdAndUpdate(projectId, { $push: { activities: addedActivity._id } });
+      const project = await projectModel.findByIdAndUpdate(projectId, {
+        $push: { activities: addedActivity._id },
+      });
       if (!project) throw new Error("Project not found");
-      let participants = await userModel.find({ _id: { $in: addedActivity.participants } });
+      let participants = await userModel.find({
+        _id: { $in: addedActivity.participants },
+      });
       const allParticipants = participants ? [...participants, user] : [user];
       await generateNotificationsForActivity(addedActivity, allParticipants);
     }
@@ -816,14 +862,20 @@ export async function createDataBase() {
       throw new Error("Activity must have a dueDate");
     }
 
-    const addedSubActivity = await activityModel.create({ ...subactivity, uid: uid, parentId: parentId });
+    const addedSubActivity = await activityModel.create({
+      ...subactivity,
+      uid: uid,
+      parentId: parentId,
+    });
     parent.subActivity.push(addedSubActivity._id);
     await parent.save();
 
     if (!projectId) {
       await generateNotificationsForActivity(addedSubActivity, [user]);
     } else {
-      var participants = await userModel.find({ _id: { $in: addedSubActivity.participants } });
+      var participants = await userModel.find({
+        _id: { $in: addedSubActivity.participants },
+      });
       await generateNotificationsForActivity(addedSubActivity, [participants]);
     }
 
@@ -835,7 +887,9 @@ export async function createDataBase() {
     if (!user) throw new Error("User not found");
 
     if (!projectId) {
-      var activity = await activityModel.find({ _id: { $in: user.activities } });
+      var activity = await activityModel.find({
+        _id: { $in: user.activities },
+      });
     } else {
       var activity = await activityModel.find({
         _id: { $in: project.activities },
@@ -877,7 +931,7 @@ export async function createDataBase() {
     // Remove any notifications related to this activity
     await userModel.updateMany(
       { "inboxNotifications.fromTask": activityId },
-      { $pull: { inboxNotifications: { fromTask: activityId } } }
+      { $pull: { inboxNotifications: { fromTask: activityId } } },
     );
     // Delete all subactivities of the parent
     await activityModel.deleteMany({ _id: { $in: activity.subActivities } });
@@ -898,7 +952,7 @@ export async function createDataBase() {
 
     // cancello la sotto attività dal parent
     parent.subActivity = parent.subActivity.filter(
-      (sub) => sub._id.toString() !== activityId.toString()
+      (sub) => sub._id.toString() !== activityId.toString(),
     );
 
     // manca la cancellazione delle notifiche
@@ -925,7 +979,7 @@ export async function createDataBase() {
     try {
       const replacedActivity = await activityModel.replaceOne(
         { _id: activityId },
-        { ...activity, uid: uid, parentId: "root" }
+        { ...activity, uid: uid, parentId: "root" },
       );
       if (replacedActivity.modifiedCount === 0) {
         throw new Error("Activity replace failed");
@@ -946,7 +1000,7 @@ export async function createDataBase() {
 
         updatedUsers = await userModel.updateMany(
           { "project.activities": activityId },
-          { $set: { inboxNotifications: { fromTask: activityId } } }
+          { $set: { inboxNotifications: { fromTask: activityId } } },
         );
       }
       await user.save();
@@ -961,7 +1015,7 @@ export async function createDataBase() {
     uid,
     subActivity,
     subActivityId,
-    projectId
+    projectId,
   ) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -973,7 +1027,7 @@ export async function createDataBase() {
 
     const replacedSubActivity = await activityModel.replaceOne(
       { _id: subActivityId },
-      { ...subActivity, uid: uid, parentId: oldActivity.parentId }
+      { ...subActivity, uid: uid, parentId: oldActivity.parentId },
     );
     if (replacedSubActivity.modifiedCount === 0) {
       throw new Error("Activity replace failed");
@@ -994,7 +1048,7 @@ export async function createDataBase() {
       // user activity
       const updatedUsers = await userModel.updateMany(
         { activities: parent._id },
-        { $pull: { inboxNotifications: { fromTask: subActivity._id } } }
+        { $pull: { inboxNotifications: { fromTask: subActivity._id } } },
       );
     } else {
       //project activity
@@ -1003,7 +1057,7 @@ export async function createDataBase() {
 
       const updatedUsers = await userModel.updateMany(
         { "project.activities": activityId },
-        { $set: { inboxNotifications: { fromTask: activityId } } }
+        { $set: { inboxNotifications: { fromTask: activityId } } },
       );
     }
 
@@ -1076,7 +1130,11 @@ export async function createDataBase() {
       const receiver = await userModel.findOne({ username: receiverUsername });
       if (!receiver) throw new Error("Receiver not found");
 
-      await this.sendMessage(senderId, receiverUsername, "You started a new chat");
+      await this.sendMessage(
+        senderId,
+        receiverUsername,
+        "You started a new chat",
+      );
 
       return this.getChats(senderId);
     },
@@ -1124,12 +1182,12 @@ export async function createDataBase() {
           $match: {
             $or: [
               { sender: new mongoose.Types.ObjectId(uid) },
-              { receiver: new mongoose.Types.ObjectId(uid) }
-            ]
-          }
+              { receiver: new mongoose.Types.ObjectId(uid) },
+            ],
+          },
         },
         {
-          $sort: { createdAt: -1 }
+          $sort: { createdAt: -1 },
         },
         {
           $group: {
@@ -1137,30 +1195,34 @@ export async function createDataBase() {
               $cond: [
                 { $eq: ["$sender", new mongoose.Types.ObjectId(uid)] },
                 "$receiver",
-                "$sender"
-              ]
+                "$sender",
+              ],
             },
             lastMessage: { $first: "$message" },
-            date: { $first: "$createdAt" }
-          }
+            date: { $first: "$createdAt" },
+          },
         },
         {
-          $limit: limit
-        }
+          $limit: limit,
+        },
       ]);
 
       const otherUserIds = messages.map((m) => m._id);
       const otherUsers = await userModel.find({ _id: { $in: otherUserIds } });
 
-      const chats = messages.map((msg) => {
-        const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
-        return otherUser ? {
-          uid: otherUser._id,
-          username: otherUser.username,
-          lastMessage: msg.lastMessage,
-          date: msg.date
-        } : null;
-      }).filter(chat => chat !== null);
+      const chats = messages
+        .map((msg) => {
+          const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
+          return otherUser
+            ? {
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: msg.lastMessage,
+                date: msg.date,
+              }
+            : null;
+        })
+        .filter((chat) => chat !== null);
 
       return chats;
     },
@@ -1209,9 +1271,9 @@ export async function createDataBase() {
       const user = await userModel.findById(id);
       if (!user) throw new Error("User not found");
       return user;
-    }
+    },
     //TODO: add other methods
-  }
+  };
 
   return {
     login,
@@ -1246,5 +1308,8 @@ export async function createDataBase() {
     friendService,
     addLike,
     removeLike,
-    userService };
+    userService,
+    saveSubscription,
+    getSubscription,
+  };
 }

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
+import { sendPushNotification } from "../../notificationWorker.js";
 
 const router = express.Router();
 
@@ -159,6 +160,41 @@ export function createAuthRouter(db) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     return res.status(200).json({ username: user.username });
+  });
+
+  router.post("/save-subscription", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const subscription = req.body;
+    console.log(subscription);
+    try {
+      await db.saveSubscription(user._id, subscription);
+      return res.status(200).json({ message: "Subscription saved" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.get("/send-test-notification", cookieJwtAuth, async (req, res) => {
+    console.log("Sending test notification");
+    try {
+      const subscription = await db.getSubscription(req.user._id);
+      console.log("Subscription:", subscription);
+      const payload = {
+        title: "Test Notification",
+        body: "This is a test notification",
+      };
+
+      await sendPushNotification(subscription, payload);
+      res.status(200).json({ message: "Notification sent successfully" });
+    } catch (error) {
+      console.error("Error in send-test-notification:", error);
+      res
+        .status(500)
+        .json({ error: error.message || "Failed to send notification" });
+    }
   });
 
   return router;
