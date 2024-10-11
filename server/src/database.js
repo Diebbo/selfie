@@ -417,8 +417,21 @@ export async function createDataBase() {
   };
 
   const getProjects = async (uid) => {
-    // ritorno tutti i progetti creati dall'utente o a cui partecipa
-    return await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
+    // Ritorna tutti i progetti creati dall'utente o a cui partecipa
+    let proj = await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
+
+    for (let i = 0; i < proj.length; i++) {
+      const project = proj[i];
+
+      let members = await userModel.find({ _id: { $in: project.members } });
+      proj[i].members = members.map((member) => member.username);
+
+      const obj = await getActivities(uid, project._id);
+      if (obj.activity)
+        proj[i].activities = obj.activity;
+    }
+
+    return proj;
   };
 
   const createProject = async (uid, project) => {
@@ -450,7 +463,7 @@ export async function createDataBase() {
 
     // add today's date to the project
     const now = await getDateTime();
-    const newProject = { ...project, creator: uid, creationDate: now };
+    const newProject = { ...project, creator: uid, creationDate: now, members: [] };
 
     // add project to the user's projects
     let addedProject = await projectModel.create(newProject);
@@ -460,14 +473,21 @@ export async function createDataBase() {
     user.projects.push(addedProject._id);
     await user.save();
 
+    let participantsIds = [];
     // add all the members to the project
     err = "Members not found: ";
     if (project.members) {
-      project.members.forEach(async (member) => {
+      for (const member of project.members) {
         const memberDoc = await userModel.findOneAndUpdate({ username: member }, { $push: { projects: addedProject._id } });
         if (!memberDoc) err += member + ", ";
-      });
+        else {
+          participantsIds.push(memberDoc._id);
+        }
+      }
     }
+    addedProject.members = participantsIds;
+    await addedProject.save();
+
     if (err !== "Members not found: ") throw new Error("Project created but " + err);
 
     return addedProject;
@@ -678,8 +698,13 @@ export async function createDataBase() {
       await user.save();
       await generateNotificationsForActivity(addedActivity, [user]);
     } else {
-      const project = await projectModel.findByIdAndUpdate(projectId, { $push: { activities: addedActivity._id } });
+      const project = await projectModel.findByIdAndUpdate(
+        projectId, 
+        { $addToSet: { activities: addedActivity._id.toString() } },
+        { new: true }
+      );
       if (!project) throw new Error("Project not found");
+
       let participants = await userModel.find({ _id: { $in: addedActivity.participants } });
       const allParticipants = participants ? [...participants, user] : [user];
       await generateNotificationsForActivity(addedActivity, allParticipants);
@@ -720,11 +745,24 @@ export async function createDataBase() {
   const getActivities = async (uid, projectId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
+    let activity;
 
     if (!projectId) {
-      var activity = await activityModel.find({ _id: { $in: user.activities } });
+      activity = await activityModel.find({ _id: { $in: user.activities } });
     } else {
-      var activity = await activityModel.find({ _id: { $in: project.activities } });
+      var project = await projectModel.findById(projectId);
+      if (!project) throw new Error("Project not found");
+
+      activity = await activityModel.find({ _id: { $in: project.activities } });
+      // for each activity, get the participants and subactivities
+      for (let i = 0; i < activity.length; i++) {
+        let participants = await userModel.find({ _id: { $in: activity[i].participants } });
+        activity[i].participants = participants.map((participant) => participant.username);
+
+        const subActivitiesIds = activity[i].subActivity.map(sub => sub.toString());
+        const subActivities = await activityModel.find({ _id: { $in: subActivitiesIds } });
+        activity[i].subActivity = subActivities;
+      }
     }
 
     return { activity: activity };
@@ -737,7 +775,6 @@ export async function createDataBase() {
 
     const activity = await activityModel.findById(activityId);
     if (!activity) throw new Error("Activity not found");
-    console.log("activity: ", activity);
 
     if (activity.parentId !== "root") {
       return deleteSubActivity(uid, activityId, projectId);
@@ -845,8 +882,6 @@ export async function createDataBase() {
       throw new Error("Activity replace failed");
     }
 
-    console.log(oldActivity.parentId);
-    console.log(replacedSubActivity.parentId);
     const parent = await activityModel.findById(oldActivity.parentId);
     if (!parent) throw new Error("Parent not found");
 
