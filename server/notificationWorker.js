@@ -1,10 +1,12 @@
+// SHOULD BE DEPRECATED, but for now let's keep it
+
+/*
 // notificationWorker.js
-import { sendNotification } from "./src/notifications.js";
+import { sendEmailNotification } from "./src/notifications.js";
 import { createDataBase } from "./src/database.js";
 import nodemailer from "nodemailer";
 import { exit } from "process";
 import dotenv from "dotenv";
-import { webpush } from "./src/webPushConfig.js";
 
 // Simulate sending notification
 process.on("message", async (notificationData) => {
@@ -43,24 +45,10 @@ process.on("message", async (notificationData) => {
 
     try {
       const notifications = await db.getNextNotifications();
-      await sendNotification(transporter, notifications);
+      await sendEmailNotification(transporter, notifications);
     } catch (error) {
       console.log("Error sending notification:", error);
     }
   }
 });
-
-export async function sendPushNotification(subscription, payload) {
-  try {
-    const result = await webpush.sendNotification(
-      subscription,
-      JSON.stringify(payload),
-    );
-  } catch (error) {
-    console.error("Detailed error in sendPushNotification:", error);
-    if (error.statusCode === 401) {
-      console.error("Authorization error. Check VAPID configuration.");
-    }
-    throw error;
-  }
-}
+*/
