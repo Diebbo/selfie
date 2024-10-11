@@ -18,7 +18,7 @@ import AudioVisualizer from "./AudioVisualizer";
 import { VolumeOffIcon, VolumeUpIcon } from "./VolumeIcons";
 
 export default function MusicPlayer() {
-  const [currentSong, setCurrentSong] = React.useState<Song>({
+  const [currentSong, setCurrentSong] = useState<Song>({
     title: "",
     album: "",
     duration: "",
@@ -26,17 +26,17 @@ export default function MusicPlayer() {
     cover: "https://nextui.org/images/album-cover.png",
     liked: false,
   });
-  const [liked, setLiked] = React.useState(currentSong.liked);
-  const [sound, setSound] = React.useState(new Audio("/song/Test Song1.wav"));
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [currentTime, setCurrentTime] = React.useState(0);
-  const [duration, setDuration] = React.useState(0);
-  const [repeat, setRepeat] = React.useState(false);
-  const [shuffle, setShuffle] = React.useState(false);
+  const [liked, setLiked] = useState(currentSong.liked);
+  const [sound, setSound] = useState<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [repeat, setRepeat] = useState(false);
+  const [shuffle, setShuffle] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(
     null,
   );
-  const [volume, setVolume] = React.useState(1);
+  const [volume, setVolume] = useState(1);
   const [isVolumeSliderVisible, setIsVolumeSliderVisible] = useState(false);
   const [isInteractingWithSlider, setIsInteractingWithSlider] = useState(false);
 
@@ -51,50 +51,56 @@ export default function MusicPlayer() {
   }, [sound, isPlaying]);
 
   useEffect(() => {
-    const newSound = new Audio(`/song/${currentSong.title}.wav`);
-    setSound(newSound);
-    setAudioElement(newSound);
+    if (typeof window !== "undefined") {
+      const newSound = new Audio(`/song/${currentSong.title}.wav`);
+      setSound(newSound);
+      setAudioElement(newSound);
 
-    const handleLoadedMetadata = () => {
-      setDuration(newSound.duration);
-    };
+      const handleLoadedMetadata = () => {
+        setDuration(newSound.duration);
+      };
 
-    const handleTimeUpdate = () => {
-      setCurrentTime(newSound.currentTime);
-    };
+      const handleTimeUpdate = () => {
+        setCurrentTime(newSound.currentTime);
+      };
 
-    const handleSongEnd = () => {
-      if (repeat) {
-        newSound.currentTime = 0;
-        newSound.play();
-      } else {
-        handleNextSong();
-      }
-    };
+      const handleSongEnd = () => {
+        if (repeat) {
+          newSound.currentTime = 0;
+          newSound.play();
+        } else {
+          handleNextSong();
+        }
+      };
 
-    newSound.addEventListener("loadedmetadata", handleLoadedMetadata);
-    newSound.addEventListener("timeupdate", handleTimeUpdate);
-    newSound.addEventListener("ended", handleSongEnd);
+      newSound.addEventListener("loadedmetadata", handleLoadedMetadata);
+      newSound.addEventListener("timeupdate", handleTimeUpdate);
+      newSound.addEventListener("ended", handleSongEnd);
 
-    return () => {
-      newSound.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      newSound.removeEventListener("timeupdate", handleTimeUpdate);
-      newSound.removeEventListener("ended", handleSongEnd);
-    };
+      return () => {
+        newSound.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        newSound.removeEventListener("timeupdate", handleTimeUpdate);
+        newSound.removeEventListener("ended", handleSongEnd);
+      };
+    }
   }, [currentSong, repeat]);
 
   const handlePlayPause = () => {
-    if (isPlaying) {
-      sound.pause();
-    } else {
-      sound.play();
+    if (sound) {
+      if (isPlaying) {
+        sound.pause();
+      } else {
+        sound.play();
+      }
+      setIsPlaying(!isPlaying);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleClickRepeat = () => {
-    sound.loop = !repeat;
-    setRepeat(!repeat);
+    if (sound) {
+      sound.loop = !repeat;
+      setRepeat(!repeat);
+    }
   };
 
   const handleClickShuffle = () => {
@@ -127,7 +133,7 @@ export default function MusicPlayer() {
         liked: song.isLiked,
       });
       setLiked(song.isLiked);
-      if (isPlaying) {
+      if (isPlaying && sound) {
         sound.pause();
         setIsPlaying(false);
       }
@@ -138,7 +144,7 @@ export default function MusicPlayer() {
   };
 
   const handleNextSong = () => {
-    if (isPlaying) {
+    if (isPlaying && sound) {
       sound.pause();
     }
     if (shuffle) {
@@ -149,8 +155,9 @@ export default function MusicPlayer() {
       setIsPlaying(true);
     }
   };
+
   const handlePrevSong = () => {
-    if (isPlaying) {
+    if (isPlaying && sound) {
       sound.pause();
     }
     if (shuffle) {
@@ -161,6 +168,7 @@ export default function MusicPlayer() {
       setIsPlaying(true);
     }
   };
+
   const handleAddLike = () => (liked ? removeLike() : addLike());
 
   const addLike = async () => {
