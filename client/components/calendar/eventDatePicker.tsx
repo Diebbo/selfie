@@ -1,24 +1,16 @@
 "use client";
 
 import React from "react";
-import {
-  DatePicker,
-  DateRangePicker
-} from "@nextui-org/react";
-import {parseZonedDateTime} from "@internationalized/date";
+import { DatePicker, DateRangePicker } from "@nextui-org/react";
+import { parseZonedDateTime } from "@internationalized/date";
 
-const EventDatePicker = ({value}) => {
-  return (
-    value ? 
+const EventDatePicker = (value: boolean) => {
+  return value ? (
     <div className="flex flex-row gap-4 min-w-[430px]">
-      <DatePicker label="Start date" 
-        isRequired
-      />
-      <DatePicker label="End date" 
-        isRequired
-      />
-    </div>    
-      : 
+      <DatePicker label="Start date" isRequired />
+      <DatePicker label="End date" isRequired />
+    </div>
+  ) : (
     <DateRangePicker
       label="Event duration"
       className="max-w-[430px]"
@@ -31,6 +23,6 @@ const EventDatePicker = ({value}) => {
       }}
     />
   );
-}
+};
 
 export default EventDatePicker;

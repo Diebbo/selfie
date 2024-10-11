@@ -1,9 +1,9 @@
 import React from "react";
-import { Note } from "@/actions/notes";
+import { NoteModel } from "@/helpers/types";
 
 interface NoteCardProps {
-  note: Note;
-  onClick: (note: Note) => void;
+  note: NoteModel;
+  onClick: (note: NoteModel) => void;
   onDelete: (id?: string) => void;
 }
 

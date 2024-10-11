@@ -9,14 +9,11 @@ import {
   Button,
 } from "@nextui-org/react";
 
-const RepetitionMenu = ({value}) => {
+const RepetitionMenu = (value: boolean) => {
   return (
     <Dropdown>
       <DropdownTrigger>
-        <Button isDisabled={!value}
-        >
-          Ogni quanto
-        </Button>
+        <Button isDisabled={!value}>Ogni quanto</Button>
       </DropdownTrigger>
       <DropdownMenu aria-label="Static Actions">
         <DropdownItem key="daily">Giorno</DropdownItem>
@@ -25,10 +22,10 @@ const RepetitionMenu = ({value}) => {
         <DropdownItem key="yearly">Anno</DropdownItem>
         <DropdownItem key="custom" className="text-danger" color="danger">
           Personalizza
-        </DropdownItem> {/* forse non lo facciamo */}
+        </DropdownItem>
       </DropdownMenu>
     </Dropdown>
   );
-}
+};
 
 export default RepetitionMenu;

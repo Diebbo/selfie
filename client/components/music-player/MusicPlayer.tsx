@@ -369,8 +369,7 @@ export default function MusicPlayer() {
                         size="sm"
                         color="primary"
                         value={volume * 100}
-                        onChange={(value: number) => handleVolumeChange(value)}
-                        onChangeStart={() => setIsInteractingWithSlider(true)}
+                        onChange={(value) => handleVolumeChange(Number(value))}
                         onChangeEnd={() => {
                           setIsInteractingWithSlider(false);
                           if (!isVolumeSliderVisible) {
