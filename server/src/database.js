@@ -75,6 +75,15 @@ export async function createDataBase() {
     return user;
   };
 
+  const deleteSubscription = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    user.subscription = null;
+    await user.save();
+    return user;
+  };
+
   const getSubscription = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user || !user.subscription) {
@@ -800,6 +809,46 @@ export async function createDataBase() {
     return notifications;
   };
 
+  // To be used by the pushNotificationWorker
+  const getAllUserEvents = async () => {
+    try {
+      const users = await userModel.find().populate("events");
+      return users;
+    } catch (error) {
+      console.error("Error getting all user events:", error);
+      throw error;
+    }
+  };
+
+  // NOW PLACED IN pushNotificationWorker
+  /*const checkAndSendNotification = async () => {
+    console.log(`Checking notifications at ${new Date().toISOString()}`);
+    const users = await getAllUserEvents();
+    const now = getDateTime();
+
+    try {
+      for (const user of users) {
+        if (!user.subscription) continue;
+
+        for (const event of user.events) {
+          if (shouldSendNotification(event, now)) {
+            const payload = createNotificationPayload(event);
+            if (event.notification.type == "push") {
+              await sendPushNotification(user.subscription, payload);
+            } else if (event.notification.type == "email") {
+              payload.email = user.email;
+              console.log(payload);
+              await sendNotification(payload);
+            }
+            console.log(`Sent notification to ${user.username}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error checking and sending notifications:", error);
+    }
+  };*/
+
   const createActivity = async (uid, projectId, activity) => {
     let user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -1300,6 +1349,8 @@ export async function createDataBase() {
     removeLike,
     userService,
     saveSubscription,
+    deleteSubscription,
     getSubscription,
+    getAllUserEvents,
   };
 }

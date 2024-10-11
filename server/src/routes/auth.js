@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
-import { sendPushNotification } from "../../notificationWorker.js";
+import { sendPushNotification } from "../../pushNotificationWorker.js";
 
 const router = express.Router();
 
@@ -162,7 +162,7 @@ export function createAuthRouter(db) {
     return res.status(200).json({ username: user.username });
   });
 
-  router.post("/save-subscription", cookieJwtAuth, async (req, res) => {
+  router.post("/subscription", cookieJwtAuth, async (req, res) => {
     const user = req.user;
     if (!user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -177,6 +177,19 @@ export function createAuthRouter(db) {
     }
   });
 
+  router.delete("/subscription", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      await db.deleteSubscription(user._id);
+      return res.status(200).json({ message: "Subscription deleted" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
   router.get("/send-test-notification", cookieJwtAuth, async (req, res) => {
     console.log("Sending test notification");
     try {
@@ -184,7 +197,7 @@ export function createAuthRouter(db) {
       console.log("Subscription:", subscription);
       const payload = {
         title: "Test Notification",
-        body: "This is a test notification",
+        body: "This is a server-side test notification",
       };
 
       await sendPushNotification(subscription, payload);

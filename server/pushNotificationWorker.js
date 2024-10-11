@@ -1,25 +1,35 @@
 import schedule from "node-schedule";
 import { mongoose } from "mongoose";
-import { userSchema } from "./src/models/user-model.js";
-import { sendPushNotification } from "./notificationWorker.js";
+import { createDataBase } from "./src/database.js";
+import { webpush } from "./src/webPushConfig.js";
+import nodemailer from "nodemailer";
+import { config } from "dotenv";
 
-const userModel = mongoose.model("User", userSchema);
-
-// Funzione per controllare e inviare le notifiche
 async function checkAndSendNotifications() {
   console.log(`Checking notifications at ${new Date().toISOString()}`);
-  const now = new Date();
 
   try {
-    const users = await userModel.find().populate("events");
+    // Get all user and their events from db
+    var db = await createDataBase();
+    const users = await db.getAllUserEvents();
+    // Get the current time of the db
+    const now = await db.getDateTime();
 
     for (const user of users) {
+      // Check if the user is subscribed to notifications
       if (!user.subscription) continue;
 
       for (const event of user.events) {
         if (shouldSendNotification(event, now)) {
           const payload = createNotificationPayload(event);
-          await sendPushNotification(user.subscription, payload);
+          if (event.notification.type === "push") {
+            console.log("sending push notification");
+            await sendPushNotification(user.subscription, payload);
+          } else if (event.notification.type === "email") {
+            console.log("sending email notification");
+            payload.email = user.email;
+            await sendEmailNotification(payload);
+          }
           console.log(`Sent notification to ${user.username}`);
         }
       }
@@ -29,7 +39,7 @@ async function checkAndSendNotifications() {
   }
 }
 
-function shouldSendNotification(event, now) {
+export function shouldSendNotification(event, now) {
   if (!event.notification) return false;
 
   const eventDate = new Date(event.dtstart);
@@ -74,7 +84,7 @@ function shouldSendNotification(event, now) {
   return false;
 }
 
-function createNotificationPayload(event) {
+export function createNotificationPayload(event) {
   const formattedDate = event.dtstart.toLocaleString("it-IT", {
     day: "2-digit",
     month: "2-digit",
@@ -90,13 +100,54 @@ function createNotificationPayload(event) {
   };
 }
 
+export async function sendPushNotification(subscription, payload) {
+  try {
+    const result = await webpush.sendNotification(
+      subscription,
+      JSON.stringify(payload),
+    );
+  } catch (error) {
+    console.error("Detailed error in sendPushNotification:", error);
+    if (error.statusCode === 401) {
+      console.error("Authorization error. Check VAPID configuration.");
+    }
+    throw error;
+  }
+}
+
+async function sendEmailNotification(payload) {
+  config();
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // use false for STARTTLS; true for SSL on port 465
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: "selfie.notification@gmail.com",
+    to: payload.email,
+    subject: payload.title,
+    text: payload.body,
+  };
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Faking sending email:", mailOptions);
+    return;
+  }
+
+  // Send the email
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log("Error:", error);
+    } else {
+      console.log("Email sent: ", mailOptions, info.response);
+    }
+  });
+}
+
 // Programma l'esecuzione del controllo ogni minuto
 schedule.scheduleJob("* * * * *", checkAndSendNotifications);
-
-// Assicurati che la connessione al database sia stabilita prima di iniziare il worker
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("Notification worker connected to database"))
-  .catch((err) =>
-    console.error("Notification worker failed to connect to database:", err),
-  );
