@@ -51,13 +51,11 @@ process.on("message", async (notificationData) => {
 });
 
 export async function sendPushNotification(subscription, payload) {
-  console.log("Sending notification to:", subscription.endpoint);
   try {
     const result = await webpush.sendNotification(
       subscription,
       JSON.stringify(payload),
     );
-    console.log("Notification sent successfully:", result);
   } catch (error) {
     console.error("Detailed error in sendPushNotification:", error);
     if (error.statusCode === 401) {

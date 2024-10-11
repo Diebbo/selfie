@@ -6,6 +6,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import pluralize from "pluralize";
 import nodemailer from "nodemailer";
+import "../pushNotificationWorker.js";
 
 // routers
 import { createAuthRouter } from "./routes/auth.js";
