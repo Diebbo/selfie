@@ -47,7 +47,7 @@ export default function PushNotificationTest() {
       });
       console.log("Push subscription:", subscription);
 
-      const response = await fetch("/api/auth/save-subscription", {
+      const response = await fetch("/api/auth/subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(subscription),
@@ -62,6 +62,23 @@ export default function PushNotificationTest() {
     } catch (error) {
       console.error("Error subscribing to notifications:", error);
       setSubscriptionStatus(`Error: ${error}`);
+    }
+  };
+
+  const unsubscribeFromNotifications = async () => {
+    try {
+      const response = await fetch("/api/auth/subscription", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.ok) {
+        setSubscriptionStatus("Unsubscribed successfully!");
+      } else {
+        setSubscriptionStatus("Failed to unsubscribe.");
+      }
+    } catch (error) {
+      console.error("Error unsubscribing from notifications:", error);
+      setSubscriptionStatus("Error unsubscribing from notifications.");
     }
   };
 
