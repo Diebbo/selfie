@@ -7,9 +7,8 @@ import getBaseUrl from "@/config/proxy";
 export const createAuthCookie = async (token: string) => {
   cookies().set("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    domain: "", // Change this in production
+    secure: false,
+    sameSite: "lax",
     path: "/",
   });
 };

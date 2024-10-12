@@ -55,6 +55,7 @@ export function createAuthRouter(db) {
     res.cookie("token", token, {
       httpOnly: true,
       sameSite: "Lax",
+      secure: false,
       // secure: true, // Enable in production
       // maxAge: 3600000, // 1 hour
       // signed: true, // Enable if using signed cookies

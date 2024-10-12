@@ -93,9 +93,13 @@ export async function createDataBase() {
     return user.subscription;
   };
 
-  const changeDateTime = async (time) => {
+  const changeDateTime = async (time, isRealTime = false) => {
     let filter = { name: "timemachine" };
-    let update = { time: time };
+    let update = {
+      virtualTime: time,
+      realTimeRef: new Date(),
+      isRealTime: isRealTime,
+    };
     const res = await timeModel.findOneAndUpdate(filter, update, {
       new: true,
       upsert: true,
@@ -106,7 +110,13 @@ export async function createDataBase() {
   const getDateTime = async () => {
     const res = await timeModel.findOne({ name: "timemachine" });
     if (!res) throw new Error("Time not found");
-    return new Date(res.time);
+
+    if (res.isRealTime) {
+      return new Date();
+    } else {
+      const elapsedTime = new Date() - res.realTimeRef;
+      return new Date(res.virtualTime.getTime() + elapsedTime);
+    }
   };
 
   const postNote = async (uid, note) => {
