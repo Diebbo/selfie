@@ -26,7 +26,10 @@ const getEventsByDay = (events: SelfieEvent[], date: Date): SelfieEvent[] => {
 const showEvents = (events: SelfieEvent[], date: Date): JSX.Element[] => {
   const todayEvents = getEventsByDay(events, date);
   return todayEvents.map((event, index) => (
-    <button key={index} className="p-2 bg-slate-700 truncate ...">
+    <button
+      key={index}
+      className="rounded-[100px] py-2 px-4 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white"
+    >
       {event.title}
     </button>
   ));
@@ -49,13 +52,13 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
 
   return (
     <Card>
-      <CardBody className="p-0 flex flex-col bg-black">
+      <CardBody className="p-0 flex flex-col bg-white dark:bg-black">
         <div
-          className={`p-2 rounded-[100px] bg-slate-800 text-sm font-bold ${isToday ? "text-blue-500" : "text-dark dark:text-white"}`}
+          className={`p-2 px-4 text-right rounded-[100px] bg-slate-800 text-sm font-bold ${isToday ? "text-slate-300 bg-blue-800 border-2 border-slate-300" : "text-white dark:text-white"}`}
         >
           {day}
         </div>
-        <div className="mt-1 rounded-[100px] space-y-1 overflow-hidden">
+        <div className="mt-1 space-y-1 overflow-hidden ">
           {showEvents(events, cellDate)}
         </div>
       </CardBody>

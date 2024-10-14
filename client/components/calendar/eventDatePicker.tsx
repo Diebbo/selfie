@@ -1,26 +1,40 @@
 "use client";
 
 import React from "react";
-import { DatePicker, DateRangePicker } from "@nextui-org/react";
-import { parseZonedDateTime } from "@internationalized/date";
+import {
+  DatePicker,
+  DateRangePicker,
+  RangeValue,
+  DateValue,
+} from "@nextui-org/react";
 
-const EventDatePicker = (value: boolean) => {
-  return value ? (
-    <div className="flex flex-row gap-4 min-w-[430px]">
-      <DatePicker label="Start date" isRequired />
-      <DatePicker label="End date" isRequired />
-    </div>
-  ) : (
+interface EventDatePickerProps {
+  isAllDay: boolean;
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  onChange: (start: Date | string, end: Date | string) => void;
+}
+
+const EventDatePicker: React.FC<EventDatePickerProps> = ({
+  isAllDay,
+  endDate,
+  onChange,
+}) => {
+  const handleDateRangeChange = (value: RangeValue<DateValue>) => {
+    if (value?.start && value?.end) {
+      onChange(value.start.toString(), value.end.toString());
+    }
+  };
+
+  return (
     <DateRangePicker
       label="Event duration"
       className="max-w-[430px]"
       isRequired
       hideTimeZone
       visibleMonths={2}
-      defaultValue={{
-        start: parseZonedDateTime("2024-04-01T00:45[America/Los_Angeles]"),
-        end: parseZonedDateTime("2024-04-08T11:15[America/Los_Angeles]"),
-      }}
+      onChange={handleDateRangeChange}
+      granularity={isAllDay ? "day" : "minute"}
     />
   );
 };

@@ -109,13 +109,23 @@ const dummyEvents: SelfieEvent[] = [
     categories: ["party"],
     transp: "OPAQUE",
     rrule: {
-      freq: { type: "weekly", enum: ["daily", "weekly", "monthly", "yearly"] },
+      freq: "weekly",
       interval: 1,
       bymonth: 8,
       bymonthday: 15,
     },
     dtstamp: new Date().toISOString(),
     geo: [40.7128],
+    notification: {
+      title: "Beach Party",
+      description: "Don't forget the sunscreen!",
+      type: "email",
+      repetition: {
+        freq: "daily",
+        interval: 1,
+      },
+      fromDate: new Date("2024-08-10T00:00:00"),
+    },
   },
   {
     title: "Movie Night",
@@ -132,13 +142,23 @@ const dummyEvents: SelfieEvent[] = [
     categories: ["movie"],
     transp: "OPAQUE",
     rrule: {
-      freq: { type: "weekly", enum: ["daily", "weekly", "monthly", "yearly"] },
+      freq: "weekly",
       interval: 1,
       bymonth: 8,
       bymonthday: 20,
     },
     dtstamp: new Date().toISOString(),
     geo: [40.7122],
+    notification: {
+      title: "Beach Party",
+      description: "Don't forget the sunscreen!",
+      type: "email",
+      repetition: {
+        freq: "daily",
+        interval: 1,
+      },
+      fromDate: new Date("2024-08-10T00:00:00"),
+    },
   },
   {
     title: "Picnic in the Park",
@@ -155,13 +175,23 @@ const dummyEvents: SelfieEvent[] = [
     categories: ["picnic"],
     transp: "OPAQUE",
     rrule: {
-      freq: { type: "weekly", enum: ["daily", "weekly", "monthly", "yearly"] },
+      freq: "weekly",
       interval: 1,
       bymonth: 8,
       bymonthday: 25,
     },
     dtstamp: new Date().toISOString(),
     geo: [40.7128],
+    notification: {
+      title: "Beach Party",
+      description: "Don't forget the sunscreen!",
+      type: "email",
+      repetition: {
+        freq: "daily",
+        interval: 1,
+      },
+      fromDate: new Date("2024-08-10T00:00:00"),
+    },
   },
 ];
 
