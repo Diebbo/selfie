@@ -18,6 +18,7 @@ export const projectSchema = new mongoose.Schema({
         ref: 'Activity'
     }],
     creationDate: Date,
+    startDate: Date,
     deadline: Date,
 });
 
