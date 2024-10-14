@@ -223,15 +223,17 @@ export async function createDataBase() {
   };
 
   const getEvents = async (uid) => {
-    var user = await userModel.findById(uid);
+    const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    const created = await eventModel.find({ _id: { $in: user.events } });
-    const partecipating = await eventModel.find({
-      _id: { $in: user.participatingEvents },
-    });
+    // Combina gli ID degli eventi creati e quelli a cui l'utente partecipa
+    const allEventIds = [
+      ...new Set([...user.events, ...user.participatingEvents]),
+    ];
 
-    const events = { created, partecipating };
+    // Recupera tutti gli eventi in una sola query
+    const events = await eventModel.find({ _id: { $in: allEventIds } });
+
     return events;
   };
 
