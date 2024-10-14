@@ -12,9 +12,12 @@ const areSameDay = (date1: Date, date2: Date): boolean => {
   );
 };
 
-const getEventsByDay = (events: SelfieEvent[], date: Date): SelfieEvent[] => {
-  if (!Array.isArray(events) || !date || !(date instanceof Date)) {
-    throw new Error("Input non valido");
+const getEventsByDay = (
+  events: SelfieEvent[] | undefined,
+  date: Date,
+): SelfieEvent[] => {
+  if (!Array.isArray(events)) {
+    return []; // Restituisci un array vuoto invece di lanciare un errore
   }
 
   return events.filter((event) => {
@@ -23,7 +26,10 @@ const getEventsByDay = (events: SelfieEvent[], date: Date): SelfieEvent[] => {
   });
 };
 
-const showEvents = (events: SelfieEvent[], date: Date): JSX.Element[] => {
+const showEvents = (
+  events: SelfieEvent[] | undefined,
+  date: Date,
+): JSX.Element[] => {
   const todayEvents = getEventsByDay(events, date);
   return todayEvents.map((event, index) => (
     <button
@@ -46,9 +52,10 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   day,
   date,
   isToday,
-  events = [],
+  events = [], // Questo già fornisce un default, ma assicuriamoci che sia un array
 }) => {
   const cellDate = new Date(date.getFullYear(), date.getMonth(), day);
+  const safeEvents = Array.isArray(events) ? events : [];
 
   return (
     <Card>
@@ -59,7 +66,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           {day}
         </div>
         <div className="mt-1 space-y-1 overflow-hidden ">
-          {showEvents(events, cellDate)}
+          {showEvents(safeEvents, cellDate)}
         </div>
       </CardBody>
     </Card>

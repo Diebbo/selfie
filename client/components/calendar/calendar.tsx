@@ -60,9 +60,16 @@ const CalendarPage = () => {
     return await res.json();
   }
 
+  const fetchCurrentDate = async () => {
+    const date = await getDateTime();
+    setToday(new Date(date.currentTime));
+    setCurrentDate(new Date(date.currentTime));
+  };
+
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando");
+      fetchCurrentDate();
       const fetchAllEvents = async () => {
         const events = await fetchEvents();
         setEvents(events);
@@ -146,7 +153,7 @@ const CalendarPage = () => {
   ];
 
   const handleToday = () => {
-    setCurrentDate(new Date());
+    fetchCurrentDate();
   };
 
   const changeMonth = (increment: number) => {
