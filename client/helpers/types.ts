@@ -61,6 +61,8 @@ export interface Person extends RegisterType {
 
 export type People = Person[];
 
+export type FrequencyType = "daily" | "weekly" | "monthly" | "yearly";
+
 export interface SelfieEvent {
   title: String;
   summary: String;
@@ -69,10 +71,7 @@ export interface SelfieEvent {
   status: String;
   transp: String;
   rrule: {
-    freq: {
-      type: String;
-      enum: ["daily", "weekly", "monthly", "yearly"];
-    };
+    freq: FrequencyType;
     interval: Number;
     bymonth: Number;
     bymonthday: Number;
@@ -80,12 +79,24 @@ export interface SelfieEvent {
   dtstart: Date;
   dtend: Date;
   dtstamp: String;
-  categories: [String];
+  categories: String[];
   location: String;
   geo: [Number];
   description: String;
   URL: String;
   participants: People;
+  notification: SelfieNotification;
+}
+
+export interface SelfieNotification {
+  title: String;
+  description: String;
+  type: String;
+  repetition: {
+    freq: String; // minutely, hourly, daily, weekly, monthly, yearly
+    interval: Number; // every x minutes/hours/days/weeks/months/years
+  };
+  fromDate: Date; // anticipo rispetto a data evento
 }
 
 export interface PomodoroSettings {

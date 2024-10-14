@@ -1,7 +1,7 @@
 "use client";
 import { Calendar, Chip, Button, DateValue } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
-import NewElementAdder from "@/components/calendar/event";
+import EventAdder from "@/components/calendar/event";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent } from "@/helpers/types";
 
@@ -10,6 +10,7 @@ const CalendarPage = () => {
   const [today, setToday] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [reloadEvents, setReloadEvents] = useState(true);
   // const [participants, setParticipants] = useState<Person[]>([]);
   const EVENTS_API_URL = "/api/events";
 
@@ -22,13 +23,13 @@ const CalendarPage = () => {
         },
       });
 
-      /*if (res.status === 401) {
-        throw new AuthenticationError("Unauthorized, please login.");
+      if (res.status === 401) {
+        throw new Error("Unauthorized, please login.");
       } else if (res.status >= 500) {
-        throw new ServerError(`Server error: ${res.statusText}`);
+        throw new Error(`Server error: ${res.statusText}`);
       } else if (!res.ok) {
         throw new Error("Failed to create events");
-        }*/
+      }
     } catch (e: unknown) {
       throw new Error(`Error during fetch events: ${(e as Error).message}`);
     }
@@ -36,13 +37,40 @@ const CalendarPage = () => {
     return await res.json();
   }
 
+  async function getDateTime() {
+    try {
+      var res = await fetch("/api/config/time", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.status === 401) {
+        throw new Error("Unauthorized, please login.");
+      } else if (res.status >= 500) {
+        throw new Error(`Server error: ${res.statusText}`);
+      } else if (!res.ok) {
+        throw new Error("Failed to get date time");
+      }
+    } catch (e) {
+      throw new Error("Error during fetching date time, ");
+    }
+
+    return await res.json();
+  }
+
   useEffect(() => {
-    const fetchAllNotes = async () => {
-      const events = await fetchEvents();
-      setEvents(events);
-    };
-    fetchAllNotes();
-  }, []);
+    if (reloadEvents) {
+      console.log("sto fetchando");
+      const fetchAllEvents = async () => {
+        const events = await fetchEvents();
+        setEvents(events);
+      };
+      fetchAllEvents();
+      setReloadEvents(false);
+    }
+  }, [reloadEvents]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -51,18 +79,6 @@ const CalendarPage = () => {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  useEffect(() => {
-    // Aggiorna 'today' ogni giorno a mezzanotte
-    const timer = setInterval(
-      () => {
-        setToday(new Date());
-      },
-      1000 * 60 * 60 * 24,
-    );
-
-    return () => clearInterval(timer);
   }, []);
 
   const daysInMonth = (date: Date) => {
@@ -95,7 +111,7 @@ const CalendarPage = () => {
         week.push(
           <td
             key={`cell-${i}-${j}`}
-            className="border border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40"
+            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-zinc-800"} border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
           >
             {isValidDay ? (
               <CalendarCell
@@ -149,7 +165,7 @@ const CalendarPage = () => {
       aria-label="Back Ground Calendar"
     >
       <div className="flex-grow">
-        <div className="bg-black h-screen flex flex-col">
+        <div className="bg-white dark:bg-black h-screen flex flex-col">
           <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
             <button
               onClick={() => changeMonth(-1)}
@@ -164,7 +180,7 @@ const CalendarPage = () => {
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </Chip>
             <Button
-              variant="shadow"
+              variant="solid"
               onClick={handleToday}
               className="text-white rounded-xl transition-all duration-500 bg-gradient-to-tl from-pink-500 via-red-500 to-yellow-400 hover:text-slate-700"
             >
@@ -206,10 +222,14 @@ const CalendarPage = () => {
         }`}
       />
       {!isMobile && (
-        <div className="w-full md:w-72 bg-black p-4">
+        <div className="w-full md:w-72 bg-white dark:bg-black p-4">
           <Calendar aria-label="Sidebar Calendar" showMonthAndYearPickers />
           <div className="relative text-center">
-            <NewElementAdder aria-label="Element Adder Button" />
+            <EventAdder
+              setReloadEvents={setReloadEvents}
+              aria-label="Event Adder Button"
+              className=""
+            />
           </div>
         </div>
       )}

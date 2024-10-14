@@ -20,7 +20,13 @@ import {
 } from "@nextui-org/react";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
-import { SelfieEvent } from "@/helpers/types";
+import {
+  SelfieEvent,
+  SelfieNotification,
+  FrequencyType,
+  Person,
+} from "@/helpers/types";
+import NotificationMenu from "./notificationMenu";
 import { parseZonedDateTime } from "@internationalized/date";
 const EVENTS_API_URL = "/api/events";
 
@@ -35,13 +41,13 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
       cache: "no-store", // This ensures fresh data on every request
     });
 
-    /*if (res.status === 401) {
-      throw new AuthenticationError("Unauthorized, please login.");
+    if (res.status === 401) {
+      throw new Error("Unauthorized, please login.");
     } else if (res.status >= 500) {
-      throw new ServerError(`Server error: ${res.statusText}`);
+      throw new Error(`Server error: ${res.statusText}`);
     } else if (!res.ok) {
       throw new Error("Failed to create events");
-      }*/
+    }
   } catch (error) {
     console.error("Error saving note:", error);
     return false;
@@ -49,15 +55,43 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
   return true;
 }
 
-export default function NewElementAdder() {
+export default function EventAdder(setReloadEvents: any) {
   const [isOpen, setIsOpen] = useState(false);
-  const [modalType, setModalType] = useState("");
+  const [eventData, setEventData] = useState<Partial<SelfieEvent>>({
+    title: "",
+    summary: "",
+    status: "confirmed",
+    transp: "OPAQUE",
+    dtstart: new Date(),
+    dtend: new Date(),
+    dtstamp: new Date().toISOString(),
+    categories: [""],
+    location: "",
+    description: "",
+    URL: "",
+    participants: [] as Person[],
+    rrule: {
+      freq: "weekly",
+      interval: 1,
+      bymonth: 1,
+      bymonthday: 1,
+    },
+    notification: {
+      title: "",
+      description: "",
+      type: "",
+      repetition: {
+        freq: "",
+        interval: 1,
+      },
+      fromDate: new Date(),
+    },
+  });
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
-  //const [eventData, setEventData] = useState<SelfieEvent>(null);
+  const [notifications, setNotifications] = useState(false);
 
-  const handleOpen = (type: string) => {
-    setModalType(type);
+  const handleOpen = () => {
     setIsOpen(true);
   };
 
@@ -65,119 +99,236 @@ export default function NewElementAdder() {
     setIsOpen(false);
   };
 
-  const handleSubmit = () => {
-    // Qui puoi aggiungere la logica per gestire l'invio del form
+  const handleInputChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | { target: { name: string; value: any } },
+  ) => {
+    var { name, value } = e.target;
+    if (name.startsWith("notification.")) {
+      const notificationField = name.split(".")[1];
+      if (name.endsWith("fromDate")) {
+        value = new Date(value).toISOString();
+      }
+      setEventData((prev: any) => ({
+        ...prev,
+        notification: {
+          ...prev.notification,
+          [notificationField]: value,
+        },
+      }));
+    } else {
+      setEventData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleDateChange = (start: Date | string, end: Date | string) => {
+    setEventData((prev) => ({
+      ...prev,
+      dtstart: new Date(start),
+      dtend: new Date(end),
+    }));
+  };
+
+  const handleRepeatChange = (value: boolean) => {
+    setRepeatEvent(value);
+    if (!value) {
+      setEventData((prev) => ({ ...prev, rrule: undefined }));
+    } else {
+      setEventData((prev) => ({
+        ...prev,
+        rrule: {
+          freq: "weekly" as FrequencyType,
+          interval: 1,
+          bymonth: 1,
+          bymonthday: 1,
+        },
+      }));
+    }
+  };
+
+  const handleRruleChange = (frequency: FrequencyType) => {
+    setEventData((prev) => ({
+      ...prev,
+      rrule: {
+        ...prev.rrule,
+        freq: frequency,
+        interval: prev.rrule?.interval ?? 1,
+        bymonth: prev.rrule?.bymonth ?? 1,
+        bymonthday: prev.rrule?.bymonthday ?? 1,
+      },
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const newEvent: SelfieEvent = {
+      ...eventData,
+      sequence: 0,
+      categories: eventData.categories || [],
+      participants: eventData.participants || [],
+    } as SelfieEvent;
 
     try {
-      //const success = createEvent(eventData);
-
-      console.log("Form submitted");
-    } catch (e) {
-      console.error("Error submitting form", e);
+      console.log("newEvent: ", newEvent);
+      const success = await createEvent(newEvent);
+      console.log("success: ", success);
+      if (success) {
+        console.log("Event created successfully");
+        handleClose();
+      } else {
+        console.error("Failed to create event");
+      }
+    } catch (error) {
+      console.error("Error submitting event", error);
     }
-    handleClose();
+
+    setReloadEvents(true);
   };
 
   return (
     <>
-      <Dropdown>
-        <DropdownTrigger>
-          <Button
-            variant="bordered"
-            className="rounded-full text-size-80 transition-all duration-500 bg-gradient-to-bl from-blue-600 from-20% via-sky-500 via-40% to-emerald-600 to-90% hover:text-slate-700"
-          >
-            Nuovo ...
-          </Button>
-        </DropdownTrigger>
-        <DropdownMenu>
-          <DropdownItem
-            key="event"
-            className="text-pink-300"
-            description="Aggiungi nuovo evento"
-            onPress={() => handleOpen("Evento")}
-          >
-            Evento
-          </DropdownItem>
-          <DropdownItem
-            key="activity"
-            className="text-teal-300"
-            description="Aggiungi una nuova attività"
-            onPress={() => handleOpen("Attività")}
-          >
-            Attività
-          </DropdownItem>
-          <DropdownItem
-            key="project"
-            className="text-sky-300"
-            description="Aggiungi nuovo progetto"
-            onPress={() => handleOpen("Progetto")}
-          >
-            Progetto
-          </DropdownItem>
-        </DropdownMenu>
-      </Dropdown>
+      <Button
+        variant="bordered"
+        className="rounded-full text-size-80 transition-all duration-500 bg-gradient-to-bl from-blue-600 from-20% via-sky-500 via-40% to-emerald-600 to-90% hover:text-slate-700"
+        onPress={handleOpen}
+      >
+        Nuovo Evento
+      </Button>
 
-      <Modal isOpen={isOpen} onClose={handleClose} size="2xl">
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        size="2xl"
+        scrollBehavior="outside"
+      >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            Nuovo {modalType}
-          </ModalHeader>
-          <ModalBody>
-            <form onSubmit={(e) => handleSubmit()}>
+          <form onSubmit={handleSubmit}>
+            <ModalHeader className="flex flex-col gap-1">
+              Nuovo Evento
+            </ModalHeader>
+            <ModalBody>
               <Input
+                isRequired
                 label="Titolo"
+                name="title"
+                value={eventData.title as string}
+                onChange={handleInputChange}
                 placeholder="Inserisci il titolo"
                 className="mb-4"
               />
               <div className="flex gap-4 mb-4">
+                <EventDatePicker
+                  isAllDay={allDayEvent}
+                  startDate={eventData.dtstart as Date}
+                  endDate={eventData.dtend as Date}
+                  onChange={handleDateChange}
+                />
                 <Switch isSelected={allDayEvent} onValueChange={setAllDayEvent}>
-                  {" "}
-                  Tutto il giorno{" "}
+                  Tutto il giorno
                 </Switch>
               </div>
-              <div className="flex pb-4 gap-4">
-                <Switch isSelected={repeatEvent} onValueChange={setRepeatEvent}>
-                  {" "}
-                  Si ripete{" "}
+              <div className="flex pb-4 gap-4 ">
+                <Switch
+                  className="w-fit min-w-[120px]"
+                  isSelected={repeatEvent}
+                  onValueChange={handleRepeatChange}
+                >
+                  Si ripete
                 </Switch>
+                <RepetitionMenu
+                  value={repeatEvent}
+                  frequency={eventData.rrule?.freq}
+                  onChange={handleRruleChange}
+                />
+                <Input
+                  className={`${eventData.rrule?.freq ? "w-fit" : "hidden"}`}
+                  label="Intervallo fra eventi"
+                  value={eventData.rrule?.interval.toString()}
+                />
+                <Input
+                  className={`${eventData.rrule?.freq === "monthly" ? "w-fit" : "hidden"}`}
+                  label="Per giorno del mese"
+                  value={eventData.rrule?.bymonthday.toString()}
+                />
+                <Input
+                  className={`${eventData.rrule?.freq === "yearly" ? "w-fit" : "hidden"}`}
+                  label="Per mese"
+                  value={eventData.rrule?.bymonth.toString()}
+                />
               </div>
               <Input
                 label="Luogo"
+                name="location"
+                value={eventData.location?.toString()}
+                onChange={handleInputChange}
                 placeholder="Inserisci il luogo"
                 className="mb-4"
               />
               <Textarea
                 label="Descrizione"
+                name="description"
+                value={eventData.description?.toString()}
+                onChange={handleInputChange}
                 placeholder="Inserisci una descrizione"
                 className="mb-4"
               />
               <Input
                 label="Partecipanti"
+                name="participants"
+                value={eventData.participants?.join(", ")}
+                /*onChange={(e) =>
+                  setEventData((prev) => ({
+                    ...prev,
+                    participants: e.target.value.split(",").map((p) => p.trim()),
+                  }))
+                }*/
                 placeholder="Inserisci i partecipanti (separati da virgola)"
                 className="mb-4"
               />
               <Input
-                label="Tag"
-                placeholder="Inserisci i partecipanti (separati da virgola)"
+                label="Categorie"
+                name="categories"
+                value={eventData.categories?.join(", ")}
+                onChange={(e) =>
+                  setEventData((prev) => ({
+                    ...prev,
+                    categories: e.target.value.split(",").map((c) => c.trim()),
+                  }))
+                }
+                placeholder="Inserisci le categorie (separate da virgola)"
                 className="mb-4"
               />
-              <div className="flex gap-4 mb-4">
-                <Input
-                  label="Numero di notifiche"
-                  min="0"
-                  className="py-0 flex-1"
+              <Input
+                label="URL"
+                name="URL"
+                value={eventData.URL?.toString()}
+                onChange={handleInputChange}
+                placeholder="Inserisci l'URL dell'evento"
+                className="mb-4"
+              />
+              <div className="flex flex-col pb-4 gap-4 ">
+                <Switch
+                  className="w-fit min-w-[120px]"
+                  isSelected={notifications}
+                  onValueChange={setNotifications}
+                >
+                  Notifiche
+                </Switch>
+                <NotificationMenu
+                  value={notifications}
+                  notification={eventData.notification as SelfieNotification}
+                  onChange={handleInputChange}
+                  eventDate={eventData.dtstart as Date}
                 />
-                <div className="flex content-middle items-center">
-                  <Switch> Abilita notifiche </Switch>
-                </div>
               </div>
-            </form>
-          </ModalBody>
-          <ModalFooter>
-            <Button color="primary" onPress={handleSubmit}>
-              Salva
-            </Button>
-          </ModalFooter>
+            </ModalBody>
+            <ModalFooter>
+              <Button color="primary" type="submit" onClick={handleClose}>
+                Salva
+              </Button>
+            </ModalFooter>
+          </form>
         </ModalContent>
       </Modal>
     </>
