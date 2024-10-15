@@ -45,7 +45,7 @@ function createTimeRouter(db) {
   router.get("/time", cookieJwtAuth, async function (req, res, next) {
     try {
       const currentTime = await db.getDateTime();
-      res.status(200).json({ currentTime: currentTime.toISOString() });
+      res.status(200).json(currentTime.toISOString());
     } catch (error) {
       res.status(500).json({ message: "Error getting current time" });
     }
