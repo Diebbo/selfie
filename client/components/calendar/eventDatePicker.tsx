@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  DatePicker,
   DateRangePicker,
   RangeValue,
   DateValue,
@@ -17,7 +16,6 @@ interface EventDatePickerProps {
 
 const EventDatePicker: React.FC<EventDatePickerProps> = ({
   isAllDay,
-  endDate,
   onChange,
 }) => {
   const handleDateRangeChange = (value: RangeValue<DateValue>) => {

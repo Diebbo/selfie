@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
   Button,
   Modal,
   ModalContent,
@@ -15,8 +11,6 @@ import {
   Input,
   Textarea,
   Switch,
-  DatePicker,
-  DateRangePicker,
 } from "@nextui-org/react";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
@@ -27,8 +21,8 @@ import {
   Person,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
-import { parseZonedDateTime } from "@internationalized/date";
 const EVENTS_API_URL = "/api/events";
+import { reloadContext } from "./reloadContext";
 
 async function createEvent(event: SelfieEvent): Promise<boolean> {
   try {
@@ -55,7 +49,7 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
   return true;
 }
 
-export default function EventAdder(setReloadEvents: any) {
+export default function EventAdder() {
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] = useState<Partial<SelfieEvent>>({
     title: "",
@@ -90,6 +84,7 @@ export default function EventAdder(setReloadEvents: any) {
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
+  const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
 
   const handleOpen = () => {
     setIsOpen(true);

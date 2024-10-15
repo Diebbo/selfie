@@ -14,7 +14,6 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
   value,
   notification,
   onChange,
-  eventDate,
 }) => {
   if (!value) return null;
 
