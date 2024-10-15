@@ -1,27 +1,44 @@
-import { NoteModel } from "../helpers/types";
+"use server";
 const NOTES_API_URL = "/api/notes";
+import { cookies } from "next/headers";
+import getBaseUrl from "@/config/proxy";
+import { AuthenticationError, ServerError } from "@/helpers/errors";
+import { NoteModel } from "@/helpers/types";
 
-export const fetchNotes = async (): Promise<NoteModel[]> => {
-  try {
-    const response = await fetch(
-      `${NOTES_API_URL}/list?fields=_id,title,date,tags,content`,
-    );
-    if (response.ok) {
-      const data = await response.json();
-      // Sort notes by date in descending order
-      return data.sort(
-        (a: NoteModel, b: NoteModel) =>
-          new Date(b.date!).getTime() - new Date(a.date!).getTime(),
-      );
-    } else {
-      console.error("Failed to fetch notes");
-      return [];
-    }
-  } catch (error) {
-    console.error("Error fetching notes:", error);
-    return [];
+export async function getNotes() {
+  const cookieStore = cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
   }
-};
+
+  const res = await fetch(
+    `${getBaseUrl()}/api/notes/list?fields=_id,title,date,tags,content`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: `token=${token.toString()}`,
+      },
+      cache: "no-store", // This ensures fresh data on every request
+    },
+  );
+
+  if (res.status === 401) {
+    throw new AuthenticationError("Unauthorized, please login.");
+  } else if (res.status >= 500) {
+    throw new ServerError(`Server error: ${res.statusText}`);
+  } else if (!res.ok) {
+    throw new Error("Failed to fetch events");
+  }
+
+  const data = await res.json();
+  return data.sort(
+    (a: NoteModel, b: NoteModel) =>
+      new Date(b.date!).getTime() - new Date(a.date!).getTime(),
+  );
+}
 
 export const fetchNoteById = async (id: string): Promise<NoteModel | null> => {
   try {

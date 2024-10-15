@@ -119,7 +119,7 @@ export async function createDataBase() {
     }
   };
 
-  const postNote = async (uid, note) => {
+  const postNote = async (uid, note, id) => {
     try {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
@@ -131,9 +131,9 @@ export async function createDataBase() {
       if (!note.tags) note.tags = [];
       note.date = new Date(); // update the last modified date with current date
 
-      if (note._id) {
+      if (id) {
         // Modify existing note
-        const noteId = new mongoose.Types.ObjectId(note._id); // convert _id field from a string to ObjectID to compare with ids in the db
+        const noteId = new mongoose.Types.ObjectId(id); // convert _id field from a string to ObjectID to compare with ids in the db
         const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
         if (noteIndex !== -1) {
           // Update existing note

@@ -21,10 +21,15 @@ import {
 } from "@heroicons/react/24/solid";
 import { Card, CardBody } from "@nextui-org/react";
 import Wave from "react-wavify";
+import { PomodoroSettings } from "@/helpers/types";
 
-function Pomodoro() {
-  const [focusTime, setFocusTime] = useState(25); // 25 minuti
-  const [breakTime, setBreakTime] = useState(5); // 5 minuti
+interface PomodoroProps {
+  settings: PomodoroSettings;
+}
+
+function Pomodoro(props: PomodoroProps) {
+  const [focusTime, setFocusTime] = useState(props.settings.studyDuration); // 25 minuti
+  const [breakTime, setBreakTime] = useState(props.settings.shortBreakDuration); // 5 minuti
   const [timeLeft, setTimeLeft] = useState(focusTime * 60);
   const [percentage, setPercentage] = useState(100);
   const [isRunning, setIsRunning] = useState(false);
