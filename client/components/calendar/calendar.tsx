@@ -5,12 +5,17 @@ import EventAdder from "@/components/calendar/event";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent } from "@/helpers/types";
 
-const CalendarPage = () => {
-  const [events, setEvents] = useState<SelfieEvent[]>([]);
-  const [today, setToday] = useState(new Date());
+interface CalendarPageProps {
+  initialEvents: SelfieEvent[];
+  dbdate: Date;
+}
+
+const CalendarPage = (props: CalendarPageProps) => {
+  const [events, setEvents] = useState<SelfieEvent[]>(props.initialEvents);
+  const [today, setToday] = useState(props.dbdate);
   const [isMobile, setIsMobile] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [reloadEvents, setReloadEvents] = useState(true);
+  const [currentDate, setCurrentDate] = useState(props.dbdate);
+  const [reloadEvents, setReloadEvents] = useState(false);
   // const [participants, setParticipants] = useState<Person[]>([]);
   const EVENTS_API_URL = "/api/events";
 
@@ -37,7 +42,7 @@ const CalendarPage = () => {
     return await res.json();
   }
 
-  async function getDateTime() {
+  async function fetchCurrentTime() {
     try {
       var res = await fetch("/api/config/time", {
         method: "GET",
@@ -60,21 +65,22 @@ const CalendarPage = () => {
     return await res.json();
   }
 
-  const fetchCurrentDate = async () => {
-    const date = await getDateTime();
-    setToday(new Date(date.currentTime));
-    setCurrentDate(new Date(date.currentTime));
+  const setCurrentTime = async () => {
+    const date = await fetchCurrentTime();
+    setToday(new Date(date));
+    setCurrentDate(new Date(date));
+  };
+
+  const setAllEvents = async () => {
+    const events = await fetchEvents();
+    setEvents(events);
   };
 
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando");
-      fetchCurrentDate();
-      const fetchAllEvents = async () => {
-        const events = await fetchEvents();
-        setEvents(events);
-      };
-      fetchAllEvents();
+      setCurrentTime();
+      setAllEvents();
       setReloadEvents(false);
     }
   }, [reloadEvents]);
@@ -153,7 +159,7 @@ const CalendarPage = () => {
   ];
 
   const handleToday = () => {
-    fetchCurrentDate();
+    setCurrentTime();
   };
 
   const changeMonth = (increment: number) => {
