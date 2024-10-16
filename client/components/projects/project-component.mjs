@@ -134,6 +134,7 @@ class ProjectCard extends HTMLElement {
 		const activityEnd = new Date(activity.dueDate);
 		const startOffset = this.getDaysBetween(startDate, activityStart).length;
 		const duration = this.getDaysBetween(activityStart, activityEnd).length;
+		console.log(activity.participants)
 	
 		const rowHtml = `
       <div class="gantt-row">
@@ -141,7 +142,7 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell days-column">${duration}</div>
         <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
-        <div class="gantt-cell participants-column">${activity.participants && activity.participants.lenght > 0 ? activity.participants.join(', ') : "no one"}</div>
+        <div class="gantt-cell participants-column">${activity.participants && (activity.participants.length > 0)? activity.participants.join(', ') : "no one"}</div>
 ${days.map((day, index) => {
 			const dayTimestamp = day.getTime();
 			const activityStartTimestamp = activityStart.getTime();
