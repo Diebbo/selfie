@@ -25,7 +25,7 @@ const activitySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    subActivity: [
+    subActivities: [
         // should be an array of activitySchema but it's not defined yet
     ],
     uid: {
