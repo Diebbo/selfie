@@ -448,10 +448,47 @@ export async function createDataBase() {
     return activities;
   };
 
+  const addDatesToActivity = (activity, lastDate) => {
+    if (!activity) return activity;
+
+    // If the activity has a due date, use it as the last date
+    activity.startDate = new Date(lastDate);
+
+    // If the activity has subActivities, recursively process them
+    if (activity.subActivities && activity.subActivities.length > 0) {
+      for (let i = 0; i < activity.subActivities.length; i++) {
+        activity.subActivities[i] = addDatesToActivity(activity.subActivities[i], lastDate);
+        lastDate = new Date(activity.subActivities[i].dueDate);
+        lastDate.setDate(lastDate.getDate() + 1);
+      }
+    }
+
+    console.log(activity);
+    return activity;
+  }
+
+  const addDatesToActivities = (projects) => {
+    if (!projects || projects.length === 0) return projects;
+
+    for (let i = 0; i < projects.length; i++) {
+      let lastDate = projects[i].startDate;
+      // Add the starting and ending dates to the activities
+      for (let j = 0; j < projects[i].activities.length; j++) {
+        projects[i].activities[j] = addDatesToActivity(projects[i].activities[j], lastDate);
+        lastDate = new Date(projects[i].activities[j].dueDate);
+        lastDate.setDate(lastDate.getDate() + 1);
+      }
+    }
+
+    return projects;
+  }
+
   const getProjects = async (uid) => {
     // Ritorna tutti i progetti creati dall'utente o a cui partecipa
     let proj = await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
 
+    // add the starting date and the ending date of the single activities
+    proj = addDatesToActivities(proj);
     return proj;
   };
 
