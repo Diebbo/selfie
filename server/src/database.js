@@ -416,20 +416,41 @@ export async function createDataBase() {
     return user.invitedEvents;
   };
 
+  const getUsrernameForActivity = async (activity) => {
+    if (!activity.participants || activity.participants.length === 0) {
+      return activity;
+    }
+
+    // Fetch the user details for all participants based on their IDs
+    console.log(activity.participants);
+    let participants = await userModel.find({ _id: { $in: activity.participants.map((id) => id.toString()) } });
+
+    // Replace the participant IDs with their usernames
+    activity.participants = participants.map((user) => user.username);
+    console.log(activity.participants);
+    console.log('-----');
+    return activity;
+  };
+
+  const getUsernameForActivities = async (activities) => {
+    if (!activities || activities.length === 0) return activities;
+
+    for (let i = 0; i < activities.length; i++) {
+      // Check if the activity has subActivities and recursively process them
+      if (activities[i].subActivities && activities[i].subActivities.length > 0) {
+        activities[i].subActivities = await getUsernameForActivities(activities[i].subActivities);
+      }
+
+      // Process the participants for the current (father) activity
+      activities[i] = await getUsrernameForActivity(activities[i]);
+    }
+
+    return activities;
+  };
+
   const getProjects = async (uid) => {
     // Ritorna tutti i progetti creati dall'utente o a cui partecipa
     let proj = await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
-
-    for (let i = 0; i < proj.length; i++) {
-      const project = proj[i];
-
-      let members = await userModel.find({ _id: { $in: project.members } });
-      proj[i].members = members.map((member) => member.username);
-
-      const obj = await getActivities(uid, project._id);
-      if (obj.activity)
-        proj[i].activities = obj.activity;
-    }
 
     return proj;
   };
@@ -468,25 +489,31 @@ export async function createDataBase() {
   const convertUsernameToId = async (username) => {
     const user = await userModel.findOne({ username: username });
     if (!user) throw new Error("User not found");
-    return user._id;
+    return user._id.toString();
   };
 
-  const processActivityParticipants = async (activity) => {
-    for (let i = 0; i < activity.participants.length; i++) {
-      activity.participants[i] = await convertUsernameToId(activity.participants[i]);
+  const processActivityParticipants = async (activity, fatherActivityParticipants = []) => {
+    if (!activity.participants || activity.participants.length === 0) {
+      return activity;
     }
 
+    // Filter out participants that are not in the fatherActivityParticipants array
+    activity.participants = activity.participants.filter(
+      participant => fatherActivityParticipants.includes(participant)
+    );
+
+    // if no subactivities, exit
     if (!activity.subActivities) return activity;
 
     for (let j = 0; j < activity.subActivities.length; j++) {
-      activity.subActivities[j] = await processActivityParticipants(activity.subActivities[j]);
+      activity.subActivities[j] = await processActivityParticipants(activity.subActivities[j], activity.participants);
     }
     return activity;
   }
 
   const addActivityToProject = async (project, activity) => {
     checkActivityFitInProject(project, activity);
-    activity = await processActivityParticipants(activity);
+    activity = await processActivityParticipants(activity, project.members);
 
     if (!project.activities) project.activities = [];
     project.activities.push(activity);
@@ -505,6 +532,9 @@ export async function createDataBase() {
     if (new Date(project.startDate) >= new Date(project.deadline)) {
       throw new Error("Project start date must be before the deadline");
     }
+    
+    project.members = project.members || [];
+    project.members.push(user.username);
 
     // Add activities to the project
     let errors = [];
@@ -530,7 +560,6 @@ export async function createDataBase() {
       ...project,
       creator: uid,
       creationDate: now,
-      members: [user.username, ...project.members]
     });
 
     // Save the project
