@@ -5,13 +5,18 @@ export function createProjectRouter(db) {
   const router = express.Router();
 
   router.put('/', cookieJwtAuth, async function(req, res) {
+    let project = req.body.project;
+    if (!project) return res.status(400).json({ message: "Progetto non fornito" });
+    let activities = project.activities;
+    project = { ...project, activities: [] };
+
     try {
-      var result = await db.createProject(req.user._id, req.body.project);
+      var result = await db.createProject(req.user._id, project, activities);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "progetto aggiunto correttamente" , result });
+    return res.status(200).json({ message: "progetto aggiunto correttamente", result });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
@@ -28,7 +33,7 @@ export function createProjectRouter(db) {
   });
 
   //patch projects
-  
+
   //delete projects
 
   //add activity inside project
@@ -42,20 +47,20 @@ export function createProjectRouter(db) {
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
 
     let result;
-  
+
     try {
-      if(!parentId) {
+      if (!parentId) {
         result = await db.createActivity(uid, projectId, activity);
       } else {
         result = await db.createSubActivity(uid, projectId, parentId, activity);
       }
-    } catch (e) { 
+    } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
     if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
 
-    res.status(200).json({ message: "attività aggiunta correttamente" , result });
+    res.status(200).json({ message: "attività aggiunta correttamente", result });
   });
 
   //get attività (da user o da project)
