@@ -134,8 +134,6 @@ class ProjectCard extends HTMLElement {
 		const activityEnd = new Date(activity.dueDate);
 		const startOffset = this.getDaysBetween(startDate, activityStart).length;
 		const duration = this.getDaysBetween(activityStart, activityEnd).length;
-		console.log(activityStart, activityEnd, startOffset, duration);
-		console.log(activity.participants);
 	
 		const rowHtml = `
       <div class="gantt-row">
@@ -157,9 +155,9 @@ ${days.map((day, index) => {
       </div>
     `;
 
-		const subActivitiesHtml = activity.subActivity
-			? activity.subActivity.map(subActivity => this.renderGanttRow(subActivity, days, startDate, level + 1)).join('')
-			//this.renderGanttRow(activity.subActivity, days, startDate, level + 1)
+		const subActivitiesHtml = activity.subActivities
+			? activity.subActivities.map(subActivities => this.renderGanttRow(subActivities, days, startDate, level + 1)).join('')
+			//this.renderGanttRow(activity.subActivities, days, startDate, level + 1)
 			: '';
 
 		return rowHtml + subActivitiesHtml;

@@ -14,6 +14,10 @@ const notificationSchema = new mongoose.Schema({
 
 const activitySchema = new mongoose.Schema({
     name: String,
+    startDate: {
+        type: Date,
+        required: false
+    },
     dueDate: Date,
     completed: {
         type: Boolean,
