@@ -21,10 +21,10 @@ const activitySchema = new mongoose.Schema({
     },
     //notifiche per attività
     notification: notificationSchema,
-    participants: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }],
+    participants: [
+        // usernames
+        String
+    ],
     subActivities: [
         // should be an array of activitySchema but it's not defined yet
     ],
