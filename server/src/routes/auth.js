@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
-import { sendPushNotification } from "../../pushNotificationWorker.js";
+import { sendPushNotification } from "../pushNotificationWorker.js";
 
 const router = express.Router();
 
