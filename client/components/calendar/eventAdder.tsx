@@ -42,9 +42,8 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
     } else if (!res.ok) {
       throw new Error("Failed to create events");
     }
-  } catch (error) {
-    console.error("Error saving note:", error);
-    return false;
+  } catch (e) {
+    throw new Error(`Error during modify event: ${(e as Error).message}`);
   }
   return true;
 }
@@ -112,6 +111,7 @@ export default function EventAdder() {
           [notificationField]: value,
         },
       }));
+      console.log("name: ", name, "value: ", value);
     } else {
       setEventData((prev) => ({ ...prev, [name]: value }));
     }

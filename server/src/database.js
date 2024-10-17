@@ -255,6 +255,7 @@ export async function createDataBase() {
     await user.save();
 
     // invite all users in the event
+    /*
     var err = "Invited users not found: ";
     if (event.invitedUsers) {
       event.invitedUsers.forEach(async (invitedUser) => {
@@ -269,9 +270,12 @@ export async function createDataBase() {
       });
     }
     if (err !== "Invited users not found: ") throw new Error(err);
+    */
+    console.log("gocciole");
+
 
     // generate notifications for all the invited users
-    await generateNotificationsForEvent(addedEvent, [user]);
+    //await generateNotificationsForEvent(addedEvent, [user]);
 
     return addedEvent;
   };
@@ -1266,11 +1270,11 @@ export async function createDataBase() {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: msg.lastMessage,
-                date: msg.date,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: msg.lastMessage,
+              date: msg.date,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
