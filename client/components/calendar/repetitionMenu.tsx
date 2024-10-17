@@ -7,11 +7,10 @@ import {
   DropdownMenu,
   DropdownItem,
   Button,
-  Input,
 } from "@nextui-org/react";
 import { FrequencyType } from "@/helpers/types";
 
-const frequencyOptions = {
+const frequencyOptions: Record<FrequencyType, string> = {
   daily: "Giorno",
   weekly: "Settimana",
   monthly: "Mese",
@@ -20,8 +19,12 @@ const frequencyOptions = {
 
 interface RepetitionMenuProps {
   value: boolean;
-  frequency: string | undefined;
+  frequency: FrequencyType | undefined;
   onChange: (frequency: FrequencyType) => void;
+}
+
+function getFrequencyLabel(key: FrequencyType): string {
+  return frequencyOptions[key];
 }
 
 const RepetitionMenu: React.FC<RepetitionMenuProps> = ({
@@ -38,9 +41,9 @@ const RepetitionMenu: React.FC<RepetitionMenuProps> = ({
       <DropdownTrigger>
         <Button
           isDisabled={!value}
-          className={`${value ? "mt-[0.5rem]" : null}`}
+          className="py-2 mt-[0.5rem]"
         >
-          {value ? "Ogni " + frequency : "Ogni ..."}
+          {value ? "Ogni " + getFrequencyLabel(frequency as FrequencyType) : "Ogni ..."}
         </Button>
       </DropdownTrigger>
       <DropdownMenu

@@ -1,10 +1,10 @@
 "use client";
-import { Calendar, Chip, Button, } from "@nextui-org/react";
-import React, { useState, useEffect, createContext } from "react";
+import { Calendar, Chip, Button, Tooltip } from "@nextui-org/react";
+import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent } from "@/helpers/types";
-import { reloadContext } from "./reloadContext"
+import { reloadContext, mobileContext } from "./reloadContext"
 
 interface CalendarPageProps {
   initialEvents: SelfieEvent[];
@@ -174,79 +174,80 @@ const CalendarPage = (props: CalendarPageProps) => {
   };
 
   return (
-    <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
-      <div
-        className="flex flex-col md:flex-row min-h-screen"
-        aria-label="Back Ground Calendar"
-      >
-        <div className="flex-grow">
-          <div className="bg-white dark:bg-black h-screen flex flex-col">
-            <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
-              <button
-                onClick={() => changeMonth(-1)}
-                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-              >
-                &lt;
-              </button>
-              <Chip
-                variant="solid"
-                className="rounded-xl py-5 bg-gradient-to-br from-indigo-500 to-pink-500"
-              >
-                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-              </Chip>
-              <Button
-                variant="solid"
-                onClick={handleToday}
-                className="text-white rounded-xl transition-all duration-500 bg-gradient-to-tl from-pink-500 via-red-500 to-yellow-400 hover:text-slate-700"
-              >
-                Today
-              </Button>
-              <button
-                onClick={() => changeMonth(1)}
-                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-              >
-                &gt;
-              </button>
-            </div>
-            <div className="flex-grow overflow-auto">
-              <table className="w-full h-full table-fixed">
-                <thead>
-                  <tr>
-                    {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
-                      (day) => (
-                        <th
-                          key={day}
-                          className="h-10 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
-                        >
-                          {day}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
-                  {renderCalendar()}
-                </tbody>
-              </table>
+    <mobileContext.Provider value={{ isMobile, setIsMobile }}>
+      <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
+        <div
+          className="flex flex-col md:flex-row min-h-screen"
+          aria-label="Back Ground Calendar"
+        >
+          <div className="flex-grow">
+            <div className="bg-white dark:bg-black h-screen flex flex-col">
+              <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
+                <button
+                  onClick={() => changeMonth(-1)}
+                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                >
+                  &lt;
+                </button>
+                <EventAdder
+                  aria-label="Event Adder Button"
+                />
+                <Tooltip
+                  content={today.toISOString().split('T')[0]}
+                  showArrow
+                  key="tooltip day"
+                  delay={0}
+                  closeDelay={0}
+                  placement="top"
+                  className="text-white border-2 border-purple-600 bg-violet-400 text-black"
+                >
+                  <Chip
+                    variant="solid"
+                    className="text-base rounded-xl py-5 bg-violet-600"
+                  >
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </Chip>
+                </Tooltip>
+                <Button
+                  variant="solid"
+                  onClick={handleToday}
+                  className="text-white text-base rounded-xl bg-warning border-transparent border-2 hover:border-white"
+                >
+                  Oggi
+                </Button>
+                <button
+                  onClick={() => changeMonth(1)}
+                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                >
+                  &gt;
+                </button>
+              </div>
+              <div className="flex-grow overflow-auto">
+                <table className="w-full h-full table-fixed">
+                  <thead>
+                    <tr>
+                      {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
+                        (day) => (
+                          <th
+                            key={day}
+                            className="h-10 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
+                          >
+                            {day}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    {renderCalendar()}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-        <div
-          className={`resizer w-1 bg-white cursor-col-resize ${isMobile ? "hidden" : ""
-            }`}
-        />
-        {!isMobile && (
-          <div className="w-full md:w-72 bg-white dark:bg-black p-4">
-            <Calendar aria-label="Sidebar Calendar" showMonthAndYearPickers />
-            <div className="relative text-center">
-              <EventAdder
-                aria-label="Event Adder Button"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </reloadContext.Provider>
+      </reloadContext.Provider>
+    </mobileContext.Provider>
   );
 };
 

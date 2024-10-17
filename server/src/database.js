@@ -1342,6 +1342,7 @@ export async function createDataBase() {
     getEvents,
     deleteEvent,
     partecipateEvent,
+    modifyEvent,
     getProjects,
     getUserById,
     createProject,
