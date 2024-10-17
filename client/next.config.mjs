@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 // next.config.js
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
   distDir: "nextbuild",
   async rewrites() {
@@ -12,3 +12,5 @@ module.exports = {
     ];
   },
 };
+
+export default nextConfig;
