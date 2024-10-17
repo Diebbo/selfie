@@ -185,7 +185,7 @@ export default function EventAdder() {
     <>
       <Button
         variant="bordered"
-        className="rounded-full text-size-80 transition-all duration-500 bg-gradient-to-bl from-blue-600 from-20% via-sky-500 via-40% to-emerald-600 to-90% hover:text-slate-700"
+        className="rounded-xl bg-primary text-base border-transparent border-2 hover:border-white"
         onPress={handleOpen}
       >
         Nuovo Evento
@@ -200,7 +200,7 @@ export default function EventAdder() {
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1">
-              Nuovo Evento
+              Creazione Evento
             </ModalHeader>
             <ModalBody>
               <Input
@@ -308,7 +308,7 @@ export default function EventAdder() {
                   isSelected={notifications}
                   onValueChange={setNotifications}
                 >
-                  Notifiche
+                  Abilita le notifiche
                 </Switch>
                 <NotificationMenu
                   value={notifications}

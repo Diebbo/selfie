@@ -11,7 +11,7 @@ import {
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
 import { reloadContext } from "./reloadContext";
-import { SelfieEvent } from "@/helpers/types";
+import { SelfieEvent, SelfieNotification } from "@/helpers/types";
 
 interface ShowEventProps {
   isOpen: boolean;
