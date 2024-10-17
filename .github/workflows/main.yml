@@ -1,0 +1,53 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ develop-build ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Compile client
+      run: |
+        cd client 
+        npm install
+        npm run build
+        cd ..
+        
+    - name: Deploy to server via rsync
+      uses: burnett01/rsync-deployments@7.0.1
+      with:
+        switches: -avzr --delete
+        path: client/nextbuild
+        remote_path: /home/web/site232454/html/
+        remote_host: ${{ secrets.SERVER_IP }}
+        remote_user: ${{ secrets.SERVER_USER }}
+        remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Install server modules
+      run: |
+        cd server
+        npm install
+        cd ..
+        
+    - name: Deploy to server via rsync
+      uses: burnett01/rsync-deployments@7.0.1
+      with:
+        switches: -avzr --delete
+        path: server/*
+        remote_path: /home/web/site232454/html/
+        remote_host: ${{ secrets.SERVER_IP }}
+        remote_user: ${{ secrets.SERVER_USER }}
+        remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    
