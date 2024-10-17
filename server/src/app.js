@@ -5,7 +5,7 @@ import logger from "morgan";
 import cors from "cors";
 import dotenv from "dotenv";
 import pluralize from "pluralize";
-import "../pushNotificationWorker.js";
+import "./pushNotificationWorker.js";
 
 // routers
 import { createAuthRouter } from "./routes/auth.js";

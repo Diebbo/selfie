@@ -1,7 +1,7 @@
 import schedule from "node-schedule";
 import { mongoose } from "mongoose";
-import { createDataBase } from "./src/database.js";
-import { webpush } from "./src/webPushConfig.js";
+import { createDataBase } from "./database.js";
+import { webpush } from "./webPushConfig.js";
 import nodemailer from "nodemailer";
 import { config } from "dotenv";
 
