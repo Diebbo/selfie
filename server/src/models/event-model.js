@@ -12,6 +12,21 @@ const notificationSchema = new mongoose.Schema({
     fromDate: Date, // anticipo rispetto a data evento
 });
 
+const subActivitySchema = new mongoose.Schema({
+    name: String,
+    startDate: Date,
+    dueDate: Date,
+    completed: {
+        type: Boolean,
+        default: false
+    },
+    // Genera automaticamente un _id per ogni subActivity
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: () => new mongoose.Types.ObjectId()
+    }
+});
+
 const activitySchema = new mongoose.Schema({
     name: String,
     startDate: {
@@ -29,14 +44,13 @@ const activitySchema = new mongoose.Schema({
         // usernames
         String
     ],
-    subActivities: [
+    subActivities: [subActivitySchema],
         // should be an array of activitySchema but it's not defined yet
-    ],
+    
     uid: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    parentId: {} 
 });
 
 const eventSchema = new mongoose.Schema({
