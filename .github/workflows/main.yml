@@ -49,7 +49,7 @@ jobs:
       - name: Delploy node modulesd
         uses: burnett01/rsync-deployments@7.0.1
         with:
-          switches: -avzr
+          switches: -avzr --ignore-existing
           path: server/node_modules
           remote_path: /home/web/site232454/html/
           remote_host: ${{ secrets.SERVER_IP }}
