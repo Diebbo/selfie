@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
@@ -40,18 +40,27 @@ jobs:
           npm install
           cd ..
 
-      - name: move src to server
-        run: |
-          cd server
-          mv src/* .
-          rm -rf src
-          cd ..
+      #- name: move src to server
+      # run: |
+      #  cd server
+      # mv src/* .
+      #rm -rf src
+      #cd ..
+      - name: Delploy node modulesd
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr
+          path: server/node_modules
+          remote_path: /home/web/site232454/html/
+          remote_host: ${{ secrets.SERVER_IP }}
+          remote_user: ${{ secrets.SERVER_USER }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Deploy server via rsync
         uses: burnett01/rsync-deployments@7.0.1
         with:
-          switches: -avzr
-          path: server/*
+          switches: -avzr --delete
+          path: server/src/*
           remote_path: /home/web/site232454/html/src
           remote_host: ${{ secrets.SERVER_IP }}
           remote_user: ${{ secrets.SERVER_USER }}
