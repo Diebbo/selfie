@@ -86,6 +86,7 @@ export interface SelfieEvent {
   URL: String;
   participants: People;
   notification: SelfieNotification;
+  _id: string;
 }
 
 export interface SelfieNotification {

@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
   Button,
   Modal,
   ModalContent,
@@ -15,8 +11,6 @@ import {
   Input,
   Textarea,
   Switch,
-  DatePicker,
-  DateRangePicker,
 } from "@nextui-org/react";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
@@ -27,8 +21,8 @@ import {
   Person,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
-import { parseZonedDateTime } from "@internationalized/date";
 const EVENTS_API_URL = "/api/events";
+import { reloadContext } from "./reloadContext";
 
 async function createEvent(event: SelfieEvent): Promise<boolean> {
   try {
@@ -48,14 +42,13 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
     } else if (!res.ok) {
       throw new Error("Failed to create events");
     }
-  } catch (error) {
-    console.error("Error saving note:", error);
-    return false;
+  } catch (e) {
+    throw new Error(`Error during modify event: ${(e as Error).message}`);
   }
   return true;
 }
 
-export default function EventAdder(setReloadEvents: any) {
+export default function EventAdder() {
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] = useState<Partial<SelfieEvent>>({
     title: "",
@@ -90,6 +83,7 @@ export default function EventAdder(setReloadEvents: any) {
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
+  const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -117,6 +111,7 @@ export default function EventAdder(setReloadEvents: any) {
           [notificationField]: value,
         },
       }));
+      console.log("name: ", name, "value: ", value);
     } else {
       setEventData((prev) => ({ ...prev, [name]: value }));
     }
@@ -190,7 +185,7 @@ export default function EventAdder(setReloadEvents: any) {
     <>
       <Button
         variant="bordered"
-        className="rounded-full text-size-80 transition-all duration-500 bg-gradient-to-bl from-blue-600 from-20% via-sky-500 via-40% to-emerald-600 to-90% hover:text-slate-700"
+        className="rounded-xl bg-primary text-base border-transparent border-2 hover:border-white"
         onPress={handleOpen}
       >
         Nuovo Evento
@@ -205,7 +200,7 @@ export default function EventAdder(setReloadEvents: any) {
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1">
-              Nuovo Evento
+              Creazione Evento
             </ModalHeader>
             <ModalBody>
               <Input
@@ -313,7 +308,7 @@ export default function EventAdder(setReloadEvents: any) {
                   isSelected={notifications}
                   onValueChange={setNotifications}
                 >
-                  Notifiche
+                  Abilita le notifiche
                 </Switch>
                 <NotificationMenu
                   value={notifications}
