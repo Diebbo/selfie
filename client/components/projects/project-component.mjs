@@ -1,5 +1,3 @@
-// project-component.js
-
 class ProjectCard extends HTMLElement {
 	constructor() {
 		super();
@@ -63,6 +61,10 @@ class ProjectCard extends HTMLElement {
         padding-right: 10px;
 				justify-content: flex-start;
       }
+.task-info:hover {
+cursor: pointer;
+color: #2196F3;
+}
       .subactivity {
         margin-left: 10px;
       }
@@ -80,6 +82,74 @@ class ProjectCard extends HTMLElement {
 .completed {
 				background-color: #4CAF50;
 }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+	border-radius: 15px;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .modal input, .modal textarea {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+        box-sizing: border-box;
+      }
+      .modal button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      .modal button:hover {
+        background-color: #45a049;
+      }
+          .add-activity-btn {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      .add-activity-btn:hover {
+        background-color: #45a049;
+      }
+      .parent-activity-select {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+        box-sizing: border-box;
+      }
     `;
 
 		shadow.appendChild(style);
@@ -102,11 +172,208 @@ class ProjectCard extends HTMLElement {
 			wrapper.innerHTML = `
         <h2>${project.title}</h2>
         <p>${project.description}</p>
+        <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
           ${this.renderGanttChart(project.activities, days, startDate)}
         </div>
+        <div id="activityModal" class="modal">
+          <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Edit Activity</h2>
+            <form id="activityForm">
+              <input type="text" id="activityName" placeholder="Activity Name" required>
+              <input type="date" id="activityStartDate" placeholder="Start Date" required>
+              <input type="date" id="activityDueDate" placeholder="Due Date" required>
+              <input type="text" id="activityParticipants" placeholder="Participants (comma-separated)">
+              <textarea id="activityDescription" placeholder="Description"></textarea>
+              <select id="parentActivitySelect" class="parent-activity-select">
+                <option value="">No Parent (Top-level Activity)</option>
+              </select>
+              <button type="submit">Save Changes</button>
+            </form>
+          </div>
+        </div>
       `;
+
+			this.addEventListeners(project);
 		}
+	}
+
+	addEventListeners(project) {
+		const taskElements = this.shadowRoot.querySelectorAll('.task-name');
+		const modal = this.shadowRoot.querySelector('#activityModal');
+		const closeBtn = modal.querySelector('.close');
+		const form = this.shadowRoot.querySelector('#activityForm');
+		const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
+
+		taskElements.forEach((task) => {
+			task.addEventListener('click', () => this.openModal(task, project, false));
+		});
+
+		addActivityBtn.addEventListener('click', () => this.openModal(null, project, true));
+
+		closeBtn.addEventListener('click', () => this.closeModal());
+		window.addEventListener('click', (event) => {
+			if (event.target === modal) {
+				this.closeModal();
+			}
+		});
+
+		form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
+	}
+
+	openModal(task, project, isNewActivity) {
+		const modal = this.shadowRoot.querySelector('#activityModal');
+		const form = this.shadowRoot.querySelector('#activityForm');
+		const modalTitle = this.shadowRoot.querySelector('#modalTitle');
+		const parentActivitySelect = form.querySelector('#parentActivitySelect');
+
+		modalTitle.textContent = isNewActivity ? 'Add New Activity' : 'Edit Activity';
+		form.reset();
+
+		if (isNewActivity) {
+			form.dataset.isNew = 'true';
+			this.populateParentActivitySelect(parentActivitySelect, project.activities);
+		} else {
+			form.dataset.isNew = 'false';
+			const activity = this.findActivity(project.activities, task.textContent.trim());
+			if (activity) {
+				form.querySelector('#activityName').value = activity.name;
+				const startDate = new Date(activity.startDate || activity.dueDate);
+				form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
+				form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
+				form.querySelector('#activityParticipants').value = activity.participants ? activity.participants.join(', ') : '';
+				form.querySelector('#activityDescription').value = activity.description || '';
+				form.dataset.activity = JSON.stringify(activity);
+
+				if (parentActivitySelect.children.length === 1) {
+					this.populateParentActivitySelect(parentActivitySelect, project.activities, activity);
+				}
+			}
+		}
+
+		modal.style.display = 'block';
+	}
+
+	findActivity(activities, name) {
+		for (const activity of activities) {
+			if (activity.name === name) {
+				return activity;
+			}
+			if (activity.subActivities) {
+				const found = this.findActivity(activity.subActivities, name);
+				if (found) {
+					return found;
+				}
+			}
+		}
+		return null;
+	}
+
+	populateParentActivitySelect(select, activities, currentActivity = null) {
+		activities.forEach(activity => {
+			if (activity !== currentActivity) {
+				const option = document.createElement('option');
+				option.value = activity._id;
+				option.textContent = activity.name;
+				select.appendChild(option);
+			}
+		});
+	}
+
+	closeModal() {
+		const modal = this.shadowRoot.querySelector('#activityModal');
+		modal.style.display = 'none';
+	}
+
+	handleFormSubmit(e, project) {
+		e.preventDefault();
+		const form = e.target;
+		const isNewActivity = form.dataset.isNew === 'true';
+		const parentActivityId = form.querySelector('#parentActivitySelect').value;
+
+		const activityData = {
+			name: form.querySelector('#activityName').value,
+			startDate: form.querySelector('#activityStartDate').value,
+			dueDate: form.querySelector('#activityDueDate').value,
+			participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()),
+			description: form.querySelector('#activityDescription').value,
+		};
+
+		if (isNewActivity) {
+			this.addActivityToProject(project, activityData, parentActivityId);
+		} else {
+			this.updateActivityInProject(project, activityData, parentActivityId);
+		}
+
+		this.setAttribute('project', JSON.stringify(project));
+		this.render();
+		this.closeModal();
+
+		// Send dummy API request
+		this.sendDummyApiRequest(project);
+	}
+
+	updateActivityInProject(project, updatedActivity, parentActivityId) {
+		const updateInParent = (activities) => {
+			for (let i = 0; i < activities.length; i++) {
+				const activity = activities[i];
+
+				// Verifica se è l'attività che stiamo cercando basandoci sull'ID
+				if (activity._id === JSON.parse(this.shadowRoot.querySelector('#activityForm').dataset.activity)._id) {
+					activities[i] = {
+						...activity,  // Mantiene i campi esistenti
+						...updatedActivity // Aggiorna i campi con quelli nuovi
+					};
+					return true;
+				}
+
+				// Se ha sotto-attività, ricorri per trovare e aggiornare anche lì
+				if (activity.subActivities && updateInParent(activity.subActivities)) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		updateInParent(project.activities);
+	}
+
+	addActivityToProject(project, newActivity, parentActivityId) {
+		if (!parentActivityId) {
+			project.activities.push(newActivity);
+		} else {
+			const addToParent = (activities) => {
+				for (const activity of activities) {
+					if (activity._id === parentActivityId) {
+						if (!activity.subActivities) {
+							activity.subActivities = [];
+						}
+						activity.subActivities.push(newActivity);
+						return true;
+					}
+					if (activity.subActivities && addToParent(activity.subActivities)) {
+						return true;
+					}
+				}
+				return false;
+			};
+
+			addToParent(project.activities);
+		}
+	}
+
+	generateUniqueId() {
+		return '_' + Math.random().toString(36).substr(2, 9);
+	}
+
+	sendDummyApiRequest(project) {
+		console.log('Sending dummy API request to update project...');
+		// Simulating an API call
+		setTimeout(() => {
+			console.log('Project updated successfully!');
+			console.log('Updated project data:', project);
+		}, 1000);
 	}
 
 	renderGanttChart(activities, days, startDate) {
@@ -135,14 +402,14 @@ class ProjectCard extends HTMLElement {
 		const startOffset = this.getDaysBetween(startDate, activityStart).length;
 		const duration = this.getDaysBetween(activityStart, activityEnd).length;
 		console.log(activity.participants)
-	
+
 		const rowHtml = `
       <div class="gantt-row">
-        <div class="gantt-cell task-info">${level === 1 ? "<span class=\"subactivity\"></span>" : ""} ${activity.name}</div>
+        <div class="gantt-cell task-info task-name">${level === 1 ? "<span class=\"subactivity\"></span>" : ""} ${activity.name}</div>
         <div class="gantt-cell days-column">${duration}</div>
         <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
-        <div class="gantt-cell participants-column">${activity.participants && (activity.participants.length > 0)? activity.participants.join(', ') : "no one"}</div>
+        <div class="gantt-cell participants-column">${activity.participants && (activity.participants.length > 0) ? activity.participants.join(', ') : "no one"}</div>
 ${days.map((day, index) => {
 			const dayTimestamp = day.getTime();
 			const activityStartTimestamp = activityStart.getTime();
