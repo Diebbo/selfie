@@ -5,6 +5,11 @@ import { webpush } from "./webPushConfig.js";
 import nodemailer from "nodemailer";
 import { config } from "dotenv";
 
+const result = config();
+if (result.error) {
+  config({ path: "/webaèè/.env" });
+}
+
 async function checkAndSendNotifications() {
   console.log(`Checking notifications at ${new Date().toISOString()}`);
 
@@ -149,5 +154,9 @@ async function sendEmailNotification(payload) {
   });
 }
 
+const notifyON = process.env.NOTIFICATION === "true";
+
+if (notifyON) {
+  schedule.scheduleJob("* * * * *", checkAndSendNotifications);
+}
 // Programma l'esecuzione del controllo ogni minuto
-schedule.scheduleJob("* * * * *", checkAndSendNotifications);
