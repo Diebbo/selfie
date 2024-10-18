@@ -14,7 +14,6 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
   value,
   notification,
   onChange,
-  eventDate,
 }) => {
   if (!value) return null;
 
@@ -68,12 +67,12 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
       <Select
         label="Frequenza ripetizione"
         selectedKeys={
-          notification?.repetition?.freq.toString()
+          notification?.repetition?.freq?.toString()
             ? [notification.repetition.freq.toString()]
             : []
         }
-        onSelectionChange={(keys) =>
-          handleNotificationChange("repetition.freq", Array.from(keys)[0])
+        onSelectionChange={(value) =>
+          handleNotificationChange("repetition.freq", Array.from(value)[0])
         }
       >
         <SelectItem key="minutely" value="minutely">
