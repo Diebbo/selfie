@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { NoteModel } from "@/helpers/types";
 import NoteCard from "@/components/notes/NoteCard";
+import Markdown from "react-markdown";
 
 interface NotePageProps {
   notes: NoteModel[];
@@ -23,6 +24,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   const [showNotification, setShowNotification] = useState(false); // State for notification
   const [isMobileView, setIsMobileView] = useState(false); // State for mobile view
   const [showNoteForm, setShowNoteForm] = useState(false); // State for showing the note form
+  const [showMarkdown, setShowMarkdown] = useState(false);
 
   const fetchNotes = async () => {
     const res = await fetch(
@@ -344,6 +346,18 @@ const NotePage: React.FC<NotePageProps> = (props) => {
             >
               {selectedNote ? "Aggiorna Nota" : "Salva Nota"}
             </button>
+            <button
+              onClick={() => setShowMarkdown(!showMarkdown)}
+              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2"
+            >
+              {showMarkdown ? "Edit View" : "Markdown View"}
+            </button>
+
+            {showMarkdown ? (
+              <div className="mt-4 p-2 border rounded prose dark:prose-invert prose-headings:mb-1 prose-headings:mt-3 dark:prose-pre:bg-gray-600">
+                <Markdown>{content}</Markdown>
+              </div>
+            ) : null}
           </>
         )}
       </div>
