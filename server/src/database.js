@@ -272,7 +272,6 @@ export async function createDataBase() {
     if (err !== "Invited users not found: ") throw new Error(err);
     */
 
-
     // generate notifications for all the invited users
     //await generateNotificationsForEvent(addedEvent, [user]);
 
@@ -1269,11 +1268,11 @@ export async function createDataBase() {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: msg.lastMessage,
-              date: msg.date,
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: msg.lastMessage,
+                date: msg.date,
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1322,7 +1321,10 @@ export async function createDataBase() {
 
   const userService = {
     async getById(id) {
-      const user = await userModel.findById(id);
+      const user = await userModel
+        .findById(id)
+        .populate("participatingEvents")
+        .populate("events"); // convert  id to event object
       if (!user) throw new Error("User not found");
       return user;
     },

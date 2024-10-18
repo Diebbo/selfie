@@ -46,7 +46,7 @@ jobs:
       # mv src/* .
       #rm -rf src
       #cd ..
-      - name: Delploy node modulesd
+      - name: Deploy node_mpdules via rsync (only new files)
         uses: burnett01/rsync-deployments@7.0.1
         with:
           switches: -avzr --ignore-existing
