@@ -271,7 +271,6 @@ export async function createDataBase() {
     }
     if (err !== "Invited users not found: ") throw new Error(err);
     */
-    console.log("gocciole");
 
 
     // generate notifications for all the invited users
