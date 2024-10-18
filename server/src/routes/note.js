@@ -45,7 +45,7 @@ function createNoteRouter(db) {
     const fields = req.query.fields ? req.query.fields.split(",") : null;
     try {
       const result = await db.getNotes(uid, fields);
-      if (!result || result.length == 0)
+      if (!result)
         return res.status(404).json({ message: "Nessuna nota trovata" });
       return res.status(200).json(result);
     } catch (e) {
