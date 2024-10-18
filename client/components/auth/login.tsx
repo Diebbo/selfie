@@ -17,7 +17,7 @@ export const Login = () => {
 
   const initialValues: LoginFormType = {
     email: "die.barbieri03@gmail.com",
-    password: "123456",
+    password: "",
   };
 
   const handleLogin = useCallback(
