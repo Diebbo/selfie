@@ -35,6 +35,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         cache: "no-store", // This ensures fresh data on every request
       },
     );
+
     const notes = await res.json();
     return notes.sort(
       (a: NoteModel, b: NoteModel) =>

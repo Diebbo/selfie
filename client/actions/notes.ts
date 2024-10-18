@@ -30,7 +30,7 @@ export async function getNotes() {
   } else if (res.status >= 500) {
     throw new ServerError(`Server error: ${res.statusText}`);
   } else if (!res.ok) {
-    throw new Error("Failed to fetch events");
+    throw new Error("Failed to fetch notes");
   }
 
   const data = await res.json();
