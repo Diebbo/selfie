@@ -18,6 +18,7 @@ import {
   BookOpenIcon,
   BeakerIcon,
   CogIcon,
+  ForwardIcon,
 } from "@heroicons/react/24/solid";
 import { Card, CardBody } from "@nextui-org/react";
 import Wave from "react-wavify";
@@ -120,6 +121,11 @@ function Pomodoro(props: PomodoroProps) {
       window.removeEventListener("resize", updateWaveHeight);
     };
   }, []);
+
+  const handleSkip = () => {
+    setIsFocusTime(!isFocusTime);
+    setTimeLeft(isFocusTime ? breakTime * 60 : focusTime * 60);
+  };
 
   const handleButtonClick = () => {
     setIsRunning(!isRunning);
@@ -268,6 +274,9 @@ function Pomodoro(props: PomodoroProps) {
               ) : (
                 <PlayIcon style={{ width: 20, height: 20 }} />
               )}
+            </Button>
+            <Button onClick={handleSkip}>
+              <ForwardIcon style={{ width: 20, height: 20 }} />
             </Button>
             <Button onClick={onOpen}>
               <CogIcon style={{ width: 20, height: 20 }} />
