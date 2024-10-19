@@ -199,11 +199,18 @@ const CalendarPage = (props: CalendarPageProps) => {
                   delay={0}
                   closeDelay={0}
                   placement="top"
-                  className="text-white border-2 border-purple-600 bg-violet-400 text-black"
-                >
+                  classNames={{
+                    base: [
+                      "before:bg-neutral-400 dark:before:bg-white",
+                    ],
+                    content: [
+                      "py-2 px-4 shadow-xl",
+                      "text-black bg-gradient-to-br from-white to-neutral-400",
+                    ],
+                  }}>
                   <Chip
                     variant="solid"
-                    className="text-base rounded-xl py-5 bg-violet-600"
+                    className="text-base rounded-xl py-5 bg-default"
                   >
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                   </Chip>
@@ -211,7 +218,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 <Button
                   variant="solid"
                   onClick={handleToday}
-                  className="text-white text-base rounded-xl bg-warning border-transparent border-2 hover:border-white"
+                  className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
                 >
                   Oggi
                 </Button>

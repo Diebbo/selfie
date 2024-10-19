@@ -76,7 +76,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     <Card>
       <CardBody className="p-0 flex flex-col bg-white dark:bg-black">
         <div
-          className={`p-2 px-4 text-right rounded-[100px] bg-slate-800 text-sm font-bold ${isToday ? "text-slate-700 bg-sky-500 border-2 border-slate-300" : "text-white dark:text-white"}`}
+          className={`p-2 px-4 text-right rounded-[100px] bg-slate-800 text-sm font-bold ${isToday ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300" : "text-white dark:text-white"}`}
         >
           {day}
         </div>
