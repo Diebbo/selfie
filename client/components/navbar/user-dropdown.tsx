@@ -57,7 +57,9 @@ export const UserDropdown = () => {
           <p>Signed in as</p>
           <p>{email || "Loading..."}</p>
         </DropdownItem>
-        <DropdownItem key="settings">My Settings</DropdownItem>
+        <DropdownItem key="settings" href="settings">
+          My Settings
+        </DropdownItem>
         <DropdownItem key="team_settings">Team Settings</DropdownItem>
         <DropdownItem key="analytics">Analytics</DropdownItem>
         <DropdownItem key="system">System</DropdownItem>

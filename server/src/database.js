@@ -55,6 +55,20 @@ export async function createDataBase() {
     return res;
   };
 
+  const updateUsername = async (uid, username) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // check that the username is not already used by another user
+    const usernameUser = await userModel.findOne({ username: username });
+    if (usernameUser) throw new Error("Username already used");
+
+    user.username = username;
+    await user.save();
+
+    return user;
+  };
+
   const verifyEmail = async (emailtoken) => {
     const user = await userModel.findOne({ emailtoken: emailtoken });
     if (!user) throw new Error("Invalid token");
@@ -63,6 +77,30 @@ export async function createDataBase() {
     user.emailtoken = "";
     await user.save();
 
+    return user;
+  };
+
+  const updateEmail = async (uid, email, emailToken) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // check that the email is not already used by another user
+    const emailUser = await userModel.findOne({ email: email });
+    if (emailUser) throw new Error("Email already used");
+
+    // TODO: Send the verification email with the emailToken
+    user.email = email;
+    await user.save();
+
+    return user;
+  };
+
+  const updatePassword = async (uid, hashedPassword) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    user.password = hashedPassword;
+    await user.save();
     return user;
   };
 
@@ -1334,6 +1372,9 @@ export async function createDataBase() {
   return {
     login,
     register,
+    updateUsername,
+    updateEmail,
+    updatePassword,
     changeDateTime,
     createEvent,
     postNote,

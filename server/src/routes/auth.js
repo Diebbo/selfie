@@ -103,6 +103,102 @@ export function createAuthRouter(db) {
     res.json({ user, token });
   });
 
+  router.patch("/email", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const email = req.body.email;
+    const emailToken = crypto.randomBytes(64).toString("hex");
+    try {
+      const dbuser = await db.updateEmail(user._id, email, emailToken);
+      const newuser = userCast(dbuser);
+      const token = createToken(newuser);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
+      return res.status(200).json({ newuser, token });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
+  router.patch("/username", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const username = req.body.username;
+    try {
+      const dbuser = await db.updateUsername(user._id, username);
+
+      const newuser = userCast(dbuser);
+      const token = createToken(newuser);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
+      return res.status(200).json({ newuser, token });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
+  router.patch("/password", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+      // Verifica la password corrente
+      const dbUser = await db.getUserById(user._id);
+      const isPasswordCorrect = await bcrypt.compare(
+        currentPassword,
+        dbUser.password,
+      );
+
+      if (!isPasswordCorrect) {
+        return res
+          .status(400)
+          .json({ message: "Current password is incorrect" });
+      }
+
+      // Genera il nuovo hash per la nuova password
+      const salt = bcrypt.genSaltSync(10);
+      const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+      // Aggiorna la password
+      const tmp = await db.updatePassword(user._id, hashedNewPassword);
+      const newuser = userCast(tmp);
+      const token = createToken(newuser);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
+      return res.status(200).json({ newuser, token });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
   router.patch("/verifyemail", async (req, res) => {
     const emailToken = req.query.emailToken;
     if (!emailToken) {
