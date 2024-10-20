@@ -18,13 +18,19 @@ import {
   BookOpenIcon,
   BeakerIcon,
   CogIcon,
+  ForwardIcon,
 } from "@heroicons/react/24/solid";
 import { Card, CardBody } from "@nextui-org/react";
 import Wave from "react-wavify";
+import { PomodoroSettings } from "@/helpers/types";
 
-function pomodoro() {
-  const [focusTime, setFocusTime] = useState(25); // 25 minuti
-  const [breakTime, setBreakTime] = useState(5); // 5 minuti
+interface PomodoroProps {
+  settings: PomodoroSettings;
+}
+
+function Pomodoro(props: PomodoroProps) {
+  const [focusTime, setFocusTime] = useState(props.settings.studyDuration); // 25 minuti
+  const [breakTime, setBreakTime] = useState(props.settings.shortBreakDuration); // 5 minuti
   const [timeLeft, setTimeLeft] = useState(focusTime * 60);
   const [percentage, setPercentage] = useState(100);
   const [isRunning, setIsRunning] = useState(false);
@@ -115,6 +121,11 @@ function pomodoro() {
       window.removeEventListener("resize", updateWaveHeight);
     };
   }, []);
+
+  const handleSkip = () => {
+    setIsFocusTime(!isFocusTime);
+    setTimeLeft(isFocusTime ? breakTime * 60 : focusTime * 60);
+  };
 
   const handleButtonClick = () => {
     setIsRunning(!isRunning);
@@ -264,6 +275,9 @@ function pomodoro() {
                 <PlayIcon style={{ width: 20, height: 20 }} />
               )}
             </Button>
+            <Button onClick={handleSkip}>
+              <ForwardIcon style={{ width: 20, height: 20 }} />
+            </Button>
             <Button onClick={onOpen}>
               <CogIcon style={{ width: 20, height: 20 }} />
             </Button>
@@ -317,4 +331,4 @@ function pomodoro() {
   );
 }
 
-export default pomodoro;
+export default Pomodoro;

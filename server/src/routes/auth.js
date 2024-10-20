@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
+import { sendPushNotification } from "../pushNotificationWorker.js";
 
 const router = express.Router();
 
@@ -54,6 +55,7 @@ export function createAuthRouter(db) {
     res.cookie("token", token, {
       httpOnly: true,
       sameSite: "Lax",
+      secure: false,
       // secure: true, // Enable in production
       // maxAge: 3600000, // 1 hour
       // signed: true, // Enable if using signed cookies
@@ -99,6 +101,102 @@ export function createAuthRouter(db) {
     });
 
     res.json({ user, token });
+  });
+
+  router.patch("/email", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const email = req.body.email;
+    const emailToken = crypto.randomBytes(64).toString("hex");
+    try {
+      const dbuser = await db.updateEmail(user._id, email, emailToken);
+      const newuser = userCast(dbuser);
+      const token = createToken(newuser);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
+      return res.status(200).json({ newuser, token });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
+  router.patch("/username", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const username = req.body.username;
+    try {
+      const dbuser = await db.updateUsername(user._id, username);
+
+      const newuser = userCast(dbuser);
+      const token = createToken(newuser);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
+      return res.status(200).json({ newuser, token });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
+  router.patch("/password", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+      // Verifica la password corrente
+      const dbUser = await db.getUserById(user._id);
+      const isPasswordCorrect = await bcrypt.compare(
+        currentPassword,
+        dbUser.password,
+      );
+
+      if (!isPasswordCorrect) {
+        return res
+          .status(400)
+          .json({ message: "Current password is incorrect" });
+      }
+
+      // Genera il nuovo hash per la nuova password
+      const salt = bcrypt.genSaltSync(10);
+      const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+      // Aggiorna la password
+      const tmp = await db.updatePassword(user._id, hashedNewPassword);
+      const newuser = userCast(tmp);
+      const token = createToken(newuser);
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "Lax",
+        // secure: true, // Enable in production
+        // maxAge: 3600000, // 1 hour
+        // signed: true, // Enable if using signed cookies
+      });
+
+      return res.status(200).json({ newuser, token });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
   });
 
   router.patch("/verifyemail", async (req, res) => {
@@ -159,6 +257,54 @@ export function createAuthRouter(db) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     return res.status(200).json({ username: user.username });
+  });
+
+  router.post("/subscription", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const subscription = req.body;
+    console.log(subscription);
+    try {
+      await db.saveSubscription(user._id, subscription);
+      return res.status(200).json({ message: "Subscription saved" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.delete("/subscription", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      await db.deleteSubscription(user._id);
+      return res.status(200).json({ message: "Subscription deleted" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.get("/send-test-notification", cookieJwtAuth, async (req, res) => {
+    console.log("Sending test notification");
+    try {
+      const subscription = await db.getSubscription(req.user._id);
+      console.log("Subscription:", subscription);
+      const payload = {
+        title: "Test Notification",
+        body: "This is a server-side test notification",
+      };
+
+      await sendPushNotification(subscription, payload);
+      res.status(200).json({ message: "Notification sent successfully" });
+    } catch (error) {
+      console.error("Error in send-test-notification:", error);
+      res
+        .status(500)
+        .json({ error: error.message || "Failed to send notification" });
+    }
   });
 
   return router;

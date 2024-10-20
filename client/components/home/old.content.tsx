@@ -14,7 +14,7 @@ const Chart = dynamic(
   () => import("../charts/steam").then((mod) => mod.Steam),
   {
     ssr: false,
-  }
+  },
 );
 
 export const Content = () => (
@@ -44,7 +44,6 @@ export const Content = () => (
       <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
         <h3 className="text-xl font-semibold">Section</h3>
         <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-          <CardAgents />
           <CardTransactions />
         </div>
       </div>

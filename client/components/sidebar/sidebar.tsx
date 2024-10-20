@@ -7,7 +7,7 @@ import { PomodoroIcon } from "../icons/sidebar/pomodoro-icon";
 import { BalanceIcon } from "../icons/sidebar/balance-icon";
 import { NotesIcon } from "../icons/sidebar/notes-icon";
 import ChatsIcon from "../icons/sidebar/chats-icon";
-import { ProductsIcon } from "../icons/sidebar/products-icon";
+import MusicalNoteIcon from "../icons/sidebar/music-icon";
 import { ReportsIcon } from "../icons/sidebar/reports-icon";
 import { DevIcon } from "../icons/sidebar/dev-icon";
 import { ViewIcon } from "../icons/sidebar/view-icon";
@@ -72,14 +72,16 @@ export const SidebarWrapper = () => {
                 href="chats"
               />
               <SidebarItem
-                isActive={pathname === "/products"}
-                title="Products"
-                icon={<ProductsIcon />}
+                isActive={pathname === "/music-player"}
+                title="Music Player"
+                icon={<MusicalNoteIcon />}
+                href="music-player"
               />
               <SidebarItem
-                isActive={pathname === "/reports"}
-                title="Reports"
+                isActive={pathname === "/calendar"}
+                title="Calendar"
                 icon={<ReportsIcon />}
+                href="calendar"
               />
             </SidebarMenu>
 
@@ -98,6 +100,7 @@ export const SidebarWrapper = () => {
                 isActive={pathname === "/settings"}
                 title="Settings"
                 icon={<SettingsIcon />}
+                href="settings"
               />
             </SidebarMenu>
 

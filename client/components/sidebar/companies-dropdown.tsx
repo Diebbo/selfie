@@ -7,7 +7,7 @@ import {
   DropdownTrigger,
 } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
-import { AcmeIcon, CalendarIcon } from "../icons/acme-icon";
+import { AcmeIcon } from "../icons/acme-icon";
 import { AcmeLogo } from "../icons/acmelogo";
 import { BottomIcon } from "../icons/sidebar/bottom-icon";
 import { getUsername } from "@/actions/auth.action";
