@@ -1,12 +1,12 @@
 class ProjectCard extends HTMLElement {
-	constructor() {
-		super();
-		const shadow = this.attachShadow({ mode: 'open' });
-		const wrapper = document.createElement('div');
-		wrapper.setAttribute('class', 'project-card');
+  constructor() {
+    super();
+    const shadow = this.attachShadow({ mode: 'open' });
+    const wrapper = document.createElement('div');
+    wrapper.setAttribute('class', 'project-card');
 
-		const style = document.createElement('style');
-		style.textContent = `
+    const style = document.createElement('style');
+    style.textContent = `
       .project-card {
         font-family: Arial, sans-serif;
         padding: 20px;
@@ -150,27 +150,36 @@ color: #2196F3;
         margin: 8px 0;
         box-sizing: border-box;
       }
+      .delete {
+        background-color: #f44336;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+        float: right;
+      }
     `;
 
-		shadow.appendChild(style);
-		shadow.appendChild(wrapper);
-	}
+    shadow.appendChild(style);
+    shadow.appendChild(wrapper);
+  }
 
-	connectedCallback() {
-		this.render();
-	}
+  connectedCallback() {
+    this.render();
+  }
 
-	render() {
-		const wrapper = this.shadowRoot.querySelector('.project-card');
-		const project = JSON.parse(this.getAttribute('project'));
+  render() {
+    const wrapper = this.shadowRoot.querySelector('.project-card');
+    const project = JSON.parse(this.getAttribute('project'));
 
-		if (wrapper && project) {
-			const startDate = new Date(project.startDate);
-			const endDate = new Date(project.deadline);
-			const days = this.getDaysBetween(startDate, endDate);
+    if (wrapper && project) {
+      const startDate = new Date(project.startDate);
+      const endDate = new Date(project.deadline);
+      const days = this.getDaysBetween(startDate, endDate);
 
-			wrapper.innerHTML = `
-        <h2>${project.title}</h2>
+      wrapper.innerHTML = `
+        <h2>${project.title}<button class="delete" id="delete-proj">delete</button></h2>
         <p>${project.description}</p>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
@@ -195,198 +204,212 @@ color: #2196F3;
         </div>
       `;
 
-			this.addEventListeners(project);
-		}
-	}
+      this.addEventListeners(project);
+    }
+  }
 
-	addEventListeners(project) {
-		const taskElements = this.shadowRoot.querySelectorAll('.task-name');
-		const modal = this.shadowRoot.querySelector('#activityModal');
-		const closeBtn = modal.querySelector('.close');
-		const form = this.shadowRoot.querySelector('#activityForm');
-		const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
+  addEventListeners(project) {
+    const taskElements = this.shadowRoot.querySelectorAll('.task-name');
+    const modal = this.shadowRoot.querySelector('#activityModal');
+    const closeBtn = modal.querySelector('.close');
+    const form = this.shadowRoot.querySelector('#activityForm');
+    const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
+    const deleteBtn = this.shadowRoot.querySelector("#delete-proj");
 
-		taskElements.forEach((task) => {
-			task.addEventListener('click', () => this.openModal(task, project, false));
-		});
+    taskElements.forEach((task) => {
+      task.addEventListener('click', () => this.openModal(task, project, false));
+    });
 
-		addActivityBtn.addEventListener('click', () => this.openModal(null, project, true));
+    addActivityBtn.addEventListener('click', () => this.openModal(null, project, true));
 
-		closeBtn.addEventListener('click', () => this.closeModal());
-		window.addEventListener('click', (event) => {
-			if (event.target === modal) {
-				this.closeModal();
-			}
-		});
+    closeBtn.addEventListener('click', () => this.closeModal());
+    window.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        this.closeModal();
+      }
+    });
 
-		form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
-	}
+    form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
 
-	openModal(task, project, isNewActivity) {
-		const modal = this.shadowRoot.querySelector('#activityModal');
-		const form = this.shadowRoot.querySelector('#activityForm');
-		const modalTitle = this.shadowRoot.querySelector('#modalTitle');
-		const parentActivitySelect = form.querySelector('#parentActivitySelect');
+    deleteBtn.addEventListener('click', () => {
+      console.log('delete button clicked');
+      if (confirm(`Are you sure you want to delete the project "${project.title}"?`)) {
+        const deleteEvent = new CustomEvent('delete-project', {
+          bubbles: true,
+          composed: true,
+          detail: { projectId: project._id }
+        });
+        this.dispatchEvent(deleteEvent);
+      }
+    });
+  }
 
-		modalTitle.textContent = isNewActivity ? 'Add New Activity' : 'Edit Activity';
-		form.reset();
+  openModal(task, project, isNewActivity) {
+    const modal = this.shadowRoot.querySelector('#activityModal');
+    const form = this.shadowRoot.querySelector('#activityForm');
+    const modalTitle = this.shadowRoot.querySelector('#modalTitle');
+    const parentActivitySelect = form.querySelector('#parentActivitySelect');
 
-		if (isNewActivity) {
-			form.dataset.isNew = 'true';
-			this.populateParentActivitySelect(parentActivitySelect, project.activities);
-		} else {
-			form.dataset.isNew = 'false';
-			const activity = this.findActivity(project.activities, task.textContent.trim());
-			if (activity) {
-				form.querySelector('#activityName').value = activity.name;
-				const startDate = new Date(activity.startDate || activity.dueDate);
-				form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
-				form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
-				form.querySelector('#activityParticipants').value = activity.participants ? activity.participants.join(', ') : '';
-				form.querySelector('#activityDescription').value = activity.description || '';
-				form.dataset.activity = JSON.stringify(activity);
+    modalTitle.textContent = isNewActivity ? 'Add New Activity' : 'Edit Activity';
+    form.reset();
 
-				if (parentActivitySelect.children.length === 1) {
-					this.populateParentActivitySelect(parentActivitySelect, project.activities, activity);
-				}
-			}
-		}
+    if (isNewActivity) {
+      form.dataset.isNew = 'true';
+      this.populateParentActivitySelect(parentActivitySelect, project.activities);
+    } else {
+      form.dataset.isNew = 'false';
+      const activity = this.findActivity(project.activities, task.textContent.trim());
+      if (activity) {
+        form.querySelector('#activityName').value = activity.name;
+        const startDate = new Date(activity.startDate || activity.dueDate);
+        form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
+        form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
+        form.querySelector('#activityParticipants').value = activity.participants ? activity.participants.join(', ') : '';
+        form.querySelector('#activityDescription').value = activity.description || '';
+        form.dataset.activity = JSON.stringify(activity);
 
-		modal.style.display = 'block';
-	}
+        if (parentActivitySelect.children.length === 1) {
+          this.populateParentActivitySelect(parentActivitySelect, project.activities, activity);
+        }
+      }
+    }
 
-	findActivity(activities, name) {
-		for (const activity of activities) {
-			if (activity.name === name) {
-				return activity;
-			}
-			if (activity.subActivities) {
-				const found = this.findActivity(activity.subActivities, name);
-				if (found) {
-					return found;
-				}
-			}
-		}
-		return null;
-	}
+    modal.style.display = 'block';
 
-	populateParentActivitySelect(select, activities, currentActivity = null) {
-		activities.forEach(activity => {
-			if (activity !== currentActivity) {
-				const option = document.createElement('option');
-				option.value = activity._id;
-				option.textContent = activity.name;
-				select.appendChild(option);
-			}
-		});
-	}
+  }
 
-	closeModal() {
-		const modal = this.shadowRoot.querySelector('#activityModal');
-		modal.style.display = 'none';
-	}
+  findActivity(activities, name) {
+    for (const activity of activities) {
+      if (activity.name === name) {
+        return activity;
+      }
+      if (activity.subActivities) {
+        const found = this.findActivity(activity.subActivities, name);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  }
 
-	handleFormSubmit(e, project) {
-		e.preventDefault();
-		const form = e.target;
-		const isNewActivity = form.dataset.isNew === 'true';
-		const parentActivityId = form.querySelector('#parentActivitySelect').value;
+  populateParentActivitySelect(select, activities, currentActivity = null) {
+    activities.forEach(activity => {
+      if (activity !== currentActivity) {
+        const option = document.createElement('option');
+        option.value = activity._id;
+        option.textContent = activity.name;
+        select.appendChild(option);
+      }
+    });
+  }
 
-		const activityData = {
-			name: form.querySelector('#activityName').value,
-			startDate: form.querySelector('#activityStartDate').value,
-			dueDate: form.querySelector('#activityDueDate').value,
-			participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()),
-			description: form.querySelector('#activityDescription').value,
-		};
+  closeModal() {
+    const modal = this.shadowRoot.querySelector('#activityModal');
+    modal.style.display = 'none';
+  }
 
-		if (isNewActivity) {
-			this.addActivityToProject(project, activityData, parentActivityId);
-		} else {
-			this.updateActivityInProject(project, activityData, parentActivityId);
-		}
+  handleFormSubmit(e, project) {
+    e.preventDefault();
+    const form = e.target;
+    const isNewActivity = form.dataset.isNew === 'true';
+    const parentActivityId = form.querySelector('#parentActivitySelect').value;
 
-		this.setAttribute('project', JSON.stringify(project));
-		this.render();
-		this.closeModal();
+    const activityData = {
+      name: form.querySelector('#activityName').value,
+      startDate: form.querySelector('#activityStartDate').value,
+      dueDate: form.querySelector('#activityDueDate').value,
+      participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()),
+      description: form.querySelector('#activityDescription').value,
+    };
 
-		// Send dummy API request
-		this.sendDummyApiRequest(project);
-	}
+    if (isNewActivity) {
+      this.addActivityToProject(project, activityData, parentActivityId);
+    } else {
+      this.updateActivityInProject(project, activityData, parentActivityId);
+    }
 
-	updateActivityInProject(project, updatedActivity, parentActivityId) {
-		const updateInParent = (activities) => {
-			for (let i = 0; i < activities.length; i++) {
-				const activity = activities[i];
+    this.setAttribute('project', JSON.stringify(project));
+    this.render();
+    this.closeModal();
 
-				// Verifica se è l'attività che stiamo cercando basandoci sull'ID
-				if (activity._id === JSON.parse(this.shadowRoot.querySelector('#activityForm').dataset.activity)._id) {
-					activities[i] = {
-						...activity,  // Mantiene i campi esistenti
-						...updatedActivity // Aggiorna i campi con quelli nuovi
-					};
-					return true;
-				}
+    // Send dummy API request
+    this.sendDummyApiRequest(project);
+  }
 
-				// Se ha sotto-attività, ricorri per trovare e aggiornare anche lì
-				if (activity.subActivities && updateInParent(activity.subActivities)) {
-					return true;
-				}
-			}
-			return false;
-		};
+  updateActivityInProject(project, updatedActivity, parentActivityId) {
+    const updateInParent = (activities) => {
+      for (let i = 0; i < activities.length; i++) {
+        const activity = activities[i];
 
-		updateInParent(project.activities);
-	}
+        // Verifica se è l'attività che stiamo cercando basandoci sull'ID
+        if (activity._id === JSON.parse(this.shadowRoot.querySelector('#activityForm').dataset.activity)._id) {
+          activities[i] = {
+            ...activity,  // Mantiene i campi esistenti
+            ...updatedActivity // Aggiorna i campi con quelli nuovi
+          };
+          return true;
+        }
 
-	addActivityToProject(project, newActivity, parentActivityId) {
-		if (!parentActivityId) {
-			project.activities.push(newActivity);
-		} else {
-			const addToParent = (activities) => {
-				for (const activity of activities) {
-					if (activity._id === parentActivityId) {
-						if (!activity.subActivities) {
-							activity.subActivities = [];
-						}
-						activity.subActivities.push(newActivity);
-						return true;
-					}
-					if (activity.subActivities && addToParent(activity.subActivities)) {
-						return true;
-					}
-				}
-				return false;
-			};
+        // Se ha sotto-attività, ricorri per trovare e aggiornare anche lì
+        if (activity.subActivities && updateInParent(activity.subActivities)) {
+          return true;
+        }
+      }
+      return false;
+    };
 
-			addToParent(project.activities);
-		}
-	}
+    updateInParent(project.activities);
+  }
 
-	generateUniqueId() {
-		return '_' + Math.random().toString(36).substr(2, 9);
-	}
+  addActivityToProject(project, newActivity, parentActivityId) {
+    if (!parentActivityId) {
+      project.activities.push(newActivity);
+    } else {
+      const addToParent = (activities) => {
+        for (const activity of activities) {
+          if (activity._id === parentActivityId) {
+            if (!activity.subActivities) {
+              activity.subActivities = [];
+            }
+            activity.subActivities.push(newActivity);
+            return true;
+          }
+          if (activity.subActivities && addToParent(activity.subActivities)) {
+            return true;
+          }
+        }
+        return false;
+      };
 
-	sendDummyApiRequest(project) {
-		console.log('Sending dummy API request to update project...');
-		// Simulating an API call
-		setTimeout(() => {
-			console.log('Project updated successfully!');
-			console.log('Updated project data:', project);
-		}, 1000);
-	}
+      addToParent(project.activities);
+    }
+  }
 
-	renderGanttChart(activities, days, startDate) {
-		const header = this.renderGanttHeader(days);
-		const rows = activities.map(activity => this.renderGanttRow(activity, days, startDate)).join('');
-		return `
+  generateUniqueId() {
+    return '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  sendDummyApiRequest(project) {
+    console.log('Sending dummy API request to update project...');
+    // Simulating an API call
+    setTimeout(() => {
+      console.log('Project updated successfully!');
+      console.log('Updated project data:', project);
+    }, 1000);
+  }
+
+  renderGanttChart(activities, days, startDate) {
+    const header = this.renderGanttHeader(days);
+    const rows = activities.map(activity => this.renderGanttRow(activity, days, startDate)).join('');
+    return `
       <div class="gantt-header">${header}</div>
       ${rows}
     `;
-	}
+  }
 
-	renderGanttHeader(days) {
-		return `
+  renderGanttHeader(days) {
+    return `
       <div class="gantt-cell task-info">Task</div>
       <div class="gantt-cell days-column">Days</div>
       <div class="gantt-cell start-date-column">Start Date</div>
@@ -394,16 +417,16 @@ color: #2196F3;
       <div class="gantt-cell participants-column">Participants</div>
       ${days.map(day => `<div class="gantt-cell" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
-	}
+  }
 
-	renderGanttRow(activity, days, startDate, level = 0) {
-		const activityStart = new Date(activity.startDate || activity.dueDate);
-		const activityEnd = new Date(activity.dueDate);
-		const startOffset = this.getDaysBetween(startDate, activityStart).length;
-		const duration = this.getDaysBetween(activityStart, activityEnd).length;
-		console.log(activity.participants)
+  renderGanttRow(activity, days, startDate, level = 0) {
+    const activityStart = new Date(activity.startDate || activity.dueDate);
+    const activityEnd = new Date(activity.dueDate);
+    const startOffset = this.getDaysBetween(startDate, activityStart).length;
+    const duration = this.getDaysBetween(activityStart, activityEnd).length;
+    console.log(activity.participants)
 
-		const rowHtml = `
+    const rowHtml = `
       <div class="gantt-row">
         <div class="gantt-cell task-info task-name">${level === 1 ? "<span class=\"subactivity\"></span>" : ""} ${activity.name}</div>
         <div class="gantt-cell days-column">${duration}</div>
@@ -411,50 +434,53 @@ color: #2196F3;
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
         <div class="gantt-cell participants-column">${activity.participants && (activity.participants.length > 0) ? activity.participants.join(', ') : "no one"}</div>
 ${days.map((day, index) => {
-			const dayTimestamp = day.getTime();
-			const activityStartTimestamp = activityStart.getTime();
-			const activityEndTimestamp = activityEnd.getTime();
+      const dayTimestamp = day.getTime();
+      const activityStartTimestamp = activityStart.getTime();
+      const activityEndTimestamp = activityEnd.getTime();
 
-			if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-				return `<div class="gantt-cell ${activity.completed ? 'completed' : 'pending'}"></div>`;
-			}
-			return `<div class="gantt-cell"></div>`;
-		}).join('')}
+      if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
+        return `<div class="gantt-cell ${activity.completed ? 'completed' : 'pending'}"></div>`;
+      }
+      return `<div class="gantt-cell"></div>`;
+    }).join('')}
       </div>
     `;
 
-		const subActivitiesHtml = activity.subActivities
-			? activity.subActivities.map(subActivities => this.renderGanttRow(subActivities, days, startDate, level + 1)).join('')
-			//this.renderGanttRow(activity.subActivities, days, startDate, level + 1)
-			: '';
+    const subActivitiesHtml = activity.subActivities
+      ? activity.subActivities.map(subActivities => this.renderGanttRow(subActivities, days, startDate, level + 1)).join('')
+      //this.renderGanttRow(activity.subActivities, days, startDate, level + 1)
+      : '';
 
-		return rowHtml + subActivitiesHtml;
-	}
+    return rowHtml + subActivitiesHtml;
+  }
 
-	getDaysBetween(start, end) {
-		const days = [];
-		let currentDate = new Date(start);
-		while (currentDate <= end) {
-			days.push(new Date(currentDate));
-			currentDate.setDate(currentDate.getDate() + 1);
-		}
-		return days;
-	}
+  getDaysBetween(start, end) {
+    const days = [];
+    let currentDate = new Date(start);
+    while (currentDate <= end) {
+      days.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return days;
+  }
 
-	formatDate(date) {
-		return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-	}
+  formatDate(date) {
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  }
 }
 
 class ProjectComponent extends HTMLElement {
-	constructor() {
-		super();
-		this.attachShadow({ mode: 'open' });
-		this._projects = [];
-		this.currentIndex = 0;
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this._projects = [];
+    this.currentIndex = 0;
+    this.addEventListener('delete-project', this.handleDeleteProject);
 
-		const style = document.createElement('style');
-		style.textContent = `
+  }
+  setupStyle() {
+    const style = document.createElement('style');
+    style.textContent = `
       :host {
         display: block;
         font-family: Arial, sans-serif;
@@ -464,7 +490,7 @@ class ProjectComponent extends HTMLElement {
         justify-content: center;
         margin-top: 20px;
       }
-      button {
+      .navigation button {
         padding: 8px 16px;
         margin: 0 5px;
         cursor: pointer;
@@ -473,69 +499,100 @@ class ProjectComponent extends HTMLElement {
         border: none;
         border-radius: 4px;
         font-size: 14px;
+        margin-left: 10px;
       }
-      button:disabled {
+      .navigation button:disabled {
         background-color: #ccc;
         cursor: not-allowed;
       }
     `;
 
-		this.shadowRoot.appendChild(style);
-	}
+    this.shadowRoot.appendChild(style);
 
-	connectedCallback() {
-		this.render();
-	}
+  }
 
-	set projects(value) {
-		if (Array.isArray(value)) {
-			this._projects = value;
-			this.render();
-		}
-	}
+  handleDeleteProject(event) {
+    const projectId = event.detail.projectId;
+    this._projects = this._projects.filter(project => project._id !== projectId);
+    if (this.currentIndex >= this._projects.length) {
+      this.currentIndex = Math.max(0, this._projects.length - 1);
+    }
+    this.render();
 
-	render() {
-		this.shadowRoot.innerHTML = '';
-		if (this._projects.length === 0) return;
+    // Send API request to delete the project
+    this.sendDeleteProjectRequest(projectId);
+  }
 
-		const projectCard = document.createElement('project-card');
-		projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
-		this.shadowRoot.appendChild(projectCard);
+  sendDeleteProjectRequest(projectId) {
+    // In a real application, you would send an API request here
+    console.log(`Sending request to delete project with ID: ${projectId}`);
+    // Simulating an API call
+    setTimeout(() => {
+      console.log(`Project with ID ${projectId} deleted successfully!`);
+    }, 1000);
+  }
 
-		const navigation = document.createElement('div');
-		navigation.className = 'navigation';
+  connectedCallback() {
+    this.setupStyle();
+    this.render();
+  }
 
-		const prevButton = document.createElement('button');
-		prevButton.textContent = 'Previous';
-		prevButton.disabled = this.currentIndex === 0;
-		prevButton.addEventListener('click', () => this.showPrevious());
+  set projects(value) {
+    if (Array.isArray(value)) {
+      this._projects = value;
+      this.render();
+    }
+  }
 
-		const nextButton = document.createElement('button');
-		nextButton.textContent = 'Next';
-		nextButton.disabled = this.currentIndex === this._projects.length - 1;
-		nextButton.addEventListener('click', () => this.showNext());
+  render() {
+    // Save the style element
+    const style = this.shadowRoot.querySelector('style');
 
-		navigation.appendChild(prevButton);
-		navigation.appendChild(nextButton);
-		this.shadowRoot.appendChild(navigation);
-	}
+    // Clear the shadow DOM
+    this.shadowRoot.innerHTML = '';
 
-	showPrevious() {
-		if (this.currentIndex > 0) {
-			this.currentIndex--;
-			this.render();
-		}
-	}
+    // Re-add the style element
+    if (style) {
+      this.shadowRoot.appendChild(style);
+    }
 
-	showNext() {
-		if (this.currentIndex < this._projects.length - 1) {
-			this.currentIndex++;
-			this.render();
-		}
-	}
+    if (this._projects.length === 0) return;
+
+    const projectCard = document.createElement('project-card');
+    projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
+    this.shadowRoot.appendChild(projectCard);
+
+    const navigation = document.createElement('div');
+    navigation.className = 'navigation';
+
+    const prevButton = document.createElement('button');
+    prevButton.textContent = 'Previous';
+    prevButton.disabled = this.currentIndex === 0;
+    prevButton.addEventListener('click', () => this.showPrevious());
+
+    const nextButton = document.createElement('button');
+    nextButton.textContent = 'Next';
+    nextButton.disabled = this.currentIndex === this._projects.length - 1;
+    nextButton.addEventListener('click', () => this.showNext());
+
+    navigation.appendChild(prevButton);
+    navigation.appendChild(nextButton);
+    this.shadowRoot.appendChild(navigation);
+  }
+
+  showPrevious() {
+    if (this.currentIndex > 0) {
+      this.currentIndex--;
+      this.render();
+    }
+  }
+
+  showNext() {
+    if (this.currentIndex < this._projects.length - 1) {
+      this.currentIndex++;
+      this.render();
+    }
+  }
 }
-
-customElements.define('project-card', ProjectCard);
-customElements.define('project-component', ProjectComponent);
 
 export { ProjectCard, ProjectComponent };
