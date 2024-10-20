@@ -592,7 +592,7 @@ export async function createDataBase() {
     return activity;
   }
 
-  const addDatesToActivities = (projects) => {
+  const addDatesToProjectActivities = (projects) => {
     if (!projects || projects.length === 0) return projects;
 
     for (let i = 0; i < projects.length; i++) {
@@ -607,15 +607,6 @@ export async function createDataBase() {
 
     return projects;
   }
-
-  const getProjects = async (uid) => {
-    // Ritorna tutti i progetti creati dall'utente o a cui partecipa
-    let proj = await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
-
-    // add the starting date and the ending date of the single activities
-    proj = addDatesToActivities(proj);
-    return proj;
-  };
 
   const checkActivityFitInProject = (project, activity) => {
     if (!activity) {
@@ -682,68 +673,7 @@ export async function createDataBase() {
     return project;
   };
 
-  const createProject = async (uid, project, activities = null) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    // Validate project object
-    if (!project.title || !project.description || !project.startDate || !project.deadline) {
-      throw new Error("Project must have a title, description, start date, and deadline");
-    }
-
-    if (new Date(project.startDate) >= new Date(project.deadline)) {
-      throw new Error("Project start date must be before the deadline");
-    }
-
-    project.members = project.members || [];
-    project.members.push(user.username);
-
-    // Add activities to the project
-    let errors = [];
-    if (activities && activities.length > 0) {
-      activities.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-      for (let activity of activities) {
-        try {
-          project = await addActivityToProject(project, activity);
-        } catch (e) {
-          errors.push(e.message);
-        }
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new Error("Invalid activities: " + errors.join(", "));
-    }
-
-    // Add today's date to the project
-    const now = await getDateTime();
-    const newProject = await projectModel.create({
-      ...project,
-      creator: uid,
-      creationDate: now,
-    });
-
-    // Save the project
-    const addedProject = await newProject.save();
-    if (!addedProject) throw new Error("Project not created");
-
-    // Add project to the user's projects
-    if (!user.projects) user.projects = [];
-    user.projects.push(addedProject._id);
-    await user.save();
-
-    // Add all the members to the project
-    const members = await userModel.find({ username: { $in: project.members } });
-    for (let member of members) {
-      if (!member.projects) member.projects = [];
-      member.projects.push(addedProject._id);
-      await member.save();
-    }
-
-    return addedProject;
-  };
-
+  
   const setPomodoroSettings = async (uid, settings) => {
     try {
       const user = await userModel.findById(uid);
@@ -768,15 +698,12 @@ export async function createDataBase() {
     }
   };
 
+
+
   const getUserById = async (uid) => {
-    try {
-      const user = await userModel.findById(uid);
-      if (!user) throw new Error("User not found");
-      return user;
-    } catch (error) {
-      console.error("Error getting user by ID:", error);
-      throw error;
-    }
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    return user;
   };
 
   const getCurrentSong = async (uid) => {
@@ -1513,6 +1440,22 @@ export async function createDataBase() {
   };
 
   const userService = {
+    async fromsIdsToUsernames(ids) {
+      const users = await userModel.find({ _id: { $in: ids } });
+      return users.map((user) => user.username);
+    },
+    async fromUsernamesToIds(usernames) {
+      const users = await userModel.find({ username: { $in: usernames } });
+      return users.map((user) => user._id);
+    },
+    async fromUsernameToId(username) {
+      const user = await userModel.findOne({ username: username });
+      if (!user) throw new Error("User not found");
+    },
+    async fromIdtoUsername(id) {
+      const user = await getUserById(id);
+      return user.username;
+    },
     async getById(id) {
       const user = await userModel
         .findById(id)
@@ -1525,7 +1468,7 @@ export async function createDataBase() {
   };
 
 
-  const projectService = createProjectService(models, {checkActivityFitInProject, addActivityToProject});
+  const projectService = createProjectService(models, { checkActivityFitInProject, userService, addDatesToProjectActivities, addActivityToProject, getDateTime });
 
   return {
     login,
@@ -1543,11 +1486,9 @@ export async function createDataBase() {
     deleteEvent,
     partecipateEvent,
     modifyEvent,
-    getProjects,
     getUserById,
-    createProject,
     setPomodoroSettings,
-    getCurrentSong,
+    getCurrentSong ,
     getNextSong,
     getPrevSong,
     getRandomSong,
@@ -1569,6 +1510,6 @@ export async function createDataBase() {
     deleteSubscription,
     getSubscription,
     getAllUserEvents,
-projectService
+    projectService
   };
 }
