@@ -9,7 +9,7 @@ interface ContentProps {
 }
 
 export default function Content({ projects }: ContentProps) {
-  const projectComponentRef = useRef(null);
+  const projectComponentRef = useRef<ProjectComponent | null>(null);
 
   useEffect(() => {
     // Registra i web components
