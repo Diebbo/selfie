@@ -33,8 +33,39 @@ export function createProjectRouter(db) {
   });
 
   //patch projects
+  router.patch('/:projectId', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.params.projectId;
+    const project = req.body.project;
+
+    if (!project) return res.status(400).json({ message: "Progetto non fornito" });
+
+    try {
+      var result = await db.projectService.updateProject(uid, projectId, project);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Errore nell'aggiornamento del progetto" });
+
+    return res.status(200).json({ message: "progetto aggiornato correttamente", result });
+  });
 
   //delete projects
+  router.delete('/:projectId', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.params.projectId;
+
+    try {
+      var result = await db.projectService.delete(uid, projectId);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Errore nell'eliminazione del progetto" });
+
+    return res.status(200).json({ message: "progetto eliminato correttamente" });
+  });
 
   //add activity inside project
   // es di URL: /:projectId/activities/?fields=parentId

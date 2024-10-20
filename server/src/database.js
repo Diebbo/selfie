@@ -10,6 +10,9 @@ import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
 
+// services import
+import createProjectService from "./services/projects.mjs";
+
 export async function createDataBase() {
   const uri =
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -22,6 +25,16 @@ export async function createDataBase() {
   const projectModel = mongoose.model("Projects", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
+
+  const models = {
+    timeModel,
+    userModel,
+    eventModel,
+    songModel,
+    projectModel,
+    activityModel,
+    chatModel
+  };
 
   await mongoose.connect(uri);
 
@@ -681,7 +694,7 @@ export async function createDataBase() {
     if (new Date(project.startDate) >= new Date(project.deadline)) {
       throw new Error("Project start date must be before the deadline");
     }
-    
+
     project.members = project.members || [];
     project.members.push(user.username);
 
@@ -1448,11 +1461,11 @@ export async function createDataBase() {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: msg.lastMessage,
-                date: msg.date,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: msg.lastMessage,
+              date: msg.date,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1511,6 +1524,9 @@ export async function createDataBase() {
     //TODO: add other methods
   };
 
+
+  const projectService = createProjectService(models, {checkActivityFitInProject, addActivityToProject});
+
   return {
     login,
     register,
@@ -1553,5 +1569,6 @@ export async function createDataBase() {
     deleteSubscription,
     getSubscription,
     getAllUserEvents,
+projectService
   };
 }
