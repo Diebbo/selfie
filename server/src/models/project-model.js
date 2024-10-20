@@ -1,26 +1,24 @@
 import mongoose from 'mongoose';
-import { activitySchema } from './event-model.js'
+import { activitySchema } from './event-model.js';
 
 export const projectSchema = new mongoose.Schema({
     title: String,
     description: String,
     creator: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'Users'
     },
     members: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User'
+            ref: 'Users'
         }
     ],
-    activities: [{
-        activityId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Activity'
-        }
-    }],
+    activities: [
+        activitySchema
+    ],
     creationDate: Date,
+    startDate: Date,
     deadline: Date,
 });
 

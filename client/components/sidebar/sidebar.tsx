@@ -19,6 +19,7 @@ import { FilterIcon } from "../icons/sidebar/filter-icon";
 import { useSidebarContext } from "../layout/layout-context";
 import { ChangeLogIcon } from "../icons/sidebar/changelog-icon";
 import { usePathname } from "next/navigation";
+import { ProjectsIcon } from "../icons/sidebar/projects-icon";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -58,10 +59,11 @@ export const SidebarWrapper = () => {
                 icon={<PomodoroIcon />}
                 href="pomodoro"
               />
-              <CollapseItems
-                icon={<BalanceIcon />}
-                items={["Banks Accounts", "Credit Cards", "Loans"]}
-                title="Balances"
+              <SidebarItem
+                icon={<ProjectsIcon />}
+                title="Projects"
+                isActive={pathname === "/projects"}
+                href="projects"
               />
               <SidebarItem
                 isActive={pathname === "/chats"}
