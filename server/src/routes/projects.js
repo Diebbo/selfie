@@ -11,7 +11,7 @@ export function createProjectRouter(db) {
     project = { ...project, activities: [] };
 
     try {
-      var result = await db.createProject(req.user._id, project, activities);
+      var result = await db.projectService.createProject(req.user._id, project, activities);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -22,7 +22,7 @@ export function createProjectRouter(db) {
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     try {
-      var result = await db.getProjects(uid);
+      var result = await db.projectService.getProjects(uid);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
