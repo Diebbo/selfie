@@ -53,29 +53,25 @@ export interface Person extends RegisterType {
   _id: string;
   avatar: string; // URL
   friends: Person[]; // is this performance frinedly?
-  events:{
-    createdEvents: SelfieEvent[];
-    participatingEvents: SelfieEvent[];
-  }
+  events: {
+    created: SelfieEvent[];
+    participating: SelfieEvent[];
+  };
 }
 
 export type People = Person[];
+
+export type FrequencyType = "daily" | "weekly" | "monthly" | "yearly";
 
 export interface SelfieEvent {
   title: String;
   summary: String;
   uid: String;
   sequence: Number;
-  status: {
-    type: String;
-    enum: ["confirmed", "tentative", "cancelled"];
-  };
+  status: String;
   transp: String;
   rrule: {
-    freq: {
-      type: String;
-      enum: ["daily", "weekly", "monthly", "yearly"];
-    };
+    freq: FrequencyType;
     interval: Number;
     bymonth: Number;
     bymonthday: Number;
@@ -83,18 +79,41 @@ export interface SelfieEvent {
   dtstart: Date;
   dtend: Date;
   dtstamp: String;
-  categories: [String];
+  categories: String[];
   location: String;
   geo: [Number];
   description: String;
   URL: String;
   participants: People;
+  notification: SelfieNotification;
+  _id: string;
 }
 
-export interface PomodoSettings {
+export interface SelfieNotification {
+  title: String;
+  description: String;
+  type: String;
+  repetition: {
+    freq: String; // minutely, hourly, daily, weekly, monthly, yearly
+    interval: Number; // every x minutes/hours/days/weeks/months/years
+  };
+  fromDate: Date; // anticipo rispetto a data evento
+}
+
+export interface PomodoroSettings {
   studyDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;
+}
+
+export interface Song {
+  title: string;
+  album: string;
+  duration: string;
+  progress: string;
+  cover: string;
+  id?: string;
+  liked: boolean;
 }
 /*
  *       setFocusTimeInput(data.studyDuration);

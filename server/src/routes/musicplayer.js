@@ -40,6 +40,17 @@ function createMusicRouter(db){
         }
     });
 
+    router.get("/randomsong", cookieJwtAuth, async (req, res) => {
+        const uid = req.user._id;
+        try {
+            const song = await db.getRandomSong(uid);
+            res.status(200).json(song);
+        } catch (error) {
+            console.error("Error getting random song:", error);
+            res.status(400).json({ message: error.message });
+        }
+    });
+
 
     router.post("/addsong", cookieJwtAuth, async (req, res) => {
         const uid = req.user._id;
@@ -50,6 +61,30 @@ function createMusicRouter(db){
             res.status(200).json({ message: "Song added successfully", result });
         } catch (error) {
             console.error("Error adding song:", error);
+            res.status(400).json({ message: error.message });
+        }
+    });
+
+    router.post("/like", cookieJwtAuth, async (req, res) => {
+        const uid = req.user._id;
+        const songId = req.body.songId;
+        try {
+            const result = await db.addLike(uid, songId);
+            res.status(200).json({ message: "Like added successfully", result });
+        } catch (error) {
+            console.error("Error adding like:", error);
+            res.status(400).json({ message: error.message });
+        }
+    });
+
+    router.delete("/like", cookieJwtAuth, async (req, res) => {
+        const uid = req.user._id;
+        const songId = req.body.songId;
+        try {
+            const result = await db.removeLike(uid, songId);
+            res.status(200).json({ message: "Like removed successfully", result });
+        } catch (error) {
+            console.error("Error removing like:", error);
             res.status(400).json({ message: error.message });
         }
     });

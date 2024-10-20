@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { login } from "@/actions/auth.action";
 import { useState } from "react";
+import { MailIcon } from "./MailIcon";
+import { PassLockIcon } from "./PassLockIcon";
 
 export const Login = () => {
   const router = useRouter();
@@ -17,7 +19,7 @@ export const Login = () => {
 
   const initialValues: LoginFormType = {
     email: "die.barbieri03@gmail.com",
-    password: "123456",
+    password: "",
   };
 
   const handleLogin = useCallback(
@@ -54,6 +56,7 @@ export const Login = () => {
                 label="Email"
                 type="email"
                 value={values.email}
+                endContent=<MailIcon />
                 isInvalid={!!errors.email && !!touched.email}
                 errorMessage={errors.email}
                 onChange={handleChange("email")}
@@ -63,6 +66,7 @@ export const Login = () => {
                 label="Password"
                 type="password"
                 value={values.password}
+                endContent=<PassLockIcon />
                 isInvalid={!!errors.password && !!touched.password}
                 errorMessage={errors.password}
                 onChange={handleChange("password")}

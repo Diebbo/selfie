@@ -13,12 +13,13 @@ function createCalendarRouter(db) {
     try {
       var result = await db.createEvent(uid, event);
 
-      res.status(200).json({ message: "evento aggiunto correttamente" , result });
+      res.status(200).json({ message: "evento aggiunto correttamente", result });
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
   });
 
+  // TODO: fare un get per :eventId
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     console.log(uid);
@@ -30,6 +31,7 @@ function createCalendarRouter(db) {
 
     if (!result) return res.status(404).json({ message: "Nessun evento trovato" });
 
+    //console.log(result);
     return res.status(200).json(result);
   });
 
@@ -42,7 +44,7 @@ function createCalendarRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "evento eliminato correttamente" , eventId });
+    return res.status(200).json({ message: "evento eliminato correttamente", eventId });
   });
 
   router.post('/partecipate/:id', cookieJwtAuth, async function(req, res) {
@@ -54,7 +56,7 @@ function createCalendarRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "partecipazione all'evento confermata" , result });
+    return res.status(200).json({ message: "partecipazione all'evento confermata", result });
   });
 
   router.patch('/:id', cookieJwtAuth, async function(req, res) {
@@ -65,19 +67,19 @@ function createCalendarRouter(db) {
 
     try {
       const result = await db.modifyEvent(uid, event, eventId);
-       
-      if(!result || Object.keys(result).length === 0) {
+
+      if (!result || Object.keys(result).length === 0) {
         return res.status(404).json({ message: "evento vuoto" });
       }
-      res.status(200).json({ message: "evento modificato correttamente" , result });
+      res.status(200).json({ message: "evento modificato correttamente", result });
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }
-    
+
   });
 
   return router;
 }
 
-  
+
 export default createCalendarRouter;

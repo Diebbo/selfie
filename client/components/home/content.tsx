@@ -14,7 +14,7 @@ const Chart = dynamic(
   () => import("../charts/steam").then((mod) => mod.Steam),
   {
     ssr: false,
-  }
+  },
 );
 
 interface ContentProps {
@@ -37,15 +37,16 @@ export const Content = (props: ContentProps) => {
             <h3 className="text-xl font-semibold">Next Events</h3>
             <h4 className="text-l font-semibold">Your Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
-              {
-                Array.isArray(props.events.created) && props.events.created.length > 0 ? (
-                  props.events.created.slice(0, 5).map((event: SelfieEvent, index: number) => (
+              {Array.isArray(props.events.created) &&
+              props.events.created.length > 0 ? (
+                props.events.created
+                  .slice(0, 5)
+                  .map((event: SelfieEvent, index: number) => (
                     <EventCard data={event} theme={index} key={index} />
                   ))
-                ) : (
-                  <div className="text-success">No future events</div> // Your alternative content here
-                )
-              }
+              ) : (
+                <div className="text-success">No future events</div> // Your alternative content here
+              )}
               {/*<EventCard data={dummy.dummyEvents[0]} theme={5}/>
             <EventCard data={dummy.dummyEvents[1]} theme={1}/>
             <EventCard data={dummy.dummyEvents[2]} theme={0}/>*/}
@@ -55,15 +56,18 @@ export const Content = (props: ContentProps) => {
             </div>
             <h4 className="text-l font-semibold">Participating Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
-              {
-                Array.isArray(props.events.participating) && props.events.participating.length > 0 ? (
-                  props.events.participating.slice(0, 5).map((event: SelfieEvent, index: number) => (
+              {Array.isArray(props.events.participating) &&
+              props.events.participating.length > 0 ? (
+                props.events.participating
+                  .slice(0, 5)
+                  .map((event: SelfieEvent, index: number) => (
                     <EventCard data={event} theme={index} key={index} />
                   ))
-                ) : (
-                  <div className="text-success">Niente attivita&apos; sociali</div> // Your alternative content here
-                )
-              }
+              ) : (
+                <div className="text-success">
+                  Niente attivita&apos; sociali
+                </div> // Your alternative content here
+              )}
             </div>
           </div>
 
@@ -104,4 +108,4 @@ export const Content = (props: ContentProps) => {
       </div>
     </div>
   );
-}
+};
