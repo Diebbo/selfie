@@ -123,3 +123,24 @@ export interface Song {
       setFocusTime(data.studyDuration);
       setBreakTime(data.shortBreakDuration);
 */
+
+export interface TaskModel {
+  name: string;
+  dueDate: Date;
+  completed: boolean;
+  participants: any[]; // id array of users
+  subActivity: any; // Assuming subActivities are references to other Activities
+  uid: string; // User ID
+  parentId?: any; // You might want to define this more specifically based on your needs
+}
+
+export interface ProjectModel {
+  _id: string;
+  title: string;
+  description: string;
+  activities: TaskModel[];
+  creator: Person;
+  participants: People;
+  creationDate: Date;
+  deadline: Date;
+}

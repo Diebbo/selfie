@@ -5,19 +5,24 @@ export function createProjectRouter(db) {
   const router = express.Router();
 
   router.put('/', cookieJwtAuth, async function(req, res) {
+    let project = req.body.project;
+    if (!project) return res.status(400).json({ message: "Progetto non fornito" });
+    let activities = project.activities;
+    project = { ...project, activities: [] };
+
     try {
-      var result = await db.createProject(req.user._id, req.body.project);
+      var result = await db.projectService.createProject(req.user._id, project, activities);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "progetto aggiunto correttamente" , result });
+    return res.status(200).json({ message: "progetto aggiunto correttamente", result });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     try {
-      var result = await db.getProjects(uid);
+      var result = await db.projectService.getProjects(uid);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -28,8 +33,39 @@ export function createProjectRouter(db) {
   });
 
   //patch projects
-  
+  router.patch('/:projectId', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.params.projectId;
+    const project = req.body.project;
+
+    if (!project) return res.status(400).json({ message: "Progetto non fornito" });
+
+    try {
+      var result = await db.projectService.updateProject(uid, projectId, project);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Errore nell'aggiornamento del progetto" });
+
+    return res.status(200).json({ message: "progetto aggiornato correttamente", result });
+  });
+
   //delete projects
+  router.delete('/:projectId', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.params.projectId;
+
+    try {
+      var result = await db.projectService.delete(uid, projectId);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Errore nell'eliminazione del progetto" });
+
+    return res.status(200).json({ message: "progetto eliminato correttamente" });
+  });
 
   //add activity inside project
   // es di URL: /:projectId/activities/?fields=parentId
@@ -42,20 +78,20 @@ export function createProjectRouter(db) {
     if (!activity) return res.status(400).json({ message: "Attività non fornita" });
 
     let result;
-  
+
     try {
-      if(!parentId) {
+      if (!parentId) {
         result = await db.createActivity(uid, projectId, activity);
       } else {
         result = await db.createSubActivity(uid, projectId, parentId, activity);
       }
-    } catch (e) { 
+    } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
     if (!result) return res.status(404).json({ message: "errore nella creazione dell'attività" });
 
-    res.status(200).json({ message: "attività aggiunta correttamente" , result });
+    res.status(200).json({ message: "attività aggiunta correttamente", result });
   });
 
   //get attività (da user o da project)

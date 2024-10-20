@@ -10,6 +10,9 @@ import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
 
+// services import
+import createProjectService from "./services/projects.mjs";
+
 export async function createDataBase() {
   const uri =
     "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
@@ -22,6 +25,16 @@ export async function createDataBase() {
   const projectModel = mongoose.model("Projects", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
+
+  const models = {
+    timeModel,
+    userModel,
+    eventModel,
+    songModel,
+    projectModel,
+    activityModel,
+    chatModel
+  };
 
   await mongoose.connect(uri);
 
@@ -528,74 +541,139 @@ export async function createDataBase() {
     return user.invitedEvents;
   };
 
-  const getProjects = async (uid) => {
-    // ritorno tutti i progetti creati dall'utente o a cui partecipa
-    return await projectModel.find({
-      $or: [{ creator: uid }, { members: uid }],
-    });
-  };
-
-  const createProject = async (uid, project) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    // Validate project object
-    if (!project.title || !project.description) {
-      throw new Error("Project must have a title and description");
+  const getUsrernameForActivity = async (activity) => {
+    if (!activity.participants || activity.participants.length === 0) {
+      return activity;
     }
 
-    // check if all the sub activities are valid:
-    // the start date must be before the end date, and the start date must be after the previous end date
-    var err = "Invalid sub activities: ";
-    if (project.activities) {
-      // TODO: check if this is correct
-      for (let i = 0; i < project.activities.length; i++) {
-        const activity = project.activities[i];
-        if (
-          !activity.title ||
-          !activity.description ||
-          !activity.start ||
-          !activity.end
-        ) {
-          err += activity.title + ", ";
-        } else {
-          if (i > 0 && project.activities[i - 1].end > activity.start) {
-            err += activity.title + ", ";
-          }
+    // Fetch the user details for all participants based on their IDs
+    console.log(activity.participants);
+    let participants = await userModel.find({ _id: { $in: activity.participants.map((id) => id.toString()) } });
+
+    // Replace the participant IDs with their usernames
+    activity.participants = participants.map((user) => user.username);
+    console.log(activity.participants);
+    console.log('-----');
+    return activity;
+  };
+
+  const getUsernameForActivities = async (activities) => {
+    if (!activities || activities.length === 0) return activities;
+
+    for (let i = 0; i < activities.length; i++) {
+      // Check if the activity has subActivities and recursively process them
+      if (activities[i].subActivities && activities[i].subActivities.length > 0) {
+        activities[i].subActivities = await getUsernameForActivities(activities[i].subActivities);
+      }
+
+      // Process the participants for the current (father) activity
+      activities[i] = await getUsrernameForActivity(activities[i]);
+    }
+
+    return activities;
+  };
+
+  const addDatesToActivity = (activity, lastDate) => {
+    if (!activity) return activity;
+
+    // If the activity has a due date, use it as the last date
+    activity.startDate = new Date(lastDate);
+
+    // If the activity has subActivities, recursively process them
+    if (activity.subActivities && activity.subActivities.length > 0) {
+      for (let i = 0; i < activity.subActivities.length; i++) {
+        activity.subActivities[i] = addDatesToActivity(activity.subActivities[i], lastDate);
+        lastDate = new Date(activity.subActivities[i].dueDate);
+        lastDate.setDate(lastDate.getDate() + 1);
+      }
+    }
+
+    console.log(activity);
+    return activity;
+  }
+
+  const addDatesToProjectActivities = (projects) => {
+    if (!projects || projects.length === 0) return projects;
+
+    for (let i = 0; i < projects.length; i++) {
+      let lastDate = projects[i].startDate;
+      // Add the starting and ending dates to the activities
+      for (let j = 0; j < projects[i].activities.length; j++) {
+        projects[i].activities[j] = addDatesToActivity(projects[i].activities[j], lastDate);
+        lastDate = new Date(projects[i].activities[j].dueDate);
+        lastDate.setDate(lastDate.getDate() + 1);
+      }
+    }
+
+    return projects;
+  }
+
+  const checkActivityFitInProject = (project, activity) => {
+    if (!activity) {
+      throw new Error("Activity must be provided");
+    }
+
+    if (!activity.name || !activity.dueDate) {
+      throw new Error(`Activity must have a name and due date: ${JSON.stringify(activity)}`);
+    }
+
+    // Check if the activity's due date is after the project's start date and before or on the project's deadline
+    if (project.startDate && new Date(activity.dueDate) < new Date(project.startDate)) {
+      throw new Error(`Activity due date must be after the project start date: ${project.startDate}`);
+    }
+    if (project.deadline && new Date(activity.dueDate) > new Date(project.deadline)) {
+      throw new Error(`Activity due date must be on or before the project deadline: ${project.deadline}`);
+    }
+
+    // Check if the sub activities are valid
+    if (activity.subActivities && activity.subActivities.length > 0) {
+      for (let subActivity of activity.subActivities) {
+        // Recursively check each sub activity
+        checkActivityFitInProject(project, subActivity);
+
+        // Ensure sub-activity due date is not later than parent activity due date
+        if (new Date(subActivity.dueDate) > new Date(activity.dueDate)) {
+          throw new Error(`Sub-activity due date must not be later than parent activity due date: ${activity.dueDate}`);
         }
       }
     }
-    if (err !== "Invalid sub activities: ") throw new Error(err);
-
-    // add today's date to the project
-    const now = await getDateTime();
-    const newProject = { ...project, creator: uid, creationDate: now };
-
-    // add project to the user's projects
-    let addedProject = await projectModel.create(newProject);
-    if (!addedProject) throw new Error("Project not created");
-
-    if (!user.projects) user.projects = [];
-    user.projects.push(addedProject._id);
-    await user.save();
-
-    // add all the members to the project
-    err = "Members not found: ";
-    if (project.members) {
-      project.members.forEach(async (member) => {
-        const memberDoc = await userModel.findOneAndUpdate(
-          { username: member },
-          { $push: { projects: addedProject._id } },
-        );
-        if (!memberDoc) err += member + ", ";
-      });
-    }
-    if (err !== "Members not found: ")
-      throw new Error("Project created but " + err);
-
-    return addedProject;
   };
 
+  const convertUsernameToId = async (username) => {
+    const user = await userModel.findOne({ username: username });
+    if (!user) throw new Error("User not found");
+    return user._id.toString();
+  };
+
+  const processActivityParticipants = async (activity, fatherActivityParticipants = []) => {
+    if (!activity.participants || activity.participants.length === 0) {
+      return activity;
+    }
+
+    // Filter out participants that are not in the fatherActivityParticipants array
+    activity.participants = activity.participants.filter(
+      participant => fatherActivityParticipants.includes(participant)
+    );
+
+    // if no subactivities, exit
+    if (!activity.subActivities) return activity;
+
+    for (let j = 0; j < activity.subActivities.length; j++) {
+      activity.subActivities[j] = await processActivityParticipants(activity.subActivities[j], activity.participants);
+    }
+    return activity;
+  }
+
+  const addActivityToProject = async (project, activity) => {
+    checkActivityFitInProject(project, activity);
+    activity = await processActivityParticipants(activity, project.members);
+
+    if (!project.activities) project.activities = [];
+    project.activities.push(activity);
+    return project;
+  };
+
+  
   const setPomodoroSettings = async (uid, settings) => {
     try {
       const user = await userModel.findById(uid);
@@ -620,15 +698,12 @@ export async function createDataBase() {
     }
   };
 
+
+
   const getUserById = async (uid) => {
-    try {
-      const user = await userModel.findById(uid);
-      if (!user) throw new Error("User not found");
-      return user;
-    } catch (error) {
-      console.error("Error getting user by ID:", error);
-      throw error;
-    }
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    return user;
   };
 
   const getCurrentSong = async (uid) => {
@@ -924,13 +999,14 @@ export async function createDataBase() {
       await user.save();
       await generateNotificationsForActivity(addedActivity, [user]);
     } else {
-      const project = await projectModel.findByIdAndUpdate(projectId, {
-        $push: { activities: addedActivity._id },
-      });
+      const project = await projectModel.findByIdAndUpdate(
+        projectId,
+        { $addToSet: { activities: addedActivity._id.toString() } },
+        { new: true }
+      );
       if (!project) throw new Error("Project not found");
-      let participants = await userModel.find({
-        _id: { $in: addedActivity.participants },
-      });
+
+      let participants = await userModel.find({ _id: { $in: addedActivity.participants } });
       const allParticipants = participants ? [...participants, user] : [user];
       await generateNotificationsForActivity(addedActivity, allParticipants);
     }
@@ -976,15 +1052,24 @@ export async function createDataBase() {
   const getActivities = async (uid, projectId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
+    let activity;
 
     if (!projectId) {
-      var activity = await activityModel.find({
-        _id: { $in: user.activities },
-      });
+      activity = await activityModel.find({ _id: { $in: user.activities } });
     } else {
-      var activity = await activityModel.find({
-        _id: { $in: project.activities },
-      });
+      var project = await projectModel.findById(projectId);
+      if (!project) throw new Error("Project not found");
+
+      activity = await activityModel.find({ _id: { $in: project.activities } });
+      // for each activity, get the participants and subactivities
+      for (let i = 0; i < activity.length; i++) {
+        let participants = await userModel.find({ _id: { $in: activity[i].participants } });
+        activity[i].participants = participants.map((participant) => participant.username);
+
+        const subActivitiesIds = activity[i].subActivity.map(sub => sub.toString());
+        const subActivities = await activityModel.find({ _id: { $in: subActivitiesIds } });
+        activity[i].subActivity = subActivities;
+      }
     }
 
     return { activity: activity };
@@ -997,7 +1082,6 @@ export async function createDataBase() {
 
     const activity = await activityModel.findById(activityId);
     if (!activity) throw new Error("Activity not found");
-    console.log("activity: ", activity);
 
     if (activity.parentId !== "root") {
       return deleteSubActivity(uid, activityId, projectId);
@@ -1124,8 +1208,6 @@ export async function createDataBase() {
       throw new Error("Activity replace failed");
     }
 
-    console.log(oldActivity.parentId);
-    console.log(replacedSubActivity.parentId);
     const parent = await activityModel.findById(oldActivity.parentId);
     if (!parent) throw new Error("Parent not found");
 
@@ -1306,11 +1388,11 @@ export async function createDataBase() {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: msg.lastMessage,
-                date: msg.date,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: msg.lastMessage,
+              date: msg.date,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1358,6 +1440,22 @@ export async function createDataBase() {
   };
 
   const userService = {
+    async fromsIdsToUsernames(ids) {
+      const users = await userModel.find({ _id: { $in: ids } });
+      return users.map((user) => user.username);
+    },
+    async fromUsernamesToIds(usernames) {
+      const users = await userModel.find({ username: { $in: usernames } });
+      return users.map((user) => user._id);
+    },
+    async fromUsernameToId(username) {
+      const user = await userModel.findOne({ username: username });
+      if (!user) throw new Error("User not found");
+    },
+    async fromIdtoUsername(id) {
+      const user = await getUserById(id);
+      return user.username;
+    },
     async getById(id) {
       const user = await userModel
         .findById(id)
@@ -1368,6 +1466,9 @@ export async function createDataBase() {
     },
     //TODO: add other methods
   };
+
+
+  const projectService = createProjectService(models, { checkActivityFitInProject, userService, addDatesToProjectActivities, addActivityToProject, getDateTime });
 
   return {
     login,
@@ -1385,11 +1486,9 @@ export async function createDataBase() {
     deleteEvent,
     partecipateEvent,
     modifyEvent,
-    getProjects,
     getUserById,
-    createProject,
     setPomodoroSettings,
-    getCurrentSong,
+    getCurrentSong ,
     getNextSong,
     getPrevSong,
     getRandomSong,
@@ -1411,5 +1510,6 @@ export async function createDataBase() {
     deleteSubscription,
     getSubscription,
     getAllUserEvents,
+    projectService
   };
 }
