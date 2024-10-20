@@ -83,6 +83,7 @@ export default function EventAdder() {
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
+  const [isError, setIsError] = useState(false);
   const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
 
   const handleOpen = () => {
@@ -90,7 +91,8 @@ export default function EventAdder() {
   };
 
   const handleClose = () => {
-    setIsOpen(false);
+    // can't submit the event if there is no title
+    eventData.title !== "" ? setIsOpen(false) : setIsError(true);
   };
 
   const handleInputChange = (
@@ -99,6 +101,7 @@ export default function EventAdder() {
       | { target: { name: string; value: any } },
   ) => {
     var { name, value } = e.target;
+    if (name.startsWith("title")) setIsError(false);
     if (name.startsWith("notification.")) {
       const notificationField = name.split(".")[1];
       if (name.endsWith("fromDate")) {
@@ -167,7 +170,6 @@ export default function EventAdder() {
     try {
       console.log("newEvent: ", newEvent);
       const success = await createEvent(newEvent);
-      console.log("success: ", success);
       if (success) {
         console.log("Event created successfully");
         handleClose();
@@ -185,7 +187,7 @@ export default function EventAdder() {
     <>
       <Button
         variant="bordered"
-        className="rounded-xl bg-primary text-base border-transparent border-2 hover:border-white"
+        className="rounded-xl bg-primary text-base text-white border-transparent border-2 hover:border-white"
         onPress={handleOpen}
       >
         Nuovo Evento
@@ -206,6 +208,8 @@ export default function EventAdder() {
               <Input
                 isRequired
                 label="Titolo"
+                isInvalid={isError}
+                errorMessage="You need to insert the title before submit the event"
                 name="title"
                 value={eventData.title as string}
                 onChange={handleInputChange}
