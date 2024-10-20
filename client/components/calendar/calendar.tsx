@@ -80,7 +80,7 @@ const CalendarPage = (props: CalendarPageProps) => {
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando");
-      setCurrentTime();
+      //setCurrentTime();
       setAllEvents();
       setReloadEvents(false);
     }
@@ -237,7 +237,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                         (day) => (
                           <th
                             key={day}
-                            className="h-10 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
+                            className="h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
                           >
                             {day}
                           </th>
