@@ -33,10 +33,12 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "helpers/**/*.ts",
     ".next/types/**/*.ts",
     "nextbuild/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "typeRoots": ["helpers/types.ts", "./node_modules/@types", "helpers/custom-types.d.ts"]
 }
