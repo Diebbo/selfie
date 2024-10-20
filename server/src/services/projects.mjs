@@ -7,7 +7,7 @@ export default function createProjectService(models, lib) {
 
     populatedProject.activities = populatedProject.activities.map(a => {
       a.participants = a.participants.map(p => project.members.find(m => m._id.equals(p)).username);
-        a.subActivities = a.subActivities.map(sa => {
+      a.subActivities = a.subActivities.map(sa => {
         sa.participants = sa.participants.map(p => project.members.find(m => m._id.equals(p)).username);
         return sa;
       });
@@ -24,10 +24,19 @@ export default function createProjectService(models, lib) {
     // the members are stored as ObjectIds in the db but passed as usernames
     const members = await models.userModel.find({ username: { $in: project.members } });
     project.members = members.map(m => m._id);
+
     project.activities.forEach(activity => {
-      activity.participants = activity.participants.map(p => members.find(m => m.username === p)._id);
+      activity.participants = activity.participants.map(p => {
+        const member = members.find(m => m.username === p)
+        if (!member) throw new Error(`Member ${p} not found`);
+        return member._id
+      });
       activity.subActivities.forEach(subActivity => {
-        subActivity.participants = subActivity.participants.map(p => members.find(m => m.username === p)._id);
+        subActivity.participants = subActivity.participants.map(p => {
+          const member = members.find(m => m.username === p)
+          if (!member) throw new Error(`Member ${p} not found`);
+          return member._id
+        });
       });
     });
     return project;
@@ -37,11 +46,18 @@ export default function createProjectService(models, lib) {
     async updateProject(uid, projectId, project) {
       const dbProj = await projectModel.findOne({ _id: projectId, creator: uid });
       if (!dbProj) throw new Error("Progetto non trovato");
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
 
       // validate activities
       for (const activity of project.activities) {
         lib.checkActivityFitInProject(project, activity);
       }
+
+      // populate members
+      project.members = project.members || [];
+      project.members.push(user.username);
+      await populateDbMembers(project);
 
       const result = await projectModel.findOneAndUpdate({ _id: projectId, creator: uid }, project, { new: true });
       return result;
@@ -83,7 +99,7 @@ export default function createProjectService(models, lib) {
       if (new Date(project.startDate) >= new Date(project.deadline)) {
         throw new Error("Project start date must be before the deadline");
       }
-      
+
       project.members = project.members || [];
       project.members.push(user.username);
 
