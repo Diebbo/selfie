@@ -614,16 +614,20 @@ export async function createDataBase() {
       throw new Error("Activity must be provided");
     }
 
-    if (!activity.name || !activity.dueDate) {
-      throw new Error(`Activity must have a name and due date: ${JSON.stringify(activity)}`);
+    if (!activity.name || !activity.dueDate || !activity.startDate) {
+      throw new Error(`Activity must have a name, start and due date: ${JSON.stringify(activity)}`);
     }
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
     if (project.startDate && new Date(activity.dueDate) < new Date(project.startDate)) {
       throw new Error(`Activity due date must be after the project start date: ${project.startDate}`);
     }
-    if (project.deadline && new Date(activity.dueDate) > new Date(project.deadline)) {
+    if (new Date(activity.dueDate) > new Date(project.deadline)) {
       throw new Error(`Activity due date must be on or before the project deadline: ${project.deadline}`);
+    }
+
+    if (new Date(activity.startDate) < new Date(project.startDate)) {
+      throw new Error(`Activity start date must be after the project start date: ${project.startDate}`);
     }
 
     // Check if the sub activities are valid
@@ -635,6 +639,10 @@ export async function createDataBase() {
         // Ensure sub-activity due date is not later than parent activity due date
         if (new Date(subActivity.dueDate) > new Date(activity.dueDate)) {
           throw new Error(`Sub-activity due date must not be later than parent activity due date: ${activity.dueDate}`);
+        }
+
+        if (new Date(subActivity.startDate) < new Date(activity.startDate)) {
+          throw new Error(`Sub-activity start date must be after the parent activity start date: ${activity.startDate}`);
         }
       }
     }
