@@ -9,13 +9,20 @@ export const userSchema = new mongoose.Schema({
   emailtoken: String,
   isVerified: Boolean,
 
-  subscription: {
-    endpoint: String,
-    expirationTime: String,
-    keys: {
-      p256dh: String,
-      auth: String,
-    },
+  notifications: {
+    emailOn: Boolean,
+    pushOn: Boolean,
+    subscriptions: [
+      {
+        device_name: String,
+        endpoint: String,
+        expirationTime: String,
+        keys: {
+          p256dh: String,
+          auth: String,
+        },
+      },
+    ],
   },
 
   name: String,

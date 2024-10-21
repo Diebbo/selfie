@@ -133,31 +133,152 @@ export async function createDataBase() {
     return user;
   };
 
-  const saveSubscription = async (uid, subscription) => {
+  const saveSubscriptions = async (uid, newSubscription) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    user.subscription = subscription;
+    // Inizializza il campo notifications se non esiste
+    if (!user.notifications) {
+      user.notifications = {
+        emailOn: true, // Valore predefinito, puoi modificarlo secondo le tue esigenze
+        pushOn: true, // Valore predefinito, puoi modificarlo secondo le tue esigenze
+        subscriptions: [],
+      };
+    }
+
+    // Controlla se esiste già una sottoscrizione con lo stesso endpoint
+    const existingSubIndex = user.notifications.subscriptions.findIndex(
+      (sub) => sub.endpoint === newSubscription.endpoint,
+    );
+
+    // Controlla se esiste una sottoscrizione con lo stesso deviceName, in caso ritorna un errore
+    if (existingSubIndex !== -1) {
+      // Se esiste una sottoscrizione con lo stesso endpoint, aggiorna solo il deviceName
+      user.notifications.subscriptions[existingSubIndex] = newSubscription;
+    } else {
+      // Controlla se esiste una sottoscrizione con lo stesso deviceName
+      const existingDeviceIndex = user.notifications.subscriptions.findIndex(
+        (sub) => sub.device_name === newSubscription.device_name,
+      );
+
+      if (existingDeviceIndex !== -1) {
+        // Se esiste una sottoscrizione con lo stesso deviceName, lancia un errore
+        throw new Error("A subscription with this device name already exists");
+      }
+
+      // Aggiungi la nuova sottoscrizione
+      user.notifications.subscriptions.push(newSubscription);
+    }
+
+    // Assicurati che pushOn sia true quando aggiungi o aggiorni una sottoscrizione
+    user.notifications.pushOn = true;
+
+    await user.save();
+    if (existingSubIndex !== -1) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
+  const deleteSubscription = async (uid, deviceName) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (!user.notifications || !user.notifications.subscriptions) {
+      throw new Error("User has no subscriptions");
+    }
+
+    // Trova l'indice della sottoscrizione con il nome del dispositivo specificato
+    const subscriptionIndex = user.notifications.subscriptions.findIndex(
+      (sub) => sub.device_name === deviceName,
+    );
+
+    if (subscriptionIndex === -1) {
+      throw new Error("Subscription not found for the specified device");
+    }
+
+    // Rimuovi la sottoscrizione dall'array
+    user.notifications.subscriptions.splice(subscriptionIndex, 1);
+
+    // Se non ci sono più sottoscrizioni, imposta pushOn a false
+    if (user.notifications.subscriptions.length === 0) {
+      user.notifications.pushOn = false;
+    }
+
     await user.save();
     return user;
   };
 
-  const deleteSubscription = async (uid) => {
+  const getSubscriptions = async (uid) => {
     const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    user.subscription = null;
-    await user.save();
-    return user;
-  };
-
-  const getSubscription = async (uid) => {
-    const user = await userModel.findById(uid);
-    if (!user || !user.subscription) {
+    if (!user || !user.notifications.subscriptions) {
       throw new Error("User not found or not subscribed");
     }
-    console.log("Retrieved subscription:", user.subscription);
-    return user.subscription;
+    return user.notifications.subscriptions;
+  };
+
+  const disableNotifications = async (uid, type) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (!user.notifications) {
+      user.notifications = {
+        emailOn: true,
+        pushOn: true,
+        subscriptions: [],
+      };
+    }
+
+    if (type === "email") {
+      user.notifications.emailOn = false;
+    } else if (type === "push") {
+      user.notifications.pushOn = false;
+    } else {
+      throw new Error("Invalid notification type");
+    }
+
+    await user.save();
+    return user;
+  };
+
+  const getNotificationsStatus = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (!user.notifications) {
+      user.notifications = {
+        emailOn: false,
+        pushOn: false,
+        subscriptions: [],
+      };
+    }
+
+    return user.notifications;
+  };
+
+  const enableNotifications = async (uid, type) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (!user.notifications) {
+      user.notifications = {
+        emailOn: true,
+        pushOn: true,
+        subscriptions: [],
+      };
+    }
+
+    if (type === "email") {
+      user.notifications.emailOn = true;
+    } else if (type === "push") {
+      user.notifications.pushOn = true;
+    } else {
+      throw new Error("Invalid notification type");
+    }
+
+    await user.save();
+    return user;
   };
 
   const changeDateTime = async (time, isRealTime = false) => {
@@ -1568,9 +1689,12 @@ export async function createDataBase() {
     addLike,
     removeLike,
     userService,
-    saveSubscription,
+    saveSubscriptions,
     deleteSubscription,
-    getSubscription,
+    getSubscriptions,
+    getNotificationsStatus,
+    disableNotifications,
+    enableNotifications,
     getAllUserEvents,
     projectService,
   };

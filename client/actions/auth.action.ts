@@ -142,3 +142,35 @@ export async function getUsername() {
 
   return await response.json();
 }
+
+export async function getNotificationStatus() {
+  const cookieStore = cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${getBaseUrl()}/api/auth/notifications`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+    cache: "no-store",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Verification failed");
+  }
+
+  const data = await response.json();
+  const result = {
+    emailOn: data.emailOn,
+    pushOn: data.pushOn,
+  };
+
+  return result;
+}

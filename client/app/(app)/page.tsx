@@ -4,7 +4,6 @@ import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
 import { getUser } from "@/actions/user";
 import { ChatModel, Person } from "@/helpers/types";
-import PushNotificationTest from "@/components/auth/PushNotificationTest";
 
 export default async function Home() {
   try {
@@ -17,7 +16,6 @@ export default async function Home() {
     return (
       <>
         <Content events={user.events} chats={chats} friends={user.friends} />
-        <PushNotificationTest />
       </>
     );
   } catch (error: any) {

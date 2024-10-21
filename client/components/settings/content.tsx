@@ -18,24 +18,43 @@ import {
 import { DarkModeSwitch } from "../navbar/darkmodeswitch";
 import { PassLockIcon } from "../auth/PassLockIcon";
 import { createAuthCookie, deleteAuthCookie } from "@/actions/auth.action";
+import NotificationSettings from "../auth/NotificationSettings";
 
 interface SettingsPageProps {
   username: string;
   email: string;
+  pushNotifications: boolean;
+  emailNotifications: boolean;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(props.username);
   const [usernameEdit, setUsernameEdit] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(props.email);
   const [emailEdit, setEmailEdit] = useState(false);
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [repeatNewPassword, setRepeatNewPassword] = useState("");
-  const [notifications, setNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(
+    props.pushNotifications,
+  );
+  const [emailNotifications, setEmailNotifications] = useState(
+    props.emailNotifications,
+  );
+  const [errorMessageNotification, setErrorMessageNotification] = useState("");
+  const [errorMessageDelete, setErrorMessageDelete] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const validateEmail = (email: string) =>
+    email.match(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,4}$/i);
+
+  const isInvalid = React.useMemo(() => {
+    if (email === "") return false;
+
+    return validateEmail(email) ? false : true;
+  }, [email]);
 
   const handleSave = async (type: string) => {
+    setErrorMessageNotification(""); // Resetta il messaggio di errore all'inizio
     let body = {};
 
     switch (type) {
@@ -46,11 +65,12 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         body = { email: email };
         break;
       case "password":
+        if (password === "" || newPassword === "" || repeatNewPassword === "") {
+          setErrorMessageNotification("Inserisci tutte le password");
+          return;
+        }
         if (newPassword !== repeatNewPassword) {
-          // Avvisa l'utente che le password non corrispondono
-          // usando una notifica in alto a destra
-          // TODO: dobbiamo creare un componente notifica da poter usare ovunque
-          console.error("Le password non corrispondono");
+          setErrorMessageNotification("Le password non corrispondono");
           return;
         }
         body = {
@@ -71,7 +91,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      await deleteAuthCookie();
+      const err = await res.json();
+      setErrorMessageNotification(err.message);
       return;
     }
     const data = await res.json();
@@ -90,17 +111,41 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       body: JSON.stringify({ password: password }),
     });
     if (!res.ok) {
+      const err = await res.json();
+      setErrorMessageDelete(err.message);
       return;
     }
     await deleteAuthCookie();
     window.location.reload();
   };
 
+  const handleNotifications = async (type: string) => {
+    let body = {};
+    if (type === "push") {
+      body = { enable: !pushNotifications };
+      props.pushNotifications = !pushNotifications;
+    } else if (type === "email") {
+      body = { enable: !emailNotifications };
+      props.emailNotifications = !emailNotifications;
+    } else {
+      console.error("Tipo non supportato:", type);
+      return;
+    }
+
+    const res = await fetch("/api/auth/notifications/" + type, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  };
+
   return (
     <NextUIProvider>
       <div className="flex items-center justify-center min-h-screen">
         <Card className="max-w-[600px] mx-auto m-auto p-5 w-full">
-          <h1 className="text-2xl font-bold text-foreground mb-5">
+          <h1 className="flex text-2xl font-bold text-foreground mb-5 justify-center">
             Impostazioni Account
           </h1>
           <Spacer y={1} />
@@ -146,6 +191,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
               label="Email"
               placeholder="Inserisci la tua nuova email"
               value={email}
+              isInvalid={isInvalid}
+              errorMessage="Please enter a valid email"
               onChange={(e) => setEmail(e.target.value)}
               className="mr-3 w-full"
             />
@@ -178,7 +225,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             label="Password Attuale"
             placeholder="Inserisci la password attuale"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setErrorMessageNotification("");
+            }}
             type="password"
           />
           <Spacer y={5} />
@@ -188,7 +238,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             label="Nuova Password"
             placeholder="Inserisci la nuova password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              setErrorMessageNotification("");
+            }}
             type="password"
           />
           <Spacer y={5} />
@@ -198,9 +251,15 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             label="Ripeti la Nuova Password"
             placeholder="Ripeti la nuova password"
             value={repeatNewPassword}
-            onChange={(e) => setRepeatNewPassword(e.target.value)}
+            onChange={(e) => {
+              setRepeatNewPassword(e.target.value);
+              setErrorMessageNotification("");
+            }}
             type="password"
           />
+          {errorMessageNotification && (
+            <div className="text-red-500 mt-3">{errorMessageNotification}</div>
+          )}
           <Spacer y={5} />
           <Button
             variant="ghost"
@@ -212,16 +271,34 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
           <Spacer y={10} />
 
-          <h3 className="mb-3">Notifiche Push</h3>
+          <h3 className="text-lg mb-3">Notifiche Email</h3>
           <Switch
-            checked={notifications}
-            onChange={(e) => setNotifications(e.target.checked)}
+            isSelected={emailNotifications}
+            onChange={async () => {
+              await handleNotifications("email");
+              setEmailNotifications(!emailNotifications);
+            }}
           >
-            {notifications ? "Attive" : "Disattive"}
+            {emailNotifications ? "Attive" : "Disattive"}
           </Switch>
 
           <Spacer y={4} />
 
+          <h3 className="text-lg mb-3">Notifiche Push</h3>
+          <Switch
+            isSelected={pushNotifications}
+            onChange={() => {
+              handleNotifications("push");
+              setPushNotifications(!pushNotifications);
+            }}
+          >
+            {pushNotifications ? "Attive" : "Disattive"}
+          </Switch>
+
+          <Spacer y={4} />
+
+          <NotificationSettings />
+          <Spacer y={4} />
           <h3 className="mb-3">Cambia Tema</h3>
           <div>
             <DarkModeSwitch />
@@ -259,9 +336,17 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                     label="Password"
                     placeholder="Inserisci la tua password"
                     type="password"
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setErrorMessageDelete("");
+                    }}
                     endContent=<PassLockIcon />
                   />
+                  {errorMessageDelete && (
+                    <div className="text-red-500 mt-1 flex justify-center">
+                      {errorMessageDelete}
+                    </div>
+                  )}
                 </ModalBody>
                 <ModalFooter className="flex justify-between">
                   <Button color="primary" variant="light" onPress={onClose}>

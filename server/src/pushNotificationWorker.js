@@ -1,5 +1,4 @@
 import schedule from "node-schedule";
-import { mongoose } from "mongoose";
 import { createDataBase } from "./database.js";
 import { webpush } from "./webPushConfig.js";
 import nodemailer from "nodemailer";
@@ -14,23 +13,28 @@ async function checkAndSendNotifications() {
   console.log(`Checking notifications at ${new Date().toISOString()}`);
 
   try {
-    // Get all user and their events from db
     var db = await createDataBase();
     const users = await db.getAllUserEvents();
-    // Get the current time of the db
     const now = await db.getDateTime();
 
     for (const user of users) {
-      // Check if the user is subscribed to notifications
-      if (!user.subscription) continue;
+      // Verifica se l'utente ha attivato le notifiche
+      if (!user.notifications) continue;
 
       for (const event of user.events) {
         if (shouldSendNotification(event, now)) {
           const payload = createNotificationPayload(event);
-          if (event.notification.type === "push") {
+
+          if (event.notification.type === "push" && user.notifications.pushOn) {
             console.log("sending push notification");
-            await sendPushNotification(user.subscription, payload);
-          } else if (event.notification.type === "email") {
+            await sendPushNotifications(
+              user.notifications.subscriptions,
+              payload,
+            );
+          } else if (
+            event.notification.type === "email" &&
+            user.notifications.emailOn
+          ) {
             console.log("sending email notification");
             payload.email = user.email;
             await sendEmailNotification(payload);
@@ -105,18 +109,19 @@ export function createNotificationPayload(event) {
   };
 }
 
-export async function sendPushNotification(subscription, payload) {
-  try {
-    const result = await webpush.sendNotification(
-      subscription,
-      JSON.stringify(payload),
-    );
-  } catch (error) {
-    console.error("Detailed error in sendPushNotification:", error);
-    if (error.statusCode === 401) {
-      console.error("Authorization error. Check VAPID configuration.");
+export async function sendPushNotifications(subscriptions, payload) {
+  for (const subscription of subscriptions) {
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify(payload));
+    } catch (error) {
+      console.error(
+        `Error sending push notification to device ${subscription.deviceName}:`,
+        error,
+      );
+      if (error.statusCode === 401) {
+        console.error("Authorization error. Check VAPID configuration.");
+      }
     }
-    throw error;
   }
 }
 
