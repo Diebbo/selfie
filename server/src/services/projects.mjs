@@ -77,7 +77,7 @@ export default function createProjectService(models, lib) {
       const project = await projectModel.findById(projectId);
       if (!project) throw new Error("Progetto non trovato");
       project = await populateMembers(project);
-      return lib.addDatesToProjectActivities(project);
+      return project;
     },
 
     async getProjects(uid) {
@@ -88,7 +88,7 @@ export default function createProjectService(models, lib) {
         projects[i] = await populateMembers(projects[i]);
       }
 
-      return lib.addDatesToProjectActivities(projects);
+      return projects;
     },
 
     async createProject(uid, project, activities = null) {
