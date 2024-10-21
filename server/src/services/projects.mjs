@@ -59,8 +59,12 @@ export default function createProjectService(models, lib) {
       project.members.push(user.username);
       await populateDbMembers(project);
 
-      const result = await projectModel.findOneAndUpdate({ _id: projectId, creator: uid }, project, { new: true });
-      return result;
+      let result = await projectModel.findOneAndUpdate({ _id: projectId, creator: uid }, project, { new: true });
+      if (!result) throw new Error("Errore nell'aggiornamento del progetto");
+      
+      result = await populateMembers(result);
+
+      return lib.addDatesToProjectActivities(result);
     },
 
     async delete(uid, projectId) {
@@ -120,7 +124,6 @@ export default function createProjectService(models, lib) {
       if (errors.length > 0) {
         throw new Error("Invalid activities: " + errors.join(", "));
       }
-      console.log("Creating project", project);
 
       // populate members
       project = await populateDbMembers(project);

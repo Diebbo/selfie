@@ -588,7 +588,6 @@ export async function createDataBase() {
       }
     }
 
-    console.log(activity);
     return activity;
   }
 
