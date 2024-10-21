@@ -167,6 +167,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     <Card>
       <CardBody className="p-0 flex flex-col bg-white dark:bg-black">
         <Button
+          onClick={() => setIsAllEventsOpen(true)}
           className={`justify-end rounded-[100px] text-sm font-bold ${isToday ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300" : "bg-slate-800 text-white dark:text-white"}`}
         >
           {day}
