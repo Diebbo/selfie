@@ -1,14 +1,15 @@
 "use client";
-import { Calendar, Chip, Button, Tooltip } from "@nextui-org/react";
+import { Chip, Button, Tooltip } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent } from "@/helpers/types";
+import { SelfieEvent, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./reloadContext"
 
 interface CalendarPageProps {
   initialEvents: SelfieEvent[];
   dbdate: Date;
+  friends: People;
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -79,7 +80,7 @@ const CalendarPage = (props: CalendarPageProps) => {
 
   useEffect(() => {
     if (reloadEvents) {
-      console.log("sto fetchando");
+      console.log("sto fetchando gli eventi");
       //setCurrentTime();
       setAllEvents();
       setReloadEvents(false);
@@ -190,6 +191,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                   &lt;
                 </button>
                 <EventAdder
+                  friends={props.friends}
                   aria-label="Event Adder Button"
                 />
                 <Tooltip

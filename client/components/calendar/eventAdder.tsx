@@ -11,6 +11,9 @@ import {
   Input,
   Textarea,
   Switch,
+  Autocomplete,
+  AutocompleteItem,
+  Avatar,
 } from "@nextui-org/react";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
@@ -18,7 +21,7 @@ import {
   SelfieEvent,
   SelfieNotification,
   FrequencyType,
-  Person,
+  People,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
@@ -48,38 +51,46 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
   return true;
 }
 
-export default function EventAdder() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [eventData, setEventData] = useState<Partial<SelfieEvent>>({
+const initialEvent = {
+  title: "",
+  summary: "",
+  status: "confirmed",
+  transp: "OPAQUE",
+  dtstart: new Date(),
+  dtend: new Date(),
+  dtstamp: new Date().toISOString(),
+  categories: [""],
+  location: "",
+  description: "",
+  URL: "",
+  participants: [] as People,
+  rrule: {
+    freq: "weekly" as FrequencyType,
+    interval: 1,
+    bymonth: 1,
+    bymonthday: 1,
+  },
+  notification: {
     title: "",
-    summary: "",
-    status: "confirmed",
-    transp: "OPAQUE",
-    dtstart: new Date(),
-    dtend: new Date(),
-    dtstamp: new Date().toISOString(),
-    categories: [""],
-    location: "",
     description: "",
-    URL: "",
-    participants: [] as Person[],
-    rrule: {
-      freq: "weekly",
+    type: "",
+    repetition: {
+      freq: "",
       interval: 1,
-      bymonth: 1,
-      bymonthday: 1,
     },
-    notification: {
-      title: "",
-      description: "",
-      type: "",
-      repetition: {
-        freq: "",
-        interval: 1,
-      },
-      fromDate: new Date(),
-    },
-  });
+    fromDate: new Date(),
+  },
+};
+
+interface EventAdderProps {
+  friends: People;
+}
+
+const EventAdder: React.FC<EventAdderProps> = ({
+  friends,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [eventData, setEventData] = useState<Partial<SelfieEvent>>(initialEvent);
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -90,9 +101,19 @@ export default function EventAdder() {
     setIsOpen(true);
   };
 
+  const handleExit = () => {
+    setIsOpen(false);
+    setIsError(false);
+    setEventData(initialEvent);
+  }
+
   const handleClose = () => {
     // can't submit the event if there is no title
-    eventData.title !== "" ? setIsOpen(false) : setIsError(true);
+    if (eventData.title !== "") {
+      handleExit();
+    } else {
+      setIsError(true);
+    }
   };
 
   const handleInputChange = (
@@ -195,7 +216,7 @@ export default function EventAdder() {
 
       <Modal
         isOpen={isOpen}
-        onClose={handleClose}
+        onClose={handleExit}
         size="2xl"
         scrollBehavior="outside"
       >
@@ -272,19 +293,25 @@ export default function EventAdder() {
                 placeholder="Inserisci una descrizione"
                 className="mb-4"
               />
-              <Input
-                label="Partecipanti"
-                name="participants"
-                value={eventData.participants?.join(", ")}
-                /*onChange={(e) =>
-                  setEventData((prev) => ({
-                    ...prev,
-                    participants: e.target.value.split(",").map((p) => p.trim()),
-                  }))
-                }*/
-                placeholder="Inserisci i partecipanti (separati da virgola)"
-                className="mb-4"
-              />
+              <Autocomplete
+                variant="bordered"
+                label="Amici"
+                placeholder="Seleziona un utente da invitare"
+                labelPlacement="inside"
+                className="max-w-xs mb-4"
+              >
+                {friends.map((friend, index) => (
+                  <AutocompleteItem key={index} textValue={friend.username}>
+                    <div className="flex gap-2 items-center">
+                      <Avatar alt={friend.username} className="flex-shrink-0" size="sm" src={friend.avatar} />
+                      <div className="flex flex-col">
+                        <span className="text-small">{friend.username}</span>
+                        <span className="text-tiny text-default-400">{friend.email}</span>
+                      </div>
+                    </div>
+                  </AutocompleteItem>
+                ))}
+              </Autocomplete>
               <Input
                 label="Categorie"
                 name="categories"
@@ -333,3 +360,5 @@ export default function EventAdder() {
     </>
   );
 }
+
+export default EventAdder;
