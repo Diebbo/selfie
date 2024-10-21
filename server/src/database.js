@@ -12,6 +12,7 @@ import { messageSchema } from "./models/chat-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
+import { sendEmailNotification } from "./pushNotificationWorker.js";
 
 export async function createDataBase() {
   const uri =
@@ -33,7 +34,7 @@ export async function createDataBase() {
     songModel,
     projectModel,
     activityModel,
-    chatModel
+    chatModel,
   };
 
   await mongoose.connect(uri);
@@ -58,13 +59,21 @@ export async function createDataBase() {
 
     let res = await userModel.create({ ...user });
 
-    // send verification email
-    addNotification(res, {
+    // OLD send verification email
+    /*addNotification(res, {
       title: "Verify your email",
       description: "verificati",
       method: "email",
       when: new Date(),
-    });
+    });*/
+
+    const payload = {
+      email: user.email,
+      title: "Verify your email",
+      body: `Click here to verify your email: http://localhost:3000/verification?emailToken=${user.emailtoken}`,
+    };
+
+    sendEmailNotification(payload);
     return res;
   };
 
@@ -106,6 +115,13 @@ export async function createDataBase() {
     await user.save();
 
     return user;
+  };
+
+  const deleteAccount = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    await userModel.deleteOne({ _id: uid });
   };
 
   const updatePassword = async (uid, hashedPassword) => {
@@ -548,12 +564,14 @@ export async function createDataBase() {
 
     // Fetch the user details for all participants based on their IDs
     console.log(activity.participants);
-    let participants = await userModel.find({ _id: { $in: activity.participants.map((id) => id.toString()) } });
+    let participants = await userModel.find({
+      _id: { $in: activity.participants.map((id) => id.toString()) },
+    });
 
     // Replace the participant IDs with their usernames
     activity.participants = participants.map((user) => user.username);
     console.log(activity.participants);
-    console.log('-----');
+    console.log("-----");
     return activity;
   };
 
@@ -562,8 +580,13 @@ export async function createDataBase() {
 
     for (let i = 0; i < activities.length; i++) {
       // Check if the activity has subActivities and recursively process them
-      if (activities[i].subActivities && activities[i].subActivities.length > 0) {
-        activities[i].subActivities = await getUsernameForActivities(activities[i].subActivities);
+      if (
+        activities[i].subActivities &&
+        activities[i].subActivities.length > 0
+      ) {
+        activities[i].subActivities = await getUsernameForActivities(
+          activities[i].subActivities,
+        );
       }
 
       // Process the participants for the current (father) activity
@@ -582,7 +605,10 @@ export async function createDataBase() {
     // If the activity has subActivities, recursively process them
     if (activity.subActivities && activity.subActivities.length > 0) {
       for (let i = 0; i < activity.subActivities.length; i++) {
-        activity.subActivities[i] = addDatesToActivity(activity.subActivities[i], lastDate);
+        activity.subActivities[i] = addDatesToActivity(
+          activity.subActivities[i],
+          lastDate,
+        );
         lastDate = new Date(activity.subActivities[i].dueDate);
         lastDate.setDate(lastDate.getDate() + 1);
       }
@@ -590,7 +616,7 @@ export async function createDataBase() {
 
     console.log(activity);
     return activity;
-  }
+  };
 
   const addDatesToProjectActivities = (projects) => {
     if (!projects || projects.length === 0) return projects;
@@ -599,14 +625,17 @@ export async function createDataBase() {
       let lastDate = projects[i].startDate;
       // Add the starting and ending dates to the activities
       for (let j = 0; j < projects[i].activities.length; j++) {
-        projects[i].activities[j] = addDatesToActivity(projects[i].activities[j], lastDate);
+        projects[i].activities[j] = addDatesToActivity(
+          projects[i].activities[j],
+          lastDate,
+        );
         lastDate = new Date(projects[i].activities[j].dueDate);
         lastDate.setDate(lastDate.getDate() + 1);
       }
     }
 
     return projects;
-  }
+  };
 
   const checkActivityFitInProject = (project, activity) => {
     if (!activity) {
@@ -614,15 +643,27 @@ export async function createDataBase() {
     }
 
     if (!activity.name || !activity.dueDate) {
-      throw new Error(`Activity must have a name and due date: ${JSON.stringify(activity)}`);
+      throw new Error(
+        `Activity must have a name and due date: ${JSON.stringify(activity)}`,
+      );
     }
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
-    if (project.startDate && new Date(activity.dueDate) < new Date(project.startDate)) {
-      throw new Error(`Activity due date must be after the project start date: ${project.startDate}`);
+    if (
+      project.startDate &&
+      new Date(activity.dueDate) < new Date(project.startDate)
+    ) {
+      throw new Error(
+        `Activity due date must be after the project start date: ${project.startDate}`,
+      );
     }
-    if (project.deadline && new Date(activity.dueDate) > new Date(project.deadline)) {
-      throw new Error(`Activity due date must be on or before the project deadline: ${project.deadline}`);
+    if (
+      project.deadline &&
+      new Date(activity.dueDate) > new Date(project.deadline)
+    ) {
+      throw new Error(
+        `Activity due date must be on or before the project deadline: ${project.deadline}`,
+      );
     }
 
     // Check if the sub activities are valid
@@ -633,7 +674,9 @@ export async function createDataBase() {
 
         // Ensure sub-activity due date is not later than parent activity due date
         if (new Date(subActivity.dueDate) > new Date(activity.dueDate)) {
-          throw new Error(`Sub-activity due date must not be later than parent activity due date: ${activity.dueDate}`);
+          throw new Error(
+            `Sub-activity due date must not be later than parent activity due date: ${activity.dueDate}`,
+          );
         }
       }
     }
@@ -645,24 +688,30 @@ export async function createDataBase() {
     return user._id.toString();
   };
 
-  const processActivityParticipants = async (activity, fatherActivityParticipants = []) => {
+  const processActivityParticipants = async (
+    activity,
+    fatherActivityParticipants = [],
+  ) => {
     if (!activity.participants || activity.participants.length === 0) {
       return activity;
     }
 
     // Filter out participants that are not in the fatherActivityParticipants array
-    activity.participants = activity.participants.filter(
-      participant => fatherActivityParticipants.includes(participant)
+    activity.participants = activity.participants.filter((participant) =>
+      fatherActivityParticipants.includes(participant),
     );
 
     // if no subactivities, exit
     if (!activity.subActivities) return activity;
 
     for (let j = 0; j < activity.subActivities.length; j++) {
-      activity.subActivities[j] = await processActivityParticipants(activity.subActivities[j], activity.participants);
+      activity.subActivities[j] = await processActivityParticipants(
+        activity.subActivities[j],
+        activity.participants,
+      );
     }
     return activity;
-  }
+  };
 
   const addActivityToProject = async (project, activity) => {
     checkActivityFitInProject(project, activity);
@@ -673,7 +722,6 @@ export async function createDataBase() {
     return project;
   };
 
-  
   const setPomodoroSettings = async (uid, settings) => {
     try {
       const user = await userModel.findById(uid);
@@ -697,8 +745,6 @@ export async function createDataBase() {
       throw error;
     }
   };
-
-
 
   const getUserById = async (uid) => {
     const user = await userModel.findById(uid);
@@ -1002,11 +1048,13 @@ export async function createDataBase() {
       const project = await projectModel.findByIdAndUpdate(
         projectId,
         { $addToSet: { activities: addedActivity._id.toString() } },
-        { new: true }
+        { new: true },
       );
       if (!project) throw new Error("Project not found");
 
-      let participants = await userModel.find({ _id: { $in: addedActivity.participants } });
+      let participants = await userModel.find({
+        _id: { $in: addedActivity.participants },
+      });
       const allParticipants = participants ? [...participants, user] : [user];
       await generateNotificationsForActivity(addedActivity, allParticipants);
     }
@@ -1063,11 +1111,19 @@ export async function createDataBase() {
       activity = await activityModel.find({ _id: { $in: project.activities } });
       // for each activity, get the participants and subactivities
       for (let i = 0; i < activity.length; i++) {
-        let participants = await userModel.find({ _id: { $in: activity[i].participants } });
-        activity[i].participants = participants.map((participant) => participant.username);
+        let participants = await userModel.find({
+          _id: { $in: activity[i].participants },
+        });
+        activity[i].participants = participants.map(
+          (participant) => participant.username,
+        );
 
-        const subActivitiesIds = activity[i].subActivity.map(sub => sub.toString());
-        const subActivities = await activityModel.find({ _id: { $in: subActivitiesIds } });
+        const subActivitiesIds = activity[i].subActivity.map((sub) =>
+          sub.toString(),
+        );
+        const subActivities = await activityModel.find({
+          _id: { $in: subActivitiesIds },
+        });
         activity[i].subActivity = subActivities;
       }
     }
@@ -1388,11 +1444,11 @@ export async function createDataBase() {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: msg.lastMessage,
-              date: msg.date,
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: msg.lastMessage,
+                date: msg.date,
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1467,12 +1523,18 @@ export async function createDataBase() {
     //TODO: add other methods
   };
 
-
-  const projectService = createProjectService(models, { checkActivityFitInProject, userService, addDatesToProjectActivities, addActivityToProject, getDateTime });
+  const projectService = createProjectService(models, {
+    checkActivityFitInProject,
+    userService,
+    addDatesToProjectActivities,
+    addActivityToProject,
+    getDateTime,
+  });
 
   return {
     login,
     register,
+    deleteAccount,
     updateUsername,
     updateEmail,
     updatePassword,
@@ -1488,7 +1550,7 @@ export async function createDataBase() {
     modifyEvent,
     getUserById,
     setPomodoroSettings,
-    getCurrentSong ,
+    getCurrentSong,
     getNextSong,
     getPrevSong,
     getRandomSong,
@@ -1510,6 +1572,6 @@ export async function createDataBase() {
     deleteSubscription,
     getSubscription,
     getAllUserEvents,
-    projectService
+    projectService,
   };
 }

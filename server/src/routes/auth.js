@@ -103,6 +103,26 @@ export function createAuthRouter(db) {
     res.json({ user, token });
   });
 
+  router.delete("/account", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    const { password } = req.body;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const dbuser = await db.getUserById(user._id);
+      if (bcrypt.compareSync(password, dbuser.password) === false) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      await db.deleteAccount(user._id);
+      res.clearCookie("token");
+      return res.status(200).json({ message: "Account deleted" });
+    } catch (e) {
+      console.log(e.message);
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
   router.patch("/email", cookieJwtAuth, async (req, res) => {
     const user = req.user;
     if (!user) {
