@@ -2,7 +2,9 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { ProjectModel } from '@/helpers/types';
-import { ProjectCard, ProjectComponent } from './project-component.mjs';
+import ProjectCard from './project-card.mjs';
+import ProjectComponent from './project-component.mjs';
+import Modal from './project-modal.mjs';
 
 interface ContentProps {
   projects: ProjectModel[];
@@ -19,6 +21,11 @@ export default function Content({ projects }: ContentProps) {
     if (!customElements.get('project-component')) {
       customElements.define('project-component', ProjectComponent);
     }
+    if (!customElements.get('modal-component')) {
+      customElements.define('modal-component', Modal);
+    }
+
+
   }, []);
 
   useEffect(() => {

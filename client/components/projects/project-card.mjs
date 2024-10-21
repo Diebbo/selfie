@@ -1,9 +1,12 @@
-/*class ProjectCard extends HTMLElement {
+import Modal from './project-modal.mjs';
+
+class ProjectCard extends HTMLElement {
   constructor() {
     super();
     const shadow = this.attachShadow({ mode: 'open' });
     const wrapper = document.createElement('div');
     wrapper.setAttribute('class', 'project-card');
+
 
     const style = document.createElement('style');
     style.textContent = `
@@ -83,59 +86,12 @@ color: #2196F3;
 				background-color: #4CAF50;
 }
 
-      .modal {
-        display: none;
-        position: fixed;
-        z-index: 1;
-        left: 0;
-        top: 0;
-	border-radius: 15px;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0,0,0,0.4);
-      }
-      .modal-content {
-        background-color: #fefefe;
-        margin: 15% auto;
-        padding: 20px;
-        border: 1px solid #888;
-        width: 80%;
-        max-width: 500px;
-      }
-      .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-      }
-      .close:hover,
-      .close:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-      }
-      .modal input, .modal textarea {
-        width: 100%;
-        padding: 8px;
-        margin: 8px 0;
-        box-sizing: border-box;
-      }
-      .modal button {
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        cursor: pointer;
-        margin-top: 10px;
-        border-radius: 4px;
-      }
+     
+      
 .success {
         background-color: #4CAF50;
 }
-      .modal button:hover {
-        background-color: #45a049;
-      }
+
           .add-activity-btn {
         background-color: #4CAF50;
         color: white;
@@ -162,6 +118,21 @@ color: #2196F3;
         border-radius: 4px;
         float: right;
       }
+#activityForm input, #activityForm textarea {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+        box-sizing: border-box;
+      }
+#activityForm button {
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+        border-radius: 4px;
+      }
+
     `;
 
     shadow.appendChild(style);
@@ -188,42 +159,33 @@ color: #2196F3;
         <div class="gantt-chart">
           ${this.renderGanttChart(project.activities, days, startDate)}
         </div>
-        <div id="activityModal" class="modal">
-          <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="modalTitle">Edit Activity</h2>
-            <form id="projectForm">
-              <input type="text" id="activityName" placeholder="Activity Name" required>
-              <input type="date" id="activityStartDate" placeholder="Start Date" required>
-              <input type="date" id="activityDueDate" placeholder="Due Date" required>
-              <input type="text" id="activityParticipants" placeholder="Participants (comma-separated)">
-              <textarea id="activityDescription" placeholder="Description"></textarea>
-              <select id="parentActivitySelect" class="parent-activity-select">
-                <option value="">No Parent (Top-level Activity)</option>
-              </select>
-              <button type="submit" class="success">Save Changes</button>
-              <button type="button" class="delete" id="delete-activity">Delete Activity</button>
-            </form>
-          </div>
-        </div>
+        <modal-component id="activityModal">
+          <form id="activityForm">
+            <input type="text" id="activityName" placeholder="Activity Name" required>
+            <input type="date" id="activityStartDate" placeholder="Start Date" required>
+            <input type="date" id="activityDueDate" placeholder="Due Date" required>
+            <input type="text" id="activityParticipants" placeholder="Participants (comma-separated)">
+            <textarea id="activityDescription" placeholder="Description"></textarea>
+            <select id="parentActivitySelect" class="parent-activity-select">
+              <option value="">No Parent (Top-level Activity)</option>
+            </select>
+            <button type="submit" class="success">Save Changes</button>
+            <button type="button" class="delete" id="delete-activity">Delete Activity</button>
+          </form>
+        </modal-component>
       `;
 
+      const modal = this.shadowRoot.querySelector('#activityModal');
+
+      // Event listeners per apertura modale
       this.addEventListeners(project);
     }
   }
 
-  addError(message) {
-    const errorElement = document.createElement('div');
-    errorElement.textContent = message;
-    errorElement.style.color = 'red';
-    querySelector('modal-content').appendChild(errorElement);
-  }
-
   addEventListeners(project) {
     const taskElements = this.shadowRoot.querySelectorAll('.task-name');
-    const modal = this.shadowRoot.querySelector('#activityModal');
-    const closeBtn = modal.querySelector('.close');
-    const form = this.shadowRoot.querySelector('#projectForm');
+    const modal = this.shadowRoot.querySelector('modal-component');
+    const form = this.shadowRoot.querySelector('#activityForm');
     const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
     const deleteProjectBtn = this.shadowRoot.querySelector("#delete-proj");
     const deleteActivityBtn = form.querySelector('#delete-activity');
@@ -232,16 +194,9 @@ color: #2196F3;
       task.addEventListener('click', () => this.openModal(task, project, false));
     });
 
-    addActivityBtn.addEventListener('click', () => this.openModal(null, project, true));
-
-    closeBtn.addEventListener('click', () => this.closeModal());
-    window.addEventListener('click', (event) => {
-      if (event.target === modal) {
-        this.closeModal();
-      }
+    addActivityBtn.addEventListener('click', () => {
+      this.openModal(null, project, true);
     });
-
-    form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
 
     deleteProjectBtn.addEventListener('click', () => {
       if (confirm(`Are you sure you want to delete the project "${project.title}"?`)) {
@@ -260,6 +215,13 @@ color: #2196F3;
     });
   }
 
+  addError(message) {
+    const errorElement = document.createElement('div');
+    errorElement.textContent = message;
+    errorElement.style.color = 'red';
+    querySelector('modal-content').appendChild(errorElement);
+  }
+
   deleteActivity(project, activityId) {
     project.activities.forEach(activity => {
       activity.subActivities = activity.subActivities.filter(subActivity => subActivity._id !== activityId);
@@ -272,14 +234,16 @@ color: #2196F3;
       this.render();
       this.closeModal();
     }).catch((error) => {
-        addError('Error deleting activity:', error.message);
+      addError('Error deleting activity:', error.message);
     });
   }
 
   openModal(task, project, isNewActivity) {
-    const modal = this.shadowRoot.querySelector('#activityModal');
-    const form = this.shadowRoot.querySelector('#projectForm');
-    const modalTitle = this.shadowRoot.querySelector('#modalTitle');
+    const modal = this.shadowRoot.querySelector('modal-component');
+    const modalShadowRoot = modal.shadowRoot;
+    modalShadowRoot.querySelector('#modalTitle').textContent = 'Add New Activity';  // Usa shadowRoot per accedere agli elementi interni del modale
+    const form = this.shadowRoot.querySelector('#activityForm');
+    const modalTitle = this.shadowRoot.querySelector('modal-component').shadowRoot.querySelector('#modalTitle');
     const parentActivitySelect = form.querySelector('#parentActivitySelect');
 
     modalTitle.textContent = isNewActivity ? 'Add New Activity' : 'Edit Activity';
@@ -306,8 +270,9 @@ color: #2196F3;
       }
     }
 
-    modal.style.display = 'block';
+    form.dataset.isNew = 'true';
 
+    modal.openModal();  // Apri il modale
   }
 
   findActivity(activities, name) {
@@ -382,7 +347,7 @@ color: #2196F3;
         const activity = activities[i];
 
         // Verifica se è l'attività che stiamo cercando basandoci sull'ID
-        if (activity._id === JSON.parse(this.shadowRoot.querySelector('#projectForm').dataset.activity)._id) {
+        if (activity._id === JSON.parse(this.shadowRoot.querySelector('#activityForm').dataset.activity)._id) {
           activities[i] = {
             ...activity,  // Mantiene i campi esistenti
             ...updatedActivity // Aggiorna i campi con quelli nuovi
@@ -513,194 +478,6 @@ ${days.map((day, index) => {
   formatDate(date) {
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   }
-}*/
-
-class ProjectComponent extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._projects = [];
-    this.currentIndex = 0;
-    this.addEventListener('delete-project', this.handleDeleteProject);
-  }
-
-  setupStyle() {
-    const style = document.createElement('style');
-    style.textContent = `
-      :host {
-        display: block;
-        font-family: Arial, sans-serif;
-      }
-      .navigation {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-      }
-      .navigation button {
-        padding: 8px 16px;
-        margin: 0 5px;
-        cursor: pointer;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-size: 14px;
-        margin-left: 10px;
-      }
-      .navigation button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-#projectForm input, #projectForm textarea {
-        width: 100%;
-        padding: 8px;
-        margin: 8px 0;
-        box-sizing: border-box;
-      }
-#projectForm button {
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        cursor: pointer;
-        margin-top: 10px;
-        border-radius: 4px;
-      }
-.success {
-        background-color: #4CAF50;
-
-    `;
-
-    this.shadowRoot.appendChild(style);
-  }
-
-  handleDeleteProject(event) {
-    const projectId = event.detail.projectId;
-
-    // Send API request to delete the project
-    this.sendDeleteProjectRequest(projectId).then((data) => {
-      this._projects = this._projects.filter(project => project._id !== projectId);
-      if (this.currentIndex >= this._projects.length) {
-        this.currentIndex = Math.max(0, this._projects.length - 1);
-      }
-      this.render();
-    }).catch((error) => {
-      console.error('Error deleting project:', error.message);
-    });
-  }
-
-  async sendDeleteProjectRequest(projectId) {
-    // In a real application, you would send an API request here
-    console.log(`Sending request to delete project with ID: ${projectId}`);
-    // Simulating an API call
-    const res = await fetch(`/api/projects/${projectId}`, {
-      method: 'DELETE'
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    return res.json();
-  }
-
-  connectedCallback() {
-    this.setupStyle();
-    this.render();
-  }
-
-  set projects(value) {
-    if (Array.isArray(value)) {
-      this._projects = value;
-      this.render();
-    }
-  }
-
-  openModal({ title, startDate, deadline, description }) {
-    const modal = this.shadowRoot.querySelector('#projectModal');
-    const form = modal.querySelector('#projectForm');
-    modal.querySelector('#modalTitle').textContent = title || 'New Project';
-    form.querySelector('#projectTitle').value = title || '';
-    form.querySelector('#projectStartDate').value = new Date(startDate).toISOString().split('T')[0];
-    form.querySelector('#projectDeadline').value = new Date(deadline).toISOString().split('T')[0];
-    form.querySelector('#projectDescription').value = description || '';
-
-    
-    form.reset();
-    form.dataset.isNew = 'true';
-    modal.openModal();
-  }
-
-  render() {
-    // Save the style element
-    const style = this.shadowRoot.querySelector('style');
-
-    // Clear the shadow DOM
-    this.shadowRoot.innerHTML = '';
-
-    // Re-add the style element
-    if (style) {
-      this.shadowRoot.appendChild(style);
-    }
-
-    if (this._projects.length === 0) return;
-
-    const projectCard = document.createElement('project-card');
-    projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
-    this.shadowRoot.appendChild(projectCard);
-
-
-    const modal = document.createElement('modal-component');
-    modal.setAttribute('id', 'projectModal');
-    modal.innerHTML = `
-      <h2 id="modalTitle"></h2>
-      <form id="projectForm">
-        <input type="text" id="projectTitle" placeholder="Project Title" required>
-        <input type="date" id="projectStartDate" placeholder="Start Date" required>
-        <input type="date" id="projectDeadline" placeholder="Deadline" required>
-        <textarea id="projectDescription" placeholder="Description"></textarea>
-        <button type="submit" class="success">Save Changes</button>
-      </form>
-    `;
-    this.shadowRoot.appendChild(modal);
-
-    const navigation = document.createElement('div');
-    navigation.className = 'navigation';
-
-    const prevButton = document.createElement('button');
-    prevButton.textContent = 'Previous';
-    prevButton.disabled = this.currentIndex === 0;
-    prevButton.addEventListener('click', () => this.showPrevious());
-
-    const newProjectButton = document.createElement('button');
-    newProjectButton.textContent = 'New Project';
-    newProjectButton.addEventListener('click', () => {
-      this.openModal({ title: '', startDate: new Date(), deadline: new Date(), description: '' });
-    });
-
-    const nextButton = document.createElement('button');
-    nextButton.textContent = 'Next';
-    nextButton.disabled = this.currentIndex === this._projects.length - 1;
-    nextButton.addEventListener('click', () => this.showNext());
-
-    navigation.appendChild(prevButton);
-    navigation.appendChild(newProjectButton);
-    navigation.appendChild(nextButton);
-    this.shadowRoot.appendChild(navigation);
-  }
-
-  showPrevious() {
-    if (this.currentIndex > 0) {
-      this.currentIndex--;
-      this.render();
-    }
-  }
-
-  showNext() {
-    if (this.currentIndex < this._projects.length - 1) {
-      this.currentIndex++;
-      this.render();
-    }
-  }
 }
 
-export default ProjectComponent;
+export default ProjectCard;
