@@ -577,7 +577,9 @@ export async function createDataBase() {
     if (!activity) return activity;
 
     // If the activity has a due date, use it as the last date
-    activity.startDate = new Date(lastDate);
+    if (!activity.startDate) {
+      activity.startDate = new Date(activity.dueDate);
+    }
 
     // If the activity has subActivities, recursively process them
     if (activity.subActivities && activity.subActivities.length > 0) {
