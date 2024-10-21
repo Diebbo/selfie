@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
-import { sendPushNotification } from "../pushNotificationWorker.js";
+import { sendPushNotifications } from "../pushNotificationWorker.js";
 
 const router = express.Router();
 
@@ -112,7 +112,7 @@ export function createAuthRouter(db) {
     try {
       const dbuser = await db.getUserById(user._id);
       if (bcrypt.compareSync(password, dbuser.password) === false) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(400).json({ message: "Invalid password" });
       }
       await db.deleteAccount(user._id);
       res.clearCookie("token");
@@ -285,10 +285,13 @@ export function createAuthRouter(db) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const subscription = req.body;
-    console.log(subscription);
+
     try {
-      await db.saveSubscription(user._id, subscription);
-      return res.status(200).json({ message: "Subscription saved" });
+      const isNew = await db.saveSubscriptions(user._id, subscription);
+      if (isNew)
+        return res.status(200).json({ message: "Subscribed successfully!" });
+      else
+        return res.status(200).json({ message: "Updated name of this device" });
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
@@ -296,28 +299,79 @@ export function createAuthRouter(db) {
 
   router.delete("/subscription", cookieJwtAuth, async (req, res) => {
     const user = req.user;
+    const device_name = req.body.device_name;
     if (!user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      await db.deleteSubscription(user._id);
+      await db.deleteSubscription(user._id, device_name);
       return res.status(200).json({ message: "Subscription deleted" });
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
   });
 
+  router.get("/subscriptions", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const subscriptions = await db.getSubscriptions(user._id);
+      return res.status(200).json({ subscriptions });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.get("/notifications", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    try {
+      const notifications = await db.getNotificationsStatus(user._id);
+      return res.status(200).json(notifications);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.patch("/notifications/:type", cookieJwtAuth, async (req, res) => {
+    const user = req.user;
+    const type = req.params.type;
+    const enable = req.body.enable;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      if (enable) {
+        await db.enableNotifications(user._id, type);
+      } else if (!enable) {
+        await db.disableNotifications(user._id, type);
+      } else {
+        return res.status(400).json({ message: "Invalid request" });
+      }
+      return res.status(200).json({ message: "Notifications deleted" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  // FOR TESTING PURPOSES
   router.get("/send-test-notification", cookieJwtAuth, async (req, res) => {
     console.log("Sending test notification");
     try {
-      const subscription = await db.getSubscription(req.user._id);
-      console.log("Subscription:", subscription);
+      const subscriptions = await db.getSubscriptions(req.user._id);
+      console.log("Subscription:", subscriptions);
       const payload = {
         title: "Test Notification",
         body: "This is a server-side test notification",
       };
 
-      await sendPushNotification(subscription, payload);
+      //await sendPushNotification(subscription, payload);
       res.status(200).json({ message: "Notification sent successfully" });
     } catch (error) {
       console.error("Error in send-test-notification:", error);
