@@ -123,13 +123,16 @@ color: #2196F3;
         box-sizing: border-box;
       }
       .modal button {
-        background-color: #4CAF50;
         color: white;
         padding: 10px 15px;
         border: none;
         cursor: pointer;
         margin-top: 10px;
+        border-radius: 4px;
       }
+.success {
+        background-color: #4CAF50;
+}
       .modal button:hover {
         background-color: #45a049;
       }
@@ -198,7 +201,8 @@ color: #2196F3;
               <select id="parentActivitySelect" class="parent-activity-select">
                 <option value="">No Parent (Top-level Activity)</option>
               </select>
-              <button type="submit">Save Changes</button>
+              <button type="submit" class="success">Save Changes</button>
+              <button type="button" class="delete" id="delete-activity">Delete Activity</button>
             </form>
           </div>
         </div>
@@ -208,13 +212,21 @@ color: #2196F3;
     }
   }
 
+  addError(message) {
+    const errorElement = document.createElement('div');
+    errorElement.textContent = message;
+    errorElement.style.color = 'red';
+    querySelector('modal-content').appendChild(errorElement);
+  }
+
   addEventListeners(project) {
     const taskElements = this.shadowRoot.querySelectorAll('.task-name');
     const modal = this.shadowRoot.querySelector('#activityModal');
     const closeBtn = modal.querySelector('.close');
     const form = this.shadowRoot.querySelector('#activityForm');
     const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
-    const deleteBtn = this.shadowRoot.querySelector("#delete-proj");
+    const deleteProjectBtn = this.shadowRoot.querySelector("#delete-proj");
+    const deleteActivityBtn = form.querySelector('#delete-activity');
 
     taskElements.forEach((task) => {
       task.addEventListener('click', () => this.openModal(task, project, false));
@@ -231,8 +243,7 @@ color: #2196F3;
 
     form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
 
-    deleteBtn.addEventListener('click', () => {
-      console.log('delete button clicked');
+    deleteProjectBtn.addEventListener('click', () => {
       if (confirm(`Are you sure you want to delete the project "${project.title}"?`)) {
         const deleteEvent = new CustomEvent('delete-project', {
           bubbles: true,
@@ -241,6 +252,27 @@ color: #2196F3;
         });
         this.dispatchEvent(deleteEvent);
       }
+    });
+
+    deleteActivityBtn.addEventListener('click', (event) => {
+      const activityId = JSON.parse(form.dataset.activity)._id;
+      this.deleteActivity(project, activityId);
+    });
+  }
+
+  deleteActivity(project, activityId) {
+    project.activities.forEach(activity => {
+      activity.subActivities = activity.subActivities.filter(subActivity => subActivity._id !== activityId);
+    });
+    project.activities = project.activities.filter(activity => activity._id !== activityId);
+
+    this.fetchProject(project).then((data) => {
+      console.log(data.message, data.project);
+      this.setAttribute('project', JSON.stringify(data.project));
+      this.render();
+      this.closeModal();
+    }).catch((error) => {
+        addError('Error deleting activity:', error.message);
     });
   }
 
@@ -313,14 +345,18 @@ color: #2196F3;
     e.preventDefault();
     const form = e.target;
     const isNewActivity = form.dataset.isNew === 'true';
+    const oldActivity = JSON.parse(form.dataset.activity);
+    let subActivities = oldActivity.subActivities ? oldActivity.subActivities : [];
     const parentActivityId = form.querySelector('#parentActivitySelect').value;
 
     const activityData = {
       name: form.querySelector('#activityName').value,
-      startDate: form.querySelector('#activityStartDate').value,
-      dueDate: form.querySelector('#activityDueDate').value,
+      startDate: new Date(form.querySelector('#activityStartDate').value),
+      dueDate: new Date(form.querySelector('#activityDueDate').value),
       participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()),
       description: form.querySelector('#activityDescription').value,
+      completed: false,
+      subActivities: subActivities
     };
 
     if (isNewActivity) {
@@ -329,12 +365,15 @@ color: #2196F3;
       this.updateActivityInProject(project, activityData, parentActivityId);
     }
 
-    this.setAttribute('project', JSON.stringify(project));
-    this.render();
-    this.closeModal();
-
-    // Send dummy API request
-    this.sendDummyApiRequest(project);
+    console.log('Updated project:', project);
+    this.fetchProject(project).then((data) => {
+      console.log(data.message, data.project);
+      this.setAttribute('project', JSON.stringify(data.project));
+      this.render();
+      this.closeModal();
+    }).catch((error) => {
+      addError('Error updating project:', error.message);
+    });
   }
 
   updateActivityInProject(project, updatedActivity, parentActivityId) {
@@ -390,13 +429,21 @@ color: #2196F3;
     return '_' + Math.random().toString(36).substr(2, 9);
   }
 
-  sendDummyApiRequest(project) {
-    console.log('Sending dummy API request to update project...');
-    // Simulating an API call
-    setTimeout(() => {
-      console.log('Project updated successfully!');
-      console.log('Updated project data:', project);
-    }, 1000);
+  async fetchProject(project) {
+    const response = await fetch(`/api/projects/${project._id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ project }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
   }
 
   renderGanttChart(activities, days, startDate) {
@@ -424,7 +471,6 @@ color: #2196F3;
     const activityEnd = new Date(activity.dueDate);
     const startOffset = this.getDaysBetween(startDate, activityStart).length;
     const duration = this.getDaysBetween(activityStart, activityEnd).length;
-    console.log(activity.participants)
 
     const rowHtml = `
       <div class="gantt-row">
@@ -513,23 +559,34 @@ class ProjectComponent extends HTMLElement {
 
   handleDeleteProject(event) {
     const projectId = event.detail.projectId;
-    this._projects = this._projects.filter(project => project._id !== projectId);
-    if (this.currentIndex >= this._projects.length) {
-      this.currentIndex = Math.max(0, this._projects.length - 1);
-    }
-    this.render();
 
     // Send API request to delete the project
-    this.sendDeleteProjectRequest(projectId);
+    this.sendDeleteProjectRequest(projectId).then((data) => {
+
+      this._projects = this._projects.filter(project => project._id !== projectId);
+      if (this.currentIndex >= this._projects.length) {
+        this.currentIndex = Math.max(0, this._projects.length - 1);
+      }
+      this.render();
+    }).catch((error) => {
+        addError('Error deleting project:', error.message);
+    });
+
   }
 
-  sendDeleteProjectRequest(projectId) {
+  async sendDeleteProjectRequest(projectId) {
     // In a real application, you would send an API request here
     console.log(`Sending request to delete project with ID: ${projectId}`);
     // Simulating an API call
-    setTimeout(() => {
-      console.log(`Project with ID ${projectId} deleted successfully!`);
-    }, 1000);
+    const res = await fetch(`/api/projects/${projectId}`, {
+      method: 'DELETE'
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    return res.json();
   }
 
   connectedCallback() {
