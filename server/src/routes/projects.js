@@ -48,7 +48,7 @@ export function createProjectRouter(db) {
 
     if (!result) return res.status(404).json({ message: "Errore nell'aggiornamento del progetto" });
 
-    return res.status(200).json({ message: "progetto aggiornato correttamente", result });
+    return res.status(200).json({ message: "progetto aggiornato correttamente", project:result });
   });
 
   //delete projects
