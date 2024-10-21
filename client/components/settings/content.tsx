@@ -81,6 +81,21 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     window.location.reload();
   };
 
+  const handleDeleteAccount = async () => {
+    const res = await fetch("/api/auth/account", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: password }),
+    });
+    if (!res.ok) {
+      return;
+    }
+    await deleteAuthCookie();
+    window.location.reload();
+  };
+
   return (
     <NextUIProvider>
       <div className="flex items-center justify-center min-h-screen">
@@ -244,6 +259,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                     label="Password"
                     placeholder="Inserisci la tua password"
                     type="password"
+                    onChange={(e) => setPassword(e.target.value)}
                     endContent=<PassLockIcon />
                   />
                 </ModalBody>
@@ -251,7 +267,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                   <Button color="primary" variant="light" onPress={onClose}>
                     Close
                   </Button>
-                  <Button color="danger" onPress={onClose}>
+                  <Button color="danger" onPress={handleDeleteAccount}>
                     Confirm
                   </Button>
                 </ModalFooter>

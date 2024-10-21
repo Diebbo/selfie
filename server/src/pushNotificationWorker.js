@@ -120,7 +120,7 @@ export async function sendPushNotification(subscription, payload) {
   }
 }
 
-async function sendEmailNotification(payload) {
+export async function sendEmailNotification(payload) {
   config();
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
