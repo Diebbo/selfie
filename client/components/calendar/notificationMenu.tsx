@@ -2,6 +2,7 @@ import React from "react";
 import { Input, Select, SelectItem } from "@nextui-org/react";
 import { DatePicker } from "@nextui-org/react";
 import { SelfieNotification } from "@/helpers/types";
+import { parseDateTime } from "@internationalized/date";
 
 interface NotificationMenuProps {
   value: boolean;
@@ -75,7 +76,7 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
         </SelectItem>
       </Select>
       <DatePicker
-        //mettere la startEventDate come campo di default, se cambia cambio
+        defaultValue={parseDateTime(startEventDate.toISOString().split('T')[0])}
         label="Data di inizio notifiche"
         isRequired
         onChange={(date) => handleNotificationChange("fromDate", date)}
