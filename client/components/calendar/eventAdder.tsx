@@ -99,46 +99,13 @@ interface EventAdderProps {
   friends: People;
 }
 
-const EventAdder: React.FC<EventAdderProps> = ({
-  friends,
-}) => {
+const EventAdder: React.FC<EventAdderProps> = ({ friends }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [eventData, setEventData] = useState<Partial<SelfieEvent>>(initialEvent);
-export default function EventAdder() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [eventData, setEventData] =
+    useState<Partial<SelfieEvent>>(initialEvent);
   const [locationSuggestions, setLocationSuggestions] = useState<
     LocationSuggestion[]
   >([]);
-  const [eventData, setEventData] = useState<Partial<SelfieEvent>>({
-    title: "",
-    summary: "",
-    status: "confirmed",
-    transp: "OPAQUE",
-    dtstart: new Date(),
-    dtend: new Date(),
-    dtstamp: new Date().toISOString(),
-    categories: [""],
-    location: "",
-    description: "",
-    URL: "",
-    participants: [] as Person[],
-    rrule: {
-      freq: "weekly",
-      interval: 1,
-      bymonth: 1,
-      bymonthday: 1,
-    },
-    notification: {
-      title: "",
-      description: "",
-      type: "",
-      repetition: {
-        freq: "",
-        interval: 1,
-      },
-      fromDate: new Date(),
-    },
-  });
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -146,8 +113,11 @@ export default function EventAdder() {
   const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
 
-  const availableFriends = friends.filter(friend =>
-    !eventData.participants?.some(participant => participant.email === friend.email)
+  const availableFriends = friends.filter(
+    (friend) =>
+      !eventData.participants?.some(
+        (participant) => participant.email === friend.email,
+      ),
   );
 
   useEffect(() => {
@@ -163,7 +133,7 @@ export default function EventAdder() {
           freq: "",
           interval: 0,
         },
-      }
+      },
     }));
     console.log(eventData.notification);
   }, [eventData.dtstart, eventData.dtend]);
@@ -219,9 +189,11 @@ export default function EventAdder() {
         } catch (error) {
           console.error("Error fetching location suggestions:", error);
         }
+      } else {
+        setLocationSuggestions([]);
       }
     },
-    1000,
+    300,
   );
 
   const handleLocationSelect = (value: string) => {
@@ -265,9 +237,9 @@ export default function EventAdder() {
               ...prev.notification,
               repetition: {
                 ...prev.notification.repetition,
-                [repetitionField]: value
-              }
-            }
+                [repetitionField]: value,
+              },
+            },
           };
         }
 
@@ -277,8 +249,8 @@ export default function EventAdder() {
             ...prev,
             notification: {
               ...prev.notification,
-              fromDate: new Date(value).toISOString()
-            }
+              fromDate: new Date(value).toISOString(),
+            },
           };
         }
 
@@ -287,16 +259,15 @@ export default function EventAdder() {
           ...prev,
           notification: {
             ...prev.notification,
-            [notificationField]: value
-          }
+            [notificationField]: value,
+          },
         };
       });
     } else {
       // Per tutti i campi non correlati alla notification
-      setEventData(prev => ({ ...prev, [name]: value }));
+      setEventData((prev) => ({ ...prev, [name]: value }));
     }
   };
-
 
   const handleDateChange = (start: Date | string, end: Date | string) => {
     setEventData((prev) => ({
@@ -347,7 +318,7 @@ export default function EventAdder() {
     setEventData((prev) => ({
       ...prev,
       participants: (prev.participants || []).filter(
-        (friend) => friend.email !== friendToRemove.email
+        (friend) => friend.email !== friendToRemove.email,
       ),
     }));
   };
@@ -364,7 +335,7 @@ export default function EventAdder() {
     setIsError(false);
     setNotificationError(false);
     setEventData(initialEvent);
-  }
+  };
 
   const handleSave = () => {
     if (eventData.title === "") {
@@ -516,17 +487,29 @@ export default function EventAdder() {
                   className="max-w-sm"
                   isDisabled={availableFriends.length === 0}
                   onSelectionChange={(key) => {
-                    const selectedFriend = friends.find(friend => friend.email === key);
+                    const selectedFriend = friends.find(
+                      (friend) => friend.email === key,
+                    );
                     if (selectedFriend) handleParticipantSelect(selectedFriend);
                   }}
                 >
                   {availableFriends.map((friend) => (
-                    <AutocompleteItem key={friend.email} textValue={friend.username}>
+                    <AutocompleteItem
+                      key={friend.email}
+                      textValue={friend.username}
+                    >
                       <div className="flex gap-2 items-center">
-                        <Avatar alt={friend.username} className="flex-shrink-0" size="sm" src={friend.avatar} />
+                        <Avatar
+                          alt={friend.username}
+                          className="flex-shrink-0"
+                          size="sm"
+                          src={friend.avatar}
+                        />
                         <div className="flex flex-col">
                           <span className="text-small">{friend.username}</span>
-                          <span className="text-tiny text-default-400">{friend.email}</span>
+                          <span className="text-tiny text-default-400">
+                            {friend.email}
+                          </span>
                         </div>
                       </div>
                     </AutocompleteItem>
@@ -536,10 +519,7 @@ export default function EventAdder() {
                 <div className="flex gap-2">
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button
-                        variant="flat"
-                        className={`{min-w-[200px]}`}
-                      >
+                      <Button variant="flat" className={`{min-w-[200px]}`}>
                         Invitati ({eventData.participants?.length || 0})
                       </Button>
                     </DropdownTrigger>
@@ -557,7 +537,9 @@ export default function EventAdder() {
                                 size="sm"
                                 color="danger"
                                 variant="light"
-                                onPress={() => handleRemoveParticipant(participant)}
+                                onPress={() =>
+                                  handleRemoveParticipant(participant)
+                                }
                               >
                                 Rimuovi
                               </Button>
@@ -571,8 +553,12 @@ export default function EventAdder() {
                                 src={participant.avatar}
                               />
                               <div className="flex flex-col">
-                                <span className="text-small">{participant.username}</span>
-                                <span className="text-tiny text-default-400">{participant.email}</span>
+                                <span className="text-small">
+                                  {participant.username}
+                                </span>
+                                <span className="text-tiny text-default-400">
+                                  {participant.email}
+                                </span>
                               </div>
                             </div>
                           </DropdownItem>
@@ -646,6 +632,6 @@ export default function EventAdder() {
       </Modal>
     </>
   );
-}
+};
 
 export default EventAdder;
