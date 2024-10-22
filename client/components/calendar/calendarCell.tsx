@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
-import ShowEvent from './showEvent'
+import ShowEvent from "./showEvent";
 import { SelfieEvent } from "@/helpers/types";
 
 const areSameDay = (date1: Date, date2: Date): boolean => {
@@ -153,6 +153,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   };
 
   const handleOpen = (e: SelfieEvent) => {
+    console.log(e);
     setSelectedEvents(e);
     setIsOpenSE(true);
   };

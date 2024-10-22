@@ -19,6 +19,7 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@nextui-org/react";
+import { useDebouncedCallback } from "use-debounce";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
 import {
@@ -53,6 +54,14 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
     throw new Error(`Error during modify event: ${(e as Error).message}`);
   }
   return true;
+}
+
+interface LocationSuggestion {
+  label: string;
+  value: string;
+  lat: number;
+  lon: number;
+  id: string;
 }
 
 const initialEvent = {
@@ -95,6 +104,41 @@ const EventAdder: React.FC<EventAdderProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] = useState<Partial<SelfieEvent>>(initialEvent);
+export default function EventAdder() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<
+    LocationSuggestion[]
+  >([]);
+  const [eventData, setEventData] = useState<Partial<SelfieEvent>>({
+    title: "",
+    summary: "",
+    status: "confirmed",
+    transp: "OPAQUE",
+    dtstart: new Date(),
+    dtend: new Date(),
+    dtstamp: new Date().toISOString(),
+    categories: [""],
+    location: "",
+    description: "",
+    URL: "",
+    participants: [] as Person[],
+    rrule: {
+      freq: "weekly",
+      interval: 1,
+      bymonth: 1,
+      bymonthday: 1,
+    },
+    notification: {
+      title: "",
+      description: "",
+      type: "",
+      repetition: {
+        freq: "",
+        interval: 1,
+      },
+      fromDate: new Date(),
+    },
+  });
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -123,6 +167,76 @@ const EventAdder: React.FC<EventAdderProps> = ({
     }));
     console.log(eventData.notification);
   }, [eventData.dtstart, eventData.dtend]);
+
+  const fetchLocationSuggestions = useDebouncedCallback(
+    async (query: string) => {
+      if (query.length > 3) {
+        try {
+          const response = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`,
+          );
+          const data = await response.json();
+
+          // Usa un Set per tenere traccia degli elementi unici
+          const uniqueItems = new Set();
+
+          const suggestions = data.features
+            .map((item: any) => {
+              const lat = item.geometry.coordinates[1];
+              const lon = item.geometry.coordinates[0];
+
+              // Usa street se c'è housenumber, altrimenti usa name
+              const primaryName = item.properties.housenumber
+                ? item.properties.street
+                : item.properties.name;
+
+              return {
+                label: [
+                  primaryName,
+                  item.properties.housenumber,
+                  item.properties.city,
+                  item.properties.county,
+                  item.properties.state,
+                ]
+                  .filter(Boolean)
+                  .join(", "),
+                value: primaryName,
+                lat,
+                lon,
+                id: `${primaryName}|${lat}|${lon}`, // Crea un ID unico
+              };
+            })
+            .filter((item: LocationSuggestion) => {
+              if (!uniqueItems.has(item.id)) {
+                uniqueItems.add(item.id);
+                return true;
+              }
+              return false;
+            });
+
+          console.log("suggestions: ", suggestions);
+          setLocationSuggestions(suggestions);
+        } catch (error) {
+          console.error("Error fetching location suggestions:", error);
+        }
+      }
+    },
+    1000,
+  );
+
+  const handleLocationSelect = (value: string) => {
+    const selectedItem = locationSuggestions.find((item) => item.id === value);
+    if (selectedItem) {
+      setEventData((prev) => ({
+        ...prev,
+        location: selectedItem.label,
+        geo: {
+          lat: selectedItem.lat,
+          lon: selectedItem.lon,
+        },
+      }));
+    }
+  };
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -360,14 +474,31 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   value={eventData.rrule?.bymonth.toString()}
                 />
               </div>
-              <Input
+              <Autocomplete
                 label="Luogo"
-                name="location"
-                value={eventData.location?.toString()}
-                onChange={handleInputChange}
                 placeholder="Inserisci il luogo"
-                className="mb-4"
-              />
+                defaultItems={locationSuggestions}
+                onInputChange={(value) => {
+                  handleInputChange({ target: { name: "location", value } });
+                  fetchLocationSuggestions(value);
+                }}
+                onSelectionChange={(value) =>
+                  handleLocationSelect(value as string)
+                }
+                defaultFilter={(textValue, inputValue) => {
+                  const lowerCaseInput = inputValue.toLowerCase().trim();
+                  const searchWords = lowerCaseInput.split(/\s+/);
+                  return searchWords.every((word) =>
+                    textValue.toLowerCase().includes(word),
+                  );
+                }}
+              >
+                {(item: LocationSuggestion) => (
+                  <AutocompleteItem key={item.id} textValue={item.label}>
+                    {item.label}
+                  </AutocompleteItem>
+                )}
+              </Autocomplete>
               <Textarea
                 label="Descrizione"
                 name="description"
