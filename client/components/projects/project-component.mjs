@@ -59,7 +59,7 @@
         min-width: 200px;
         max-width: 200px;
         padding-right: 10px;
-				justify-content: flex-start;
+        justify-content: flex-start;
       }
 .task-info:hover {
 cursor: pointer;
@@ -76,11 +76,11 @@ color: #2196F3;
         min-width: 150px;
         max-width: 150px;
       }
-				.pending {
-				background-color: #f5f5f5;
+        .pending {
+        background-color: #f5f5f5;
 }
 .completed {
-				background-color: #4CAF50;
+        background-color: #4CAF50;
 }
 
       .modal {
@@ -89,7 +89,7 @@ color: #2196F3;
         z-index: 1;
         left: 0;
         top: 0;
-	border-radius: 15px;
+  border-radius: 15px;
         width: 100%;
         height: 100%;
         overflow: auto;
@@ -521,6 +521,7 @@ class ProjectComponent extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     this._projects = [];
     this.currentIndex = 0;
+    this._modal = null;
     this.addEventListener('delete-project', this.handleDeleteProject);
   }
 
@@ -616,19 +617,65 @@ class ProjectComponent extends HTMLElement {
   }
 
   openModal({ title, startDate, deadline, description }) {
-    const modal = this.shadowRoot.querySelector('#projectModal');
-    const form = modal.querySelector('#projectForm');
-    modal.querySelector('#modalTitle').textContent = title || 'New Project';
+    this._modal = this.shadowRoot.querySelector('#projectModal');
+    const form = this._modal.querySelector('#projectForm');
+    this._modal.setTitle('New Project');
     form.querySelector('#projectTitle').value = title || '';
     form.querySelector('#projectStartDate').value = new Date(startDate).toISOString().split('T')[0];
     form.querySelector('#projectDeadline').value = new Date(deadline).toISOString().split('T')[0];
     form.querySelector('#projectDescription').value = description || '';
 
-    
+
     form.reset();
     form.dataset.isNew = 'true';
-    modal.openModal();
+    this._modal.openModal();
   }
+
+  createHandleSave() {
+    const formDOM = this.shadowRoot.querySelector('#projectForm');
+    const addProject = (newProject) => {
+      console.log('Adding new project:', newProject);
+      this._projects.push(newProject);
+      this.currentIndex = this._projects.length - 1;
+      this._modal.closeModal();
+      this.render();
+    }
+    return (e) => {
+      e.preventDefault();
+
+      const getFormData = (form) => {
+        const title = form.querySelector('#projectTitle').value;
+        const startDate = form.querySelector('#projectStartDate').value;
+        const deadline = form.querySelector('#projectDeadline').value;
+        const description = form.querySelector('#projectDescription').value;
+
+        return {
+          title,
+          startDate:new Date(startDate),
+          deadline:new Date(deadline),
+          description,
+          activities: []
+        };
+      };
+      const newProject = getFormData(formDOM);
+      fetch('/api/projects', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({project:newProject})
+      }).then((res) => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Error creating project');
+      }).then((data) => {
+        addProject(data.project);
+      }).catch((error) => {
+        this._modal.setError('Error creating project:', error);
+      });
+    }
+  };
 
   render() {
     // Save the style element
@@ -662,6 +709,10 @@ class ProjectComponent extends HTMLElement {
       </form>
     `;
     this.shadowRoot.appendChild(modal);
+    const form = this.shadowRoot.querySelector('#projectForm');
+    if (form) {
+      form.addEventListener('submit', this.createHandleSave());
+    }
 
     const navigation = document.createElement('div');
     navigation.className = 'navigation';
@@ -702,5 +753,6 @@ class ProjectComponent extends HTMLElement {
     }
   }
 }
+
 
 export default ProjectComponent;
