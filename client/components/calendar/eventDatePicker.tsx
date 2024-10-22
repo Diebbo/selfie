@@ -7,7 +7,7 @@ import {
   DateValue,
 } from "@nextui-org/react";
 import { mobileContext } from "./reloadContext"
-import { parseDate, parseDateTime } from "@internationalized/date";
+import { parseDateTime } from "@internationalized/date";
 
 interface EventDatePickerProps {
   isAllDay: boolean;
