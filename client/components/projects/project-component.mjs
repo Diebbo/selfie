@@ -523,6 +523,17 @@ class ProjectComponent extends HTMLElement {
     this.currentIndex = 0;
     this._modal = null;
     this.addEventListener('delete-project', this.handleDeleteProject);
+    this.addEventListener('update-project', this.handleSaveProject);
+  }
+
+  handleSaveProject(event) {
+    const fetchedProject = event.detail.project;
+    this._projects = this._projects.map(project => {
+      if (project._id === fetchedProject._id) {
+        return fetchedProject;
+      }
+      return project;
+    });
   }
 
   setupStyle() {
@@ -704,7 +715,7 @@ class ProjectComponent extends HTMLElement {
         <input type="text" id="projectTitle" placeholder="Project Title" required>
         <input type="date" id="projectStartDate" placeholder="Start Date" required>
         <input type="date" id="projectDeadline" placeholder="Deadline" required>
-        <textarea id="projectDescription" placeholder="Description"></textarea>
+        <textarea id="projectDescription" placeholder="Description" required></textarea>
         <button type="submit" class="success">Save Changes</button>
       </form>
     `;
