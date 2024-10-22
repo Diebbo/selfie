@@ -81,7 +81,10 @@ export interface SelfieEvent {
   dtstamp: String;
   categories: String[];
   location: String;
-  geo: [Number];
+  geo: {
+    lat: Number;
+    lon: Number;
+  };
   description: String;
   URL: String;
   participants: People;
