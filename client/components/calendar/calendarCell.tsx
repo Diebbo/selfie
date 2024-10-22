@@ -176,10 +176,10 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           {showEvents(safeEvents, cellDate, handleOpen, isMobile)}
           {hasMoreEvents && (
             <Button
-              className="w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
+              className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
               onClick={() => setIsAllEventsOpen(true)}
             >
-              + mostra tutti gli eventi
+              ...
             </Button>
           )}
         </div>

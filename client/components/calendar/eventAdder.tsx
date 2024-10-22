@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Button,
   Modal,
@@ -14,6 +14,10 @@ import {
   Autocomplete,
   AutocompleteItem,
   Avatar,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@nextui-org/react";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
 import EventDatePicker from "@/components/calendar/eventDatePicker";
@@ -35,7 +39,7 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ event: event }),
-      cache: "no-store", // This ensures fresh data on every request
+      cache: "no-store",
     });
 
     if (res.status === 401) {
@@ -76,7 +80,7 @@ const initialEvent = {
     type: "",
     repetition: {
       freq: "",
-      interval: 1,
+      interval: 0,
     },
     fromDate: new Date(),
   },
@@ -95,25 +99,33 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
+
+  const availableFriends = friends.filter(friend =>
+    !eventData.participants?.some(participant => participant.email === friend.email)
+  );
+
+  useEffect(() => {
+    setEventData((prev: any) => ({
+      ...prev,
+      notification: {
+        ...prev.notification,
+        title: prev.notification?.title || "",
+        description: prev.notification?.description || "",
+        type: "",
+        fromDate: new Date(),
+        repetition: {
+          freq: "",
+          interval: 0,
+        },
+      }
+    }));
+    console.log(eventData.notification);
+  }, [eventData.dtstart, eventData.dtend]);
 
   const handleOpen = () => {
     setIsOpen(true);
-  };
-
-  const handleExit = () => {
-    setIsOpen(false);
-    setIsError(false);
-    setEventData(initialEvent);
-  }
-
-  const handleClose = () => {
-    // can't submit the event if there is no title
-    if (eventData.title !== "") {
-      handleExit();
-    } else {
-      setIsError(true);
-    }
   };
 
   const handleInputChange = (
@@ -121,25 +133,56 @@ const EventAdder: React.FC<EventAdderProps> = ({
       | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
       | { target: { name: string; value: any } },
   ) => {
-    var { name, value } = e.target;
-    if (name.startsWith("title")) setIsError(false);
-    if (name.startsWith("notification.")) {
-      const notificationField = name.split(".")[1];
-      if (name.endsWith("fromDate")) {
-        value = new Date(value).toISOString();
-      }
-      setEventData((prev: any) => ({
-        ...prev,
-        notification: {
-          ...prev.notification,
-          [notificationField]: value,
-        },
-      }));
-      console.log("name: ", name, "value: ", value);
+    const { name, value } = e.target;
+
+    if (name.startsWith("title")) {
+      setIsError(false);
+    }
+
+    if (name.startsWith("notification")) {
+      const [_, notificationField, repetitionField] = name.split(".");
+
+      setEventData((prev: any) => {
+        // Se stiamo gestendo un campo di repetition
+        if (notificationField === "repetition") {
+          return {
+            ...prev,
+            notification: {
+              ...prev.notification,
+              repetition: {
+                ...prev.notification.repetition,
+                [repetitionField]: value
+              }
+            }
+          };
+        }
+
+        // Se stiamo gestendo fromDate
+        if (notificationField === "fromDate") {
+          return {
+            ...prev,
+            notification: {
+              ...prev.notification,
+              fromDate: new Date(value).toISOString()
+            }
+          };
+        }
+
+        // Per tutti gli altri campi della notification
+        return {
+          ...prev,
+          notification: {
+            ...prev.notification,
+            [notificationField]: value
+          }
+        };
+      });
     } else {
-      setEventData((prev) => ({ ...prev, [name]: value }));
+      // Per tutti i campi non correlati alla notification
+      setEventData(prev => ({ ...prev, [name]: value }));
     }
   };
+
 
   const handleDateChange = (start: Date | string, end: Date | string) => {
     setEventData((prev) => ({
@@ -179,29 +222,69 @@ const EventAdder: React.FC<EventAdderProps> = ({
     }));
   };
 
+  const handleParticipantSelect = (friend: any) => {
+    setEventData((prev) => ({
+      ...prev,
+      participants: [...(prev.participants || []), friend],
+    }));
+  };
+
+  const handleRemoveParticipant = (friendToRemove: any) => {
+    setEventData((prev) => ({
+      ...prev,
+      participants: (prev.participants || []).filter(
+        (friend) => friend.email !== friendToRemove.email
+      ),
+    }));
+  };
+
+  const handleRemoveAllParticipants = () => {
+    setEventData((prev) => ({
+      ...prev,
+      participants: [],
+    }));
+  };
+
+  const handleExit = () => {
+    setIsOpen(false);
+    setIsError(false);
+    setNotificationError(false);
+    setEventData(initialEvent);
+  }
+
+  const handleSave = () => {
+    if (eventData.title === "") {
+      setIsError(true);
+    } else {
+      setIsError(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newEvent: SelfieEvent = {
-      ...eventData,
-      sequence: 0,
-      categories: eventData.categories || [],
-      participants: eventData.participants || [],
-    } as SelfieEvent;
+    console.log(isError, notificationError);
+    if (!isError && !notificationError) {
+      const newEvent: SelfieEvent = {
+        ...eventData,
+        sequence: 0,
+        categories: eventData.categories || [],
+        participants: eventData.participants || [],
+      } as SelfieEvent;
 
-    try {
-      console.log("newEvent: ", newEvent);
-      const success = await createEvent(newEvent);
-      if (success) {
-        console.log("Event created successfully");
-        handleClose();
-      } else {
-        console.error("Failed to create event");
+      try {
+        const success = await createEvent(newEvent);
+        if (success) {
+          console.log("Event created successfully");
+          handleExit();
+        } else {
+          console.error("Failed to create event");
+        }
+      } catch (error) {
+        console.error("Error submitting event", error);
       }
-    } catch (error) {
-      console.error("Error submitting event", error);
-    }
 
-    setReloadEvents(true);
+      setReloadEvents(true);
+    }
   };
 
   return (
@@ -293,25 +376,95 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 placeholder="Inserisci una descrizione"
                 className="mb-4"
               />
-              <Autocomplete
-                variant="bordered"
-                label="Amici"
-                placeholder="Seleziona un utente da invitare"
-                labelPlacement="inside"
-                className="max-w-xs mb-4"
-              >
-                {friends.map((friend, index) => (
-                  <AutocompleteItem key={index} textValue={friend.username}>
-                    <div className="flex gap-2 items-center">
-                      <Avatar alt={friend.username} className="flex-shrink-0" size="sm" src={friend.avatar} />
-                      <div className="flex flex-col">
-                        <span className="text-small">{friend.username}</span>
-                        <span className="text-tiny text-default-400">{friend.email}</span>
+              <div className="flex gap-4 items-start mb-4 items-center">
+                <Autocomplete
+                  variant="bordered"
+                  label="Amici"
+                  placeholder="Seleziona un utente da invitare"
+                  labelPlacement="inside"
+                  className="max-w-sm"
+                  isDisabled={availableFriends.length === 0}
+                  onSelectionChange={(key) => {
+                    const selectedFriend = friends.find(friend => friend.email === key);
+                    if (selectedFriend) handleParticipantSelect(selectedFriend);
+                  }}
+                >
+                  {availableFriends.map((friend) => (
+                    <AutocompleteItem key={friend.email} textValue={friend.username}>
+                      <div className="flex gap-2 items-center">
+                        <Avatar alt={friend.username} className="flex-shrink-0" size="sm" src={friend.avatar} />
+                        <div className="flex flex-col">
+                          <span className="text-small">{friend.username}</span>
+                          <span className="text-tiny text-default-400">{friend.email}</span>
+                        </div>
                       </div>
-                    </div>
-                  </AutocompleteItem>
-                ))}
-              </Autocomplete>
+                    </AutocompleteItem>
+                  ))}
+                </Autocomplete>
+
+                <div className="flex gap-2">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        variant="flat"
+                        className={`{min-w-[200px]}`}
+                      >
+                        Invitati ({eventData.participants?.length || 0})
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Invited participants"
+                      className="max-h-[300px] overflow-y-auto"
+                    >
+                      {eventData.participants?.length ? (
+                        eventData.participants.map((participant) => (
+                          <DropdownItem
+                            key={participant.email}
+                            className="py-2"
+                            endContent={
+                              <Button
+                                size="sm"
+                                color="danger"
+                                variant="light"
+                                onPress={() => handleRemoveParticipant(participant)}
+                              >
+                                Rimuovi
+                              </Button>
+                            }
+                          >
+                            <div className="flex gap-2 items-center">
+                              <Avatar
+                                alt={participant.username}
+                                className="flex-shrink-0"
+                                size="sm"
+                                src={participant.avatar}
+                              />
+                              <div className="flex flex-col">
+                                <span className="text-small">{participant.username}</span>
+                                <span className="text-tiny text-default-400">{participant.email}</span>
+                              </div>
+                            </div>
+                          </DropdownItem>
+                        ))
+                      ) : (
+                        <DropdownItem className="text-default-400">
+                          Nessun invitato
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+
+                  <Button
+                    size="md"
+                    color="danger"
+                    variant="flat"
+                    isDisabled={!eventData.participants?.length}
+                    onPress={handleRemoveAllParticipants}
+                  >
+                    Rimuovi tutti
+                  </Button>
+                </div>
+              </div>
               <Input
                 label="Categorie"
                 name="categories"
@@ -345,12 +498,15 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   value={notifications}
                   notification={eventData.notification as SelfieNotification}
                   onChange={handleInputChange}
-                  eventDate={eventData.dtstart as Date}
+                  startEventDate={eventData.dtstart as Date}
+                  notificationError={notificationError}
+                  setNotificationError={setNotificationError}
+                  isAllDay={allDayEvent}
                 />
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button color="primary" type="submit" onClick={handleClose}>
+              <Button color="primary" type="submit" onClick={handleSave}>
                 Salva
               </Button>
             </ModalFooter>
