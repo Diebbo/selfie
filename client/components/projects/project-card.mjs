@@ -157,7 +157,7 @@ color: #2196F3;
         <p>${project.description}</p>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
-          ${this.renderGanttChart(project.activities, days, startDate)}
+          ${project.activities && project.activities.length > 0 ? this.renderGanttChart(project.activities, days, startDate) : '<p>No activities found</p>'}
         </div>
         <modal-component id="activityModal">
           <form id="activityForm">

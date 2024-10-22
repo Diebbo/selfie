@@ -16,7 +16,7 @@ export function createProjectRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "progetto aggiunto correttamente", result });
+    return res.status(200).json({ message: "progetto aggiunto correttamente", project:result });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
