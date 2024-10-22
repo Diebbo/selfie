@@ -1,14 +1,15 @@
 "use client";
-import { Calendar, Chip, Button, Tooltip } from "@nextui-org/react";
+import { Chip, Button, Tooltip } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent } from "@/helpers/types";
+import { SelfieEvent, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./reloadContext"
 
 interface CalendarPageProps {
   initialEvents: SelfieEvent[];
   dbdate: Date;
+  friends: People;
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -79,8 +80,8 @@ const CalendarPage = (props: CalendarPageProps) => {
 
   useEffect(() => {
     if (reloadEvents) {
-      console.log("sto fetchando");
-      setCurrentTime();
+      console.log("sto fetchando gli eventi");
+      //setCurrentTime();
       setAllEvents();
       setReloadEvents(false);
     }
@@ -190,6 +191,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                   &lt;
                 </button>
                 <EventAdder
+                  friends={props.friends}
                   aria-label="Event Adder Button"
                 />
                 <Tooltip
@@ -199,11 +201,18 @@ const CalendarPage = (props: CalendarPageProps) => {
                   delay={0}
                   closeDelay={0}
                   placement="top"
-                  className="text-white border-2 border-purple-600 bg-violet-400 text-black"
-                >
+                  classNames={{
+                    base: [
+                      "before:bg-neutral-400 dark:before:bg-white",
+                    ],
+                    content: [
+                      "py-2 px-4 shadow-xl",
+                      "text-black bg-gradient-to-br from-white to-neutral-400",
+                    ],
+                  }}>
                   <Chip
                     variant="solid"
-                    className="text-base rounded-xl py-5 bg-violet-600"
+                    className="text-base rounded-xl py-5 bg-default"
                   >
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                   </Chip>
@@ -211,7 +220,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 <Button
                   variant="solid"
                   onClick={handleToday}
-                  className="text-white text-base rounded-xl bg-warning border-transparent border-2 hover:border-white"
+                  className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
                 >
                   Oggi
                 </Button>
@@ -230,7 +239,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                         (day) => (
                           <th
                             key={day}
-                            className="h-10 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
+                            className="h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
                           >
                             {day}
                           </th>
