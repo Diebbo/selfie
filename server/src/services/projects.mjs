@@ -74,7 +74,7 @@ export default function createProjectService(models, lib) {
     },
 
     async getProject(uid, projectId) {
-      const project = await projectModel.findById(projectId);
+      let project = await projectModel.findById(projectId);
       if (!project) throw new Error("Progetto non trovato");
       project = await populateMembers(project);
       return project;
