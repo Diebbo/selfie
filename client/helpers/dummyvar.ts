@@ -115,7 +115,10 @@ const dummyEvents: SelfieEvent[] = [
       bymonthday: 15,
     },
     dtstamp: new Date().toISOString(),
-    geo: [40.7128],
+    geo: {
+      lat: 40.7128,
+      lon: -74.006,
+    },
     notification: {
       title: "Beach Party",
       description: "Don't forget the sunscreen!",
@@ -149,7 +152,10 @@ const dummyEvents: SelfieEvent[] = [
       bymonthday: 20,
     },
     dtstamp: new Date().toISOString(),
-    geo: [40.7122],
+    geo: {
+      lat: 40.7128,
+      lon: -74.006,
+    },
     notification: {
       title: "Beach Party",
       description: "Don't forget the sunscreen!",
@@ -183,7 +189,10 @@ const dummyEvents: SelfieEvent[] = [
       bymonthday: 25,
     },
     dtstamp: new Date().toISOString(),
-    geo: [40.7128],
+    geo: {
+      lat: 40.7128,
+      lon: -74.006,
+    },
     notification: {
       title: "Beach Party",
       description: "Don't forget the sunscreen!",
