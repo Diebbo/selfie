@@ -1,5 +1,4 @@
 import { mongoose } from "mongoose";
-import { activitySchema } from "./event-model.js";
 
 export const userSchema = new mongoose.Schema({
   //campi user di default per l'iscrizione

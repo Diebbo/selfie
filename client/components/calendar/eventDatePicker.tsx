@@ -7,6 +7,7 @@ import {
   DateValue,
 } from "@nextui-org/react";
 import { mobileContext } from "./reloadContext"
+import { parseDateTime } from "@internationalized/date";
 
 interface EventDatePickerProps {
   isAllDay: boolean;
@@ -27,6 +28,26 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
     }
   };
 
+  const getDefaultDateRange = (isAllDay: boolean) => {
+    const today = new Date();
+
+    if (isAllDay) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return {
+        start: parseDateTime(today.toISOString().split('T')[0]),
+        end: parseDateTime(tomorrow.toISOString().split('T')[0])
+      };
+    } else {
+      const nextHour = new Date(today);
+      nextHour.setHours(today.getHours() + 1);
+      return {
+        start: parseDateTime(today.toISOString().split('T')[0]),
+        end: parseDateTime(nextHour.toISOString().split('T')[0])
+      };
+    }
+  };
+
   return (
     <DateRangePicker
       label="Event duration"
@@ -36,6 +57,7 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
       visibleMonths={isMobile ? 1 : 2}
       onChange={handleDateRangeChange}
       granularity={isAllDay ? "day" : "minute"}
+      defaultValue={getDefaultDateRange(isAllDay)}
     />
   );
 };
