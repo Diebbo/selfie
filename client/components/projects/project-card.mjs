@@ -1,12 +1,9 @@
-import Modal from './project-modal.mjs';
-
 class ProjectCard extends HTMLElement {
   constructor() {
     super();
     const shadow = this.attachShadow({ mode: 'open' });
     const wrapper = document.createElement('div');
     wrapper.setAttribute('class', 'project-card');
-
 
     const style = document.createElement('style');
     style.textContent = `
@@ -62,12 +59,12 @@ class ProjectCard extends HTMLElement {
         min-width: 200px;
         max-width: 200px;
         padding-right: 10px;
-				justify-content: flex-start;
+        justify-content: flex-start;
       }
-.task-info:hover {
-cursor: pointer;
-color: #2196F3;
-}
+      .task-info:hover {
+        cursor: pointer;
+        color: #2196F3;
+      }
       .subactivity {
         margin-left: 10px;
       }
@@ -79,20 +76,16 @@ color: #2196F3;
         min-width: 150px;
         max-width: 150px;
       }
-				.pending {
-				background-color: #f5f5f5;
-}
-.completed {
-				background-color: #4CAF50;
-}
-
-     
-      
-.success {
+      .pending {
+        background-color: #f5f5f5;
+      }
+      .completed {
         background-color: #4CAF50;
-}
-
-          .add-activity-btn {
+      }
+      .success {
+        background-color: #4CAF50;
+      }
+      .add-activity-btn {
         background-color: #4CAF50;
         color: white;
         padding: 10px 15px;
@@ -118,13 +111,13 @@ color: #2196F3;
         border-radius: 4px;
         float: right;
       }
-#activityForm input, #activityForm textarea {
+      #activityForm input, #activityForm textarea {
         width: 100%;
         padding: 8px;
         margin: 8px 0;
         box-sizing: border-box;
       }
-#activityForm button {
+      #activityForm button {
         color: white;
         padding: 10px 15px;
         border: none;
@@ -137,6 +130,8 @@ color: #2196F3;
 
     shadow.appendChild(style);
     shadow.appendChild(wrapper);
+
+    this._modal = null;
   }
 
   connectedCallback() {
@@ -175,7 +170,7 @@ color: #2196F3;
         </modal-component>
       `;
 
-      const modal = this.shadowRoot.querySelector('#activityModal');
+      this._modal = this.shadowRoot.querySelector('modal-component');
 
       // Event listeners per apertura modale
       this.addEventListeners(project);
@@ -184,7 +179,7 @@ color: #2196F3;
 
   addEventListeners(project) {
     const taskElements = this.shadowRoot.querySelectorAll('.task-name');
-    const modal = this.shadowRoot.querySelector('modal-component');
+    this._modal = this.shadowRoot.querySelector('modal-component');
     const form = this.shadowRoot.querySelector('#activityForm');
     const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
     const deleteProjectBtn = this.shadowRoot.querySelector("#delete-proj");
@@ -210,16 +205,30 @@ color: #2196F3;
     });
 
     deleteActivityBtn.addEventListener('click', (event) => {
-      const activityId = JSON.parse(form.dataset.activity)._id;
-      this.deleteActivity(project, activityId);
+      try {
+        const activityId = JSON.parse(form.dataset.activity)._id;
+        this.deleteActivity(project, activityId);
+      } catch (error) {
+        this._modal.closeModal();
+      }
     });
+
+    form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
   }
 
   addError(message) {
-    const errorElement = document.createElement('div');
-    errorElement.textContent = message;
-    errorElement.style.color = 'red';
-    querySelector('modal-content').appendChild(errorElement);
+    this._modal.setError(message);
+  }
+  
+  modifyProject(project) {
+      const updateEvent = new CustomEvent('update-project', {
+        bubbles: true,
+        composed: true,
+        detail: { project: project }
+      });
+      this.dispatchEvent(updateEvent);
+      this.setAttribute('project', JSON.stringify(project));
+      this.render();
   }
 
   deleteActivity(project, activityId) {
@@ -229,24 +238,18 @@ color: #2196F3;
     project.activities = project.activities.filter(activity => activity._id !== activityId);
 
     this.fetchProject(project).then((data) => {
-      console.log(data.message, data.project);
-      this.setAttribute('project', JSON.stringify(data.project));
-      this.render();
-      this.closeModal();
+      this.modifyProject(data);
+      this._modal.closeModal();
     }).catch((error) => {
-      addError('Error deleting activity:', error.message);
+      this.addError('Error deleting activity:', error);
     });
   }
 
   openModal(task, project, isNewActivity) {
-    const modal = this.shadowRoot.querySelector('modal-component');
-    const modalShadowRoot = modal.shadowRoot;
-    modalShadowRoot.querySelector('#modalTitle').textContent = 'Add New Activity';  // Usa shadowRoot per accedere agli elementi interni del modale
     const form = this.shadowRoot.querySelector('#activityForm');
-    const modalTitle = this.shadowRoot.querySelector('modal-component').shadowRoot.querySelector('#modalTitle');
+    this._modal.setTitle(isNewActivity ? 'Add New Activity' : 'Edit Activity');
     const parentActivitySelect = form.querySelector('#parentActivitySelect');
 
-    modalTitle.textContent = isNewActivity ? 'Add New Activity' : 'Edit Activity';
     form.reset();
 
     if (isNewActivity) {
@@ -270,9 +273,7 @@ color: #2196F3;
       }
     }
 
-    form.dataset.isNew = 'true';
-
-    modal.openModal();  // Apri il modale
+    this._modal.openModal();  // Apri il modale
   }
 
   findActivity(activities, name) {
@@ -301,17 +302,16 @@ color: #2196F3;
     });
   }
 
-  closeModal() {
-    const modal = this.shadowRoot.querySelector('#activityModal');
-    modal.style.display = 'none';
-  }
-
   handleFormSubmit(e, project) {
     e.preventDefault();
+    if (!project) {
+      this.addError('Error updating project:', 'Project not found');
+      return;
+    }
     const form = e.target;
     const isNewActivity = form.dataset.isNew === 'true';
-    const oldActivity = JSON.parse(form.dataset.activity);
-    let subActivities = oldActivity.subActivities ? oldActivity.subActivities : [];
+    const oldActivity = !isNewActivity ? JSON.parse(form.dataset.activity) : null;
+    let subActivities = oldActivity && oldActivity.subActivities ? oldActivity.subActivities : [];
     const parentActivityId = form.querySelector('#parentActivitySelect').value;
 
     const activityData = {
@@ -321,7 +321,8 @@ color: #2196F3;
       participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()),
       description: form.querySelector('#activityDescription').value,
       completed: false,
-      subActivities: subActivities
+      subActivities: subActivities,
+      ...(oldActivity?.id && { id: oldActivity.id }), // Preserve ID if it exists
     };
 
     if (isNewActivity) {
@@ -330,14 +331,11 @@ color: #2196F3;
       this.updateActivityInProject(project, activityData, parentActivityId);
     }
 
-    console.log('Updated project:', project);
     this.fetchProject(project).then((data) => {
-      console.log(data.message, data.project);
-      this.setAttribute('project', JSON.stringify(data.project));
-      this.render();
-      this.closeModal();
+      this.modifyProject(data);
+      this._modal.closeModal();
     }).catch((error) => {
-      addError('Error updating project:', error.message);
+      this.addError('Error updating project:', error.message);
     });
   }
 
@@ -408,7 +406,7 @@ color: #2196F3;
     }
 
     const data = await response.json();
-    return data;
+    return data.project;
   }
 
   renderGanttChart(activities, days, startDate) {
