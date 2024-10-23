@@ -5,6 +5,7 @@ class ProjectCard extends HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.setAttribute('class', 'project-card');
     this.user = null;
+    this.project = null;
 
     const style = document.createElement('style');
     style.textContent = `
@@ -141,20 +142,20 @@ class ProjectCard extends HTMLElement {
 
   render() {
     const wrapper = this.shadowRoot.querySelector('.project-card');
-    const project = JSON.parse(this.getAttribute('project'));
+    this.project = JSON.parse(this.getAttribute('project'));
     this.user = JSON.parse(this.getAttribute('user'));
 
-    if (wrapper && project) {
-      const startDate = new Date(project.startDate);
-      const endDate = new Date(project.deadline);
+    if (wrapper && this.project) {
+      const startDate = new Date(this.project.startDate);
+      const endDate = new Date(this.project.deadline);
       const days = this.getDaysBetween(startDate, endDate);
 
       wrapper.innerHTML = `
-        <h2>${project.title}<button class="delete" id="delete-proj">delete</button></h2>
-        <p>${project.description}</p>
+        <h2>${this.project.title}<button class="delete" id="delete-proj">delete</button></h2>
+        <p>${this.project.description}</p>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
-          ${this.renderGanttChart(project.activities, days, startDate)}
+          ${this.renderGanttChart(this.project.activities, days, startDate)}
         </div>
         <modal-component id="activityModal">
           <form id="activityForm">
@@ -175,7 +176,7 @@ class ProjectCard extends HTMLElement {
       this._modal = this.shadowRoot.querySelector('modal-component');
 
       // Event listeners per apertura modale
-      this.addEventListeners(project);
+      this.addEventListeners(this.project);
     }
   }
 
@@ -233,17 +234,83 @@ class ProjectCard extends HTMLElement {
     this.render();
   }
 
-  deleteActivity(project, activityId) {
-    project.activities.forEach(activity => {
-      activity.subActivities = activity.subActivities.filter(subActivity => subActivity._id !== activityId);
-    });
-    project.activities = project.activities.filter(activity => activity._id !== activityId);
+  removeActivityFromProject(project, activityId) {
+    const removeFromArray = (activities) => {
+      const index = activities.findIndex(a => a._id === activityId);
+      if (index !== -1) {
+        return activities.splice(index, 1)[0];
+      }
 
-    this.fetchProject(project).then((data) => {
-      this.modifyProject(data);
-      this._modal.closeModal();
+      for (let activity of activities) {
+        if (activity.subActivities) {
+          const removed = removeFromArray(activity.subActivities);
+          if (removed) return removed;
+        }
+      }
+      return null;
+    };
+
+    const removedActivity = removeFromArray(project.activities);
+    if (removedActivity) {
+      return removedActivity;
+    }
+    return null;
+  }
+
+  updateActivityInProject(project, updatedActivity, parentActivityId) {
+    // First remove the activity from its current location
+    this.removeActivityFromProject(project, updatedActivity._id);
+
+    // Then add it to the new location
+    if (!parentActivityId) {
+      // If no parent ID, add to root level
+      project.activities.push(updatedActivity);
+    } else {
+      const findAndAddToParent = (activities) => {
+        for (let activity of activities) {
+          if (activity._id === parentActivityId) {
+            if (!activity.subActivities) {
+              activity.subActivities = [];
+            }
+            activity.subActivities.push(updatedActivity);
+            return true;
+          }
+          if (activity.subActivities && findAndAddToParent(activity.subActivities)) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      const added = findAndAddToParent(project.activities);
+      if (!added) {
+        // If parent not found, add to root level
+        project.activities.push(updatedActivity);
+      }
+    }
+  }
+
+  deleteActivity(project, activityId) {
+    if (!project || !activityId) {
+      this.addError('Invalid project or activity ID');
+      return;
+    }
+
+    const removedActivity = this.removeActivityFromProject(project, activityId);
+
+    if (!removedActivity) {
+      this.addError('Activity not found');
+      return;
+    }
+
+    this._modal.closeModal();
+
+    this.fetchProject(project).then((updatedProject) => {
+      this.modifyProject(updatedProject);
     }).catch((error) => {
-      this.addError(error.message);
+      this.addError(`Failed to delete activity: ${error.message}`);
+      // Revert the deletion
+      this.addActivityToProject(project, removedActivity, null);
     });
   }
 
@@ -271,7 +338,8 @@ class ProjectCard extends HTMLElement {
         form.dataset.activity = JSON.stringify(activity);
 
         if (parentActivitySelect.children.length === 1) {
-          this.populateParentActivitySelect(parentActivitySelect, project.activities, activity);
+          const parentActivity = this.project.activities.find(a => a.subActivities && a.subActivities.find(sa => sa._id === activity._id));
+          this.populateParentActivitySelect(parentActivitySelect, project.activities, parentActivity);
         }
       }
     }
@@ -294,13 +362,14 @@ class ProjectCard extends HTMLElement {
     return null;
   }
 
-  populateParentActivitySelect(select, activities, currentActivity = null) {
+  populateParentActivitySelect(select, activities, currentParentActivity = null) {
     activities.forEach(activity => {
-      if (activity !== currentActivity) {
-        const option = document.createElement('option');
-        option.value = activity._id;
-        option.textContent = activity.name;
-        select.appendChild(option);
+      let option = document.createElement('option');
+      option.value = activity._id;
+      option.textContent = activity.name;
+      select.appendChild(option);
+      if (currentParentActivity && currentParentActivity._id === activity._id) {
+        option.selected = true;
       }
     });
   }
@@ -315,7 +384,7 @@ class ProjectCard extends HTMLElement {
     const isNewActivity = form.dataset.isNew === 'true';
     const oldActivity = !isNewActivity ? JSON.parse(form.dataset.activity) : null;
     let subActivities = oldActivity && oldActivity.subActivities ? oldActivity.subActivities : [];
-    const parentActivityId = form.querySelector('#parentActivitySelect').value;
+    const parentActivityId = form.querySelector('#parentActivitySelect').value === '' ? null : form.querySelector('#parentActivitySelect').value;
 
     const activityData = {
       name: form.querySelector('#activityName').value,
@@ -325,7 +394,7 @@ class ProjectCard extends HTMLElement {
       description: form.querySelector('#activityDescription').value,
       completed: false,
       subActivities: subActivities,
-      ...(oldActivity?.id && { id: oldActivity.id }), // Preserve ID if it exists
+      _id: oldActivity ? oldActivity._id : null
     };
 
     if (isNewActivity) {
@@ -336,63 +405,9 @@ class ProjectCard extends HTMLElement {
 
     this.fetchProject(project).then((data) => {
       this.modifyProject(data);
-      this._modal.closeModal();
     }).catch((error) => {
       this.addError(error.message);
     });
-  }
-
-  updateActivityInProject(project, updatedActivity, parentActivityId) {
-    const updateInParent = (activities) => {
-      for (let i = 0; i < activities.length; i++) {
-        const activity = activities[i];
-
-        // Verifica se è l'attività che stiamo cercando basandoci sull'ID
-        if (activity._id === JSON.parse(this.shadowRoot.querySelector('#activityForm').dataset.activity)._id) {
-          activities[i] = {
-            ...activity,  // Mantiene i campi esistenti
-            ...updatedActivity // Aggiorna i campi con quelli nuovi
-          };
-          return true;
-        }
-
-        // Se ha sotto-attività, ricorri per trovare e aggiornare anche lì
-        if (activity.subActivities && updateInParent(activity.subActivities)) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    updateInParent(project.activities);
-  }
-
-  addActivityToProject(project, newActivity, parentActivityId) {
-    if (!parentActivityId) {
-      project.activities.push(newActivity);
-    } else {
-      const addToParent = (activities) => {
-        for (const activity of activities) {
-          if (activity._id === parentActivityId) {
-            if (!activity.subActivities) {
-              activity.subActivities = [];
-            }
-            activity.subActivities.push(newActivity);
-            return true;
-          }
-          if (activity.subActivities && addToParent(activity.subActivities)) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      addToParent(project.activities);
-    }
-  }
-
-  generateUniqueId() {
-    return '_' + Math.random().toString(36).substr(2, 9);
   }
 
   async fetchProject(project) {
