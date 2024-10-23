@@ -31,7 +31,7 @@ export const CompaniesDropdown = () => {
         const response = await getUsername();
         setCompany((prevCompany) => ({
           ...prevCompany,
-          name: response.username, // Assuming the response contains a username field
+          name: response.username,
         }));
       } catch (error) {
         console.error("Failed to fetch username:", error);
@@ -39,6 +39,27 @@ export const CompaniesDropdown = () => {
     };
 
     fetchUsername();
+
+    // Aggiungi il listener per l'evento usernameUpdated
+    const handleUsernameUpdate = (event: CustomEvent<string>) => {
+      console.log("Username update event received", event.detail); // Per debug
+      setCompany((prevCompany) => ({
+        ...prevCompany,
+        name: event.detail,
+      }));
+    };
+
+    window.addEventListener(
+      "usernameUpdated",
+      handleUsernameUpdate as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "usernameUpdated",
+        handleUsernameUpdate as EventListener,
+      );
+    };
   }, []);
 
   return (

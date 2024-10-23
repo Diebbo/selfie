@@ -150,6 +150,7 @@ export function createAuthRouter(db) {
   });
 
   router.patch("/username", cookieJwtAuth, async (req, res) => {
+    console.log("Updating username");
     const user = req.user;
     if (!user) {
       return res.status(401).json({ message: "Unauthorized" });
