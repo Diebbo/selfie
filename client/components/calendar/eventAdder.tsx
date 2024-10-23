@@ -11,6 +11,7 @@ import {
   Input,
   Textarea,
   Switch,
+  cn,
   Autocomplete,
   AutocompleteItem,
   Avatar,
@@ -98,9 +99,14 @@ const initialEvent = {
 
 interface EventAdderProps {
   friends: People;
+  isMobile: Boolean;
+
 }
 
-const EventAdder: React.FC<EventAdderProps> = ({ friends }) => {
+const EventAdder: React.FC<EventAdderProps> = ({
+  friends,
+  isMobile,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
@@ -376,13 +382,27 @@ const EventAdder: React.FC<EventAdderProps> = ({ friends }) => {
 
   return (
     <>
-      <Button
-        variant="bordered"
-        className="rounded-xl bg-primary text-base text-white border-transparent border-2 hover:border-white"
-        onPress={handleOpen}
-      >
-        Nuovo Evento
-      </Button>
+      {!isMobile &&
+        <Button
+          variant="bordered"
+          className=" rounded-xl bg-primary text-base text-white border-transparent border-2 hover:border-white"
+          onPress={handleOpen}
+        >
+          Nuovo Evento
+        </Button>
+      }
+
+      {isMobile &&
+        <Button
+          className="fixed bottom-6 right-6 min-w-[56px] h-14 rounded-full shadow-lg z-50 p-0 bg-primary hover:bg-primary/90"
+          isIconOnly
+          onPress={handleOpen}
+          aria-label="Add Event"
+        >
+          <span className="text-2xl font-bold text-white">+</span>
+        </Button>
+      }
+
 
       <Modal
         isOpen={isOpen}
@@ -405,18 +425,54 @@ const EventAdder: React.FC<EventAdderProps> = ({ friends }) => {
                 value={eventData.title as string}
                 onChange={handleInputChange}
                 placeholder="Inserisci il titolo"
-                className="mb-4"
+                className={`${isMobile ? "" : "mb-4"}`}
               />
-              <div className="flex gap-4 mb-4">
+
+              {isMobile &&
+                <Switch
+                  isSelected={allDayEvent}
+                  onValueChange={setAllDayEvent}
+                  className="mb-1"
+                  classNames={{
+                    base: cn(
+                      "inline-flex flex-row-reverse w-full max-w-lg bg-[#27272a] hover:bg-content2 items-center",
+                      "justify-between rounded-lg gap-2 p-2 border-2 border-transparent",
+                    ),
+                    wrapper: "p-0 h-4 overflow-visible",
+                    thumb: cn("w-5 h-5 border-2 shadow-lg",
+                      "group-data-[hover=true]:border-secondary",
+                      //selected
+                      "group-data-[selected=true]:ml-6",
+                      // pressed
+                      "group-data-[pressed=true]:w-7",
+                      "group-data-[selected]:group-data-[pressed]:ml-4",
+                    ),
+                  }}
+                >
+                  <div className="flex flex-col gap-1">
+                    <p className="text-medium">
+                      Tutto il giorno
+                    </p>
+                  </div>
+                </Switch>
+              }
+
+              <div className={`${isMobile ? "max-w-fit" : "flex gap-4 mb-4 "}`}>
                 <EventDatePicker
                   isAllDay={allDayEvent}
                   startDate={eventData.dtstart as Date}
                   endDate={eventData.dtend as Date}
                   onChange={handleDateChange}
                 />
-                <Switch isSelected={allDayEvent} onValueChange={setAllDayEvent}>
+
+                {!isMobile && <Switch
+                  isSelected={allDayEvent}
+                  onValueChange={setAllDayEvent}
+                >
                   Tutto il giorno
                 </Switch>
+                }
+
               </div>
               <div className="flex pb-4 gap-4 ">
                 <Switch

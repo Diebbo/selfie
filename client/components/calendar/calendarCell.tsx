@@ -87,28 +87,30 @@ const showEvents = (
   date: Date,
   handleOpen: (event: SelfieEvent) => void,
   isMobile: boolean
-): JSX.Element[] => {
+): JSX.Element[] | null => {
   const todayEvents = getEventsByDay(events, date);
   const eventsToShow = todayEvents.slice(0, 2);
 
-  return eventsToShow.map((event, index) => (
-    <button
-      onClick={() => handleOpen(event)}
-      key={index}
-      className={`rounded-[100px] p-1 px-2 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${event.allDay ? "bg-violet-600" : ""}`}
-    >
-      {(!isMobile && !event.allDay) && (
-        <>
-          <span className="font-medium">
-            {new Date(event.dtstart).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          {" - "}
-        </>
-      )}
+  return (
+    !isMobile ? eventsToShow.map((event, index) => (
+      <button
+        onClick={() => handleOpen(event)}
+        key={index}
+        className={`rounded-[100px] p-1 px-2 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${event.allDay ? "bg-violet-600" : ""}`}
+      >
+        {(!isMobile && !event.allDay) && (
+          <>
+            <span className="font-medium">
+              {new Date(event.dtstart).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+            {" - "}
+          </>
+        )}
 
-      {event.title}
-    </button>
-  ));
+        {event.title}
+      </button>
+    )) : null
+  );
 };
 
 const monthNames = [
@@ -167,10 +169,12 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
 
   return (
     <Card>
-      <CardBody className="p-0 flex flex-col bg-white dark:bg-black">
+      <CardBody className={`${!isMobile ? "p-0 dark:bg-black" : ""}`}
+      >
         <Button
           onClick={() => setIsAllEventsOpen(true)}
-          className={`justify-end rounded-[100px] text-sm font-bold ${isToday ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300" : "bg-slate-800 text-white dark:text-white"}`}
+          className={`justify-start w-full rounded-[100px] text-sm font-bold 
+            ${isToday ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300" : "bg-slate-800 text-white dark:text-white"}`}
         >
           {day}
         </Button>
