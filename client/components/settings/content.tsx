@@ -19,6 +19,7 @@ import { DarkModeSwitch } from "../navbar/darkmodeswitch";
 import { PassLockIcon } from "../auth/PassLockIcon";
 import { createAuthCookie, deleteAuthCookie } from "@/actions/auth.action";
 import NotificationSettings from "../auth/NotificationSettings";
+import { useRouter } from "next/navigation";
 
 interface SettingsPageProps {
   username: string;
@@ -28,6 +29,7 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
+  const router = useRouter();
   const [username, setUsername] = useState(props.username);
   const [usernameEdit, setUsernameEdit] = useState(false);
   const [email, setEmail] = useState(props.email);
@@ -41,6 +43,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const [emailNotifications, setEmailNotifications] = useState(
     props.emailNotifications,
   );
+  const [statusPasswordChange, setStatusPasswordChange] = useState("");
   const [errorMessageNotification, setErrorMessageNotification] = useState("");
   const [errorMessageDelete, setErrorMessageDelete] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -95,11 +98,20 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       setErrorMessageNotification(err.message);
       return;
     }
-    const data = await res.json();
-    if (data) {
-      await createAuthCookie(data.token);
+    if (type === "username") {
+      setUsernameEdit(false);
+      const event = new CustomEvent("usernameUpdated", { detail: username });
+      window.dispatchEvent(event);
+    } else if (type === "password") {
+      setPassword("");
+      setNewPassword("");
+      setRepeatNewPassword("");
+      setStatusPasswordChange("Password cambiata con successo");
+    } else if (type === "email") {
+      setEmailEdit(false);
+      const event = new CustomEvent("emailUpdated", { detail: email });
+      window.dispatchEvent(event);
     }
-    window.location.reload();
   };
 
   const handleDeleteAccount = async () => {
@@ -115,8 +127,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       setErrorMessageDelete(err.message);
       return;
     }
-    await deleteAuthCookie();
-    window.location.reload();
+    router.push("/login");
   };
 
   const handleNotifications = async (type: string) => {
@@ -166,7 +177,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 variant="light"
                 color="danger"
                 className="mt-2"
-                onClick={() => handleSave("username")}
+                onClick={() => {
+                  setUsernameEdit(false);
+                  handleSave("username");
+                }}
               >
                 Save
               </Button>
@@ -228,6 +242,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             onChange={(e) => {
               setPassword(e.target.value);
               setErrorMessageNotification("");
+              setStatusPasswordChange("");
             }}
             type="password"
           />
@@ -241,6 +256,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             onChange={(e) => {
               setNewPassword(e.target.value);
               setErrorMessageNotification("");
+              setStatusPasswordChange("");
             }}
             type="password"
           />
@@ -254,11 +270,15 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             onChange={(e) => {
               setRepeatNewPassword(e.target.value);
               setErrorMessageNotification("");
+              setStatusPasswordChange("");
             }}
             type="password"
           />
           {errorMessageNotification && (
             <div className="text-red-500 mt-3">{errorMessageNotification}</div>
+          )}
+          {statusPasswordChange && (
+            <div className="text-green-500 mt-3">{statusPasswordChange}</div>
           )}
           <Spacer y={5} />
           <Button

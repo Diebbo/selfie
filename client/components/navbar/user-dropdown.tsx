@@ -25,15 +25,27 @@ export const UserDropdown = () => {
     const fetchEmail = async () => {
       try {
         const response = await getEmail();
-        setEmail(response.email); // Assuming the response contains an email field
+        setEmail(response.email);
       } catch (error) {
         console.error("Failed to fetch email:", error);
       }
     };
 
     fetchEmail();
-  }, []);
 
+    const handleEmailUpdate = (event: CustomEvent<string>) => {
+      setEmail(event.detail);
+    };
+
+    window.addEventListener("emailUpdated", handleEmailUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "emailUpdated",
+        handleEmailUpdate as EventListener,
+      );
+    };
+  }, []);
   return (
     <Dropdown>
       <NavbarItem>
