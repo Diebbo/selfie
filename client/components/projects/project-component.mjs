@@ -520,6 +520,7 @@ class ProjectComponent extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this._projects = [];
+    this._user = null;
     this.currentIndex = 0;
     this._modal = null;
     this.addEventListener('delete-project', this.handleDeleteProject);
@@ -631,13 +632,14 @@ class ProjectComponent extends HTMLElement {
     this._modal = this.shadowRoot.querySelector('#projectModal');
     const form = this._modal.querySelector('#projectForm');
     this._modal.setTitle('New Project');
+    form.reset();
     form.querySelector('#projectTitle').value = title || '';
     form.querySelector('#projectStartDate').value = new Date(startDate).toISOString().split('T')[0];
     form.querySelector('#projectDeadline').value = new Date(deadline).toISOString().split('T')[0];
     form.querySelector('#projectDescription').value = description || '';
+    form.querySelector('#projectMembers').value = this._user ? this._user.username + ',' : '';
 
 
-    form.reset();
     form.dataset.isNew = 'true';
     this._modal.openModal();
   }
@@ -659,13 +661,15 @@ class ProjectComponent extends HTMLElement {
         const startDate = form.querySelector('#projectStartDate').value;
         const deadline = form.querySelector('#projectDeadline').value;
         const description = form.querySelector('#projectDescription').value;
+        const members = form.querySelector('#projectMembers').value.split(',').map(m => m.trim());
 
         return {
           title,
           startDate:new Date(startDate),
           deadline:new Date(deadline),
           description,
-          activities: []
+          activities: [],
+          members
         };
       };
       const newProject = getFormData(formDOM);
@@ -683,7 +687,7 @@ class ProjectComponent extends HTMLElement {
       }).then((data) => {
         addProject(data.project);
       }).catch((error) => {
-        this._modal.setError('Error creating project:', error);
+        this._modal.setError('Error creating project:', error.message);
       });
     }
   };
@@ -704,6 +708,7 @@ class ProjectComponent extends HTMLElement {
 
     const projectCard = document.createElement('project-card');
     projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
+    projectCard.setAttribute('user', JSON.stringify(this._user));
     this.shadowRoot.appendChild(projectCard);
 
 
@@ -715,6 +720,7 @@ class ProjectComponent extends HTMLElement {
         <input type="text" id="projectTitle" placeholder="Project Title" required>
         <input type="date" id="projectStartDate" placeholder="Start Date" required>
         <input type="date" id="projectDeadline" placeholder="Deadline" required>
+        <input type="text" id="projectMembers" placeholder="Members (comma-separated)">
         <textarea id="projectDescription" placeholder="Description" required></textarea>
         <button type="submit" class="success">Save Changes</button>
       </form>
