@@ -83,6 +83,7 @@ const eventSchema = new mongoose.Schema({
   dtstart: Date,
   dtend: Date,
   dtstamp: String,
+  allDay: Boolean,
   categories: [String],
   location: String,
   geo: {
