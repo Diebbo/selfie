@@ -4,6 +4,7 @@ class ProjectCard extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' });
     const wrapper = document.createElement('div');
     wrapper.setAttribute('class', 'project-card');
+    this.user = null;
 
     const style = document.createElement('style');
     style.textContent = `
@@ -141,6 +142,7 @@ class ProjectCard extends HTMLElement {
   render() {
     const wrapper = this.shadowRoot.querySelector('.project-card');
     const project = JSON.parse(this.getAttribute('project'));
+    this.user = JSON.parse(this.getAttribute('user'));
 
     if (wrapper && project) {
       const startDate = new Date(project.startDate);
@@ -152,7 +154,7 @@ class ProjectCard extends HTMLElement {
         <p>${project.description}</p>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
-          ${project.activities && project.activities.length > 0 ? this.renderGanttChart(project.activities, days, startDate) : '<p>No activities found</p>'}
+          ${this.renderGanttChart(project.activities, days, startDate)}
         </div>
         <modal-component id="activityModal">
           <form id="activityForm">
@@ -219,16 +221,16 @@ class ProjectCard extends HTMLElement {
   addError(message) {
     this._modal.setError(message);
   }
-  
+
   modifyProject(project) {
-      const updateEvent = new CustomEvent('update-project', {
-        bubbles: true,
-        composed: true,
-        detail: { project: project }
-      });
-      this.dispatchEvent(updateEvent);
-      this.setAttribute('project', JSON.stringify(project));
-      this.render();
+    const updateEvent = new CustomEvent('update-project', {
+      bubbles: true,
+      composed: true,
+      detail: { project: project }
+    });
+    this.dispatchEvent(updateEvent);
+    this.setAttribute('project', JSON.stringify(project));
+    this.render();
   }
 
   deleteActivity(project, activityId) {
@@ -241,7 +243,7 @@ class ProjectCard extends HTMLElement {
       this.modifyProject(data);
       this._modal.closeModal();
     }).catch((error) => {
-      this.addError('Error deleting activity:', error);
+      this.addError(error.message);
     });
   }
 
@@ -254,6 +256,7 @@ class ProjectCard extends HTMLElement {
 
     if (isNewActivity) {
       form.dataset.isNew = 'true';
+      form.querySelector('#activityParticipants').value = this.user ? this.user.username + ',' : '';
       this.populateParentActivitySelect(parentActivitySelect, project.activities);
     } else {
       form.dataset.isNew = 'false';
@@ -305,7 +308,7 @@ class ProjectCard extends HTMLElement {
   handleFormSubmit(e, project) {
     e.preventDefault();
     if (!project) {
-      this.addError('Error updating project:', 'Project not found');
+      this.addError('Error updating project: Project not found');
       return;
     }
     const form = e.target;
@@ -318,7 +321,7 @@ class ProjectCard extends HTMLElement {
       name: form.querySelector('#activityName').value,
       startDate: new Date(form.querySelector('#activityStartDate').value),
       dueDate: new Date(form.querySelector('#activityDueDate').value),
-      participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()),
+      participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()).filter(p => p !== ''),
       description: form.querySelector('#activityDescription').value,
       completed: false,
       subActivities: subActivities,
@@ -335,7 +338,7 @@ class ProjectCard extends HTMLElement {
       this.modifyProject(data);
       this._modal.closeModal();
     }).catch((error) => {
-      this.addError('Error updating project:', error.message);
+      this.addError(error.message);
     });
   }
 
@@ -401,17 +404,22 @@ class ProjectCard extends HTMLElement {
       }
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`${data.message}`);
     }
 
-    const data = await response.json();
+    if (!data.project) {
+      throw new Error('Project data not found');
+    }
+
     return data.project;
   }
 
   renderGanttChart(activities, days, startDate) {
     const header = this.renderGanttHeader(days);
-    const rows = activities.map(activity => this.renderGanttRow(activity, days, startDate)).join('');
+    const rows = activities && activities.length > 0 ? activities.map(activity => this.renderGanttRow(activity, days, startDate)).join('') : '<div>No activities found</div>';
     return `
       <div class="gantt-header">${header}</div>
       ${rows}
