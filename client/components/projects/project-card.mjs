@@ -189,7 +189,8 @@ class ProjectCard extends HTMLElement {
     const deleteActivityBtn = form.querySelector('#delete-activity');
 
     taskElements.forEach((task) => {
-      task.addEventListener('click', () => this.openModal(task, project, false));
+      const taskId = task.getAttribute('data-activity-id');
+      task.addEventListener('click', () => this.openModal(taskId, project, false));
     });
 
     addActivityBtn.addEventListener('click', () => {
@@ -314,7 +315,7 @@ class ProjectCard extends HTMLElement {
     });
   }
 
-  openModal(task, project, isNewActivity) {
+  openModal(taskId, project, isNewActivity) {
     const form = this.shadowRoot.querySelector('#activityForm');
     this._modal.setTitle(isNewActivity ? 'Add New Activity' : 'Edit Activity');
     const parentActivitySelect = form.querySelector('#parentActivitySelect');
@@ -327,7 +328,7 @@ class ProjectCard extends HTMLElement {
       this.populateParentActivitySelect(parentActivitySelect, project.activities);
     } else {
       form.dataset.isNew = 'false';
-      const activity = this.findActivity(project.activities, task.textContent.trim());
+      const activity = this.findActivity(project.activities, taskId);
       if (activity) {
         form.querySelector('#activityName').value = activity.name;
         const startDate = new Date(activity.startDate || activity.dueDate);
@@ -347,13 +348,13 @@ class ProjectCard extends HTMLElement {
     this._modal.openModal();  // Apri il modale
   }
 
-  findActivity(activities, name) {
+  findActivity(activities, id) {
     for (const activity of activities) {
-      if (activity.name === name) {
+      if (activity._id === id) {
         return activity;
       }
       if (activity.subActivities) {
-        const found = this.findActivity(activity.subActivities, name);
+        const found = this.findActivity(activity.subActivities, id);
         if (found) {
           return found;
         }
@@ -460,7 +461,7 @@ class ProjectCard extends HTMLElement {
 
     const rowHtml = `
       <div class="gantt-row">
-        <div class="gantt-cell task-info task-name">${level === 1 ? "<span class=\"subactivity\"></span>" : ""} ${activity.name}</div>
+        <div class="gantt-cell task-info task-name" data-activity-id="${activity._id}">${level === 1 ? "<span class=\"subactivity\"></span>" : ""} ${activity.name}</div>
         <div class="gantt-cell days-column">${duration}</div>
         <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
