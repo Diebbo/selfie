@@ -18,7 +18,6 @@ const CalendarPage = (props: CalendarPageProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(props.dbdate);
   const [reloadEvents, setReloadEvents] = useState(false);
-  // const [participants, setParticipants] = useState<Person[]>([]);
   const EVENTS_API_URL = "/api/events";
 
   async function fetchEvents() {
