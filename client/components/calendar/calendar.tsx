@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, People } from "@/helpers/types";
-import { reloadContext, mobileContext } from "./reloadContext"
+import { reloadContext, mobileContext } from "./reloadContext";
 
 interface CalendarPageProps {
   initialEvents: SelfieEvent[];
@@ -177,7 +177,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
       <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
         <div
-          className="flex flex-col md:flex-row min-h-screen"
+          className="flex flex-col md:flex-row min-h-screen relative"
           aria-label="Back Ground Calendar"
         >
           <div className="flex-grow">
@@ -191,6 +191,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 </button>
                 <EventAdder
                   friends={props.friends}
+                  isMobile={isMobile}
                   aria-label="Event Adder Button"
                 />
                 <Tooltip
