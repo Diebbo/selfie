@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
@@ -9,6 +9,7 @@ import NextLink from "next/link";
 import { SelfieEvent } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
+import { useGeolocation } from "@/helpers/useGeolocation";
 
 const Chart = dynamic(
   () => import("../charts/steam").then((mod) => mod.Steam),
@@ -28,6 +29,42 @@ interface ContentProps {
 
 export const Content = (props: ContentProps) => {
   const [friends, setFriends] = React.useState<People>(props.friends);
+  const { position, error } = useGeolocation();
+
+  useEffect(() => {
+    if (position) {
+      sendPositionToServer(position);
+    }
+  }, [position]);
+
+  const sendPositionToServer = async (position: {
+    latitude: number;
+    longitude: number;
+  }) => {
+    try {
+      console.log("Sending position to server:", position);
+      const response = await fetch("/api/users/gps", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(position),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update position");
+      }
+
+      console.log("Position updated successfully");
+    } catch (error) {
+      console.error("Error updating position:", error);
+    }
+  };
+
+  if (error) {
+    console.error("Geolocation error:", error);
+  }
+
   return (
     <div className="h-full lg:px-6">
       <div className="flex justify-center gap-4 xl:gap-6 pt-3 px-4 lg:px-0  flex-wrap xl:flex-nowrap sm:pt-10 max-w-[90rem] mx-auto w-full">
@@ -90,6 +127,14 @@ export const Content = (props: ContentProps) => {
           </div>
         </div>
       </div>
+
+      {position && (
+        <div className="mt-4 p-4 bg-default-100 rounded-lg">
+          <h3 className="text-xl font-semibold mb-2">Current Location</h3>
+          <p>Latitude: {position.latitude}</p>
+          <p>Longitude: {position.longitude}</p>
+        </div>
+      )}
 
       {/* Table Latest Users */}
       <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
