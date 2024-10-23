@@ -72,6 +72,7 @@ const initialEvent = {
   dtstart: new Date(),
   dtend: new Date(),
   dtstamp: new Date().toISOString(),
+  allDay: false,
   categories: [""],
   location: "",
   description: "",
@@ -135,7 +136,6 @@ const EventAdder: React.FC<EventAdderProps> = ({ friends }) => {
         },
       },
     }));
-    console.log(eventData.notification);
   }, [eventData.dtstart, eventData.dtend]);
 
   const fetchLocationSuggestions = useDebouncedCallback(
@@ -354,9 +354,11 @@ const EventAdder: React.FC<EventAdderProps> = ({ friends }) => {
         sequence: 0,
         categories: eventData.categories || [],
         participants: eventData.participants || [],
+        allDay: allDayEvent,
       } as SelfieEvent;
 
       try {
+        console.log("allday: ", newEvent.allDay);
         const success = await createEvent(newEvent);
         if (success) {
           console.log("Event created successfully");

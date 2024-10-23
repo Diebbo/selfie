@@ -95,9 +95,9 @@ const showEvents = (
     <button
       onClick={() => handleOpen(event)}
       key={index}
-      className="rounded-[100px] p-1 px-2 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white"
+      className={`rounded-[100px] p-1 px-2 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${event.allDay ? "bg-violet-600" : ""}`}
     >
-      {!isMobile && (
+      {(!isMobile && !event.allDay) && (
         <>
           <span className="font-medium">
             {new Date(event.dtstart).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
@@ -105,6 +105,7 @@ const showEvents = (
           {" - "}
         </>
       )}
+
       {event.title}
     </button>
   ));
@@ -212,7 +213,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                 >
                   <p className="font-medium">
                     <span className="text-primary">
-                      {formatEventTime(event)}
+                      {!event.allDay && formatEventTime(event)}
                     </span>
                     {" - "}
                     {event.title.toString()}
