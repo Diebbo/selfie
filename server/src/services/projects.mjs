@@ -174,7 +174,7 @@ export default function createProjectService(models, lib) {
       }
       await project.save();
 
-      return project;
+      return await populateMembers(project);
     }
   }
 }
