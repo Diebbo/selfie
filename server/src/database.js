@@ -1643,6 +1643,26 @@ export async function createDataBase() {
       if (!user) throw new Error("User not found");
       return user;
     },
+    async updateGps(id, gps) {
+      const user = await userModel.findById(id);
+      if (!user) throw new Error("User not found");
+      if (!gps.latitude || !gps.longitude) {
+        throw new Error("Invalid GPS data");
+      }
+
+      user.position = {
+        latitude: gps.latitude,
+        longitude: gps.longitude,
+      };
+      await user.save();
+      return user.position;
+    },
+    async getGps(id) {
+      const user = await userModel.findById(id);
+      if (!user) throw new Error("User not found");
+      return user.position;
+    },
+
     //TODO: add other methods
   };
 
