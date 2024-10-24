@@ -25,14 +25,8 @@ jobs:
           cd ..
 
       - name: Deploy client via rsync
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -avzr
-          path: client/nextbuild
-          remote_path: /home/web/site232454/html/
-          remote_host: ${{ secrets.SERVER_IP }}
-          remote_user: ${{ secrets.SERVER_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          rsync -avzr client/nextbuild deploy:/home/web/site232454/html/
 
       - name: Install server modules
         run: |
@@ -41,21 +35,9 @@ jobs:
           cd ..
 
       - name: Deploy node_modules via rsync (only new files)
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -avzr --ignore-existing
-          path: server/node_modules
-          remote_path: /home/web/site232454/html/
-          remote_host: ${{ secrets.SERVER_IP }}
-          remote_user: ${{ secrets.SERVER_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          rsync -avzr --ignore-existing server/node_modules deploy:/home/web/site232454/html/
 
       - name: Deploy server via rsync
-        uses: burnett01/rsync-deployments@7.0.1
-        with:
-          switches: -avzr --delete
-          path: server/src/*
-          remote_path: /home/web/site232454/html/src
-          remote_host: ${{ secrets.SERVER_IP }}
-          remote_user: ${{ secrets.SERVER_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          rsync -avzr --delete server/src/* deploy:/home/web/site232454/html/src
