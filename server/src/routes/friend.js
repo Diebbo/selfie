@@ -1,11 +1,11 @@
-import express from 'express';
-import cookieJwtAuth from './middleware/cookieJwtAuth.js';
+import express from "express";
+import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 
 export function createFriendRouter(db) {
   const router = express.Router();
 
-  router.get('/', cookieJwtAuth, async (req, res) => {
-    try{
+  router.get("/", cookieJwtAuth, async (req, res) => {
+    try {
       const friends = await db.friendService.get(req.user._id);
       res.json(friends);
     } catch (e) {
@@ -13,7 +13,7 @@ export function createFriendRouter(db) {
     }
   });
 
-  router.put('/:friend', cookieJwtAuth, async (req, res) => {
+  router.put("/:friend", cookieJwtAuth, async (req, res) => {
     const id = req.user._id;
     const friend = req.params.friend;
     try {
@@ -24,12 +24,12 @@ export function createFriendRouter(db) {
     }
   });
 
-  router.delete('/:id', cookieJwtAuth, async (req, res) => {
+  router.delete("/:id", cookieJwtAuth, async (req, res) => {
     const id = req.user._id;
     const friendId = req.params.id;
     try {
       const result = await db.friendService.delete(id, friendId);
-      res.json({ message: 'Friend deleted', result });
+      res.json({ message: "Friend deleted", result });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
