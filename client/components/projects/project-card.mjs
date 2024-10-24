@@ -9,17 +9,67 @@ class ProjectCard extends HTMLElement {
 
     const style = document.createElement('style');
     style.textContent = `
-      .project-card {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-        background-color: #f5f5f5;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  :host {
+    --bg-color: #f5f5f5;
+    --text-color: #333;
+    --gantt-bg-color: white;
+    --cell-bg-color: #e0e0e0;
+    --hover-bg-color: #F0F8FF;
+    --pending-color: silver;
+    --partial-completed-color: #F4A460;
+    --title-color: #333;
+    --success-color: #4CAF50;
+  }
+
+  :host([dark-mode]) {
+    --bg-color: #333;
+    --text-color: #f5f5f5;
+    --gantt-bg-color: #444;
+    --cell-bg-color: #666;
+    --hover-bg-color: #555;
+  }
+
+  .project-card {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: var(--bg-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2, h3{
+    margin-top: 0;
+    color: var(--text-color);
+  }
+  
+  .gantt-chart {
+    overflow-x: auto;
+    margin-top: 20px;
+    background-color: var(--gantt-bg-color);
+    border-radius: 4px;
+    padding: 10px;
+  }
+  
+  .gantt-cell {
+    flex: 1;
+    min-width: 40px;
+    height: 30px;
+    border-right: 1px solid var(--cell-bg-color);
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gantt-task-cell:hover {
+    background-color: var(--hover-bg-color) !important;
+  }
+      .title {
+        color: var(--title-color);
       }
-      h2 {
-        margin-top: 0;
-        color: #333;
-      }
+
       .gantt-chart {
         overflow-x: auto;
         margin-top: 20px;
@@ -34,18 +84,7 @@ class ProjectCard extends HTMLElement {
       .gantt-header {
         font-weight: bold;
       }
-      .gantt-cell {
-        flex: 1;
-        min-width: 40px;
-        height: 30px;
-        border-right: 1px solid #e0e0e0;
-        text-align: center;
-        font-size: 12px;
-        color: #666;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
+      
       .gantt-cell:last-child {
         border-right: none;
       }
@@ -59,11 +98,11 @@ class ProjectCard extends HTMLElement {
       }
       
       .gantt-task-cell.partial-completed {
-        background-color: #8BC34A;  /* Light green for partially completed */
+        background-color: var(--partial-completed-color); 
       }
       
       .gantt-task-cell.pending {
-        background-color: #f5f5f5;  /* Gray for pending */
+        background-color: var(--pending-color);  
       }
       .gantt-task-cell.passed {
         background-color: #FFC107;  /* Yellow for passed due date */
@@ -85,13 +124,18 @@ class ProjectCard extends HTMLElement {
       .subactivity {
         margin-left: 20px;
       }
-      .days-column, .start-date-column, .end-date-column {
-        min-width: 100px;
-        max-width: 100px;
+      .days-column{
+        min-width: 50px;
+        max-width: 50px;
+      }
+      .start-date-column, .end-date-column {
+        min-width: 80px;
+        max-width: 80px;
       }
       .participants-column {
         min-width: 150px;
         max-width: 150px;
+        overflow: hidden;
       }
       .success {
         background-color: #4CAF50;
@@ -104,8 +148,9 @@ class ProjectCard extends HTMLElement {
         cursor: pointer;
         margin-top: 10px;
       }
-      .add-activity-btn:hover {
-        background-color: #45a049;
+      .add-activity-btn {
+        background-color: var(--success-color);
+        border-radius: 4px;
       }
       .parent-activity-select {
         width: 100%;
@@ -160,8 +205,8 @@ class ProjectCard extends HTMLElement {
       const days = this.getDaysBetween(startDate, endDate);
 
       wrapper.innerHTML = `
-        <h2>${this.project.title}<button class="delete" id="delete-proj">delete</button></h2>
-        <p>${this.project.description}</p>
+        <h2 class=".title">${this.project.title}<button class="delete" id="delete-proj">delete</button></h2>
+        <h3 class=".title">${this.project.description}</h3>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
           ${this.renderGanttChart(this.project.activities, days, startDate)}
@@ -254,6 +299,7 @@ class ProjectCard extends HTMLElement {
       }
     });
 
+
     deleteActivityBtn.addEventListener('click', (event) => {
       try {
         const activityId = JSON.parse(form.dataset.activity)._id;
@@ -262,6 +308,7 @@ class ProjectCard extends HTMLElement {
         this._modal.closeModal();
       }
     });
+
 
     form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
   }
@@ -498,40 +545,96 @@ class ProjectCard extends HTMLElement {
       ${days.map(day => `<div class="gantt-cell" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
   }
+  isActivityFullyComplete(activity) {
+    if (!activity.subActivities || activity.subActivities.length === 0) {
+      return activity.completed;
+    }
 
-  renderGanttRow(activity, days, startDate, level = 0) {
+    const allSubActivitiesComplete = activity.subActivities.every(subActivity =>
+      this.isActivityFullyComplete(subActivity)
+    );
+
+    return activity.completed && allSubActivitiesComplete;
+  }
+
+  // Add this helper method to your class
+  isActivityFullyComplete(activity) {
+    if (!activity.subActivities || activity.subActivities.length === 0) {
+      return activity.completed;
+    }
+
+    const allSubActivitiesComplete = activity.subActivities.every(subActivity =>
+      this.isActivityFullyComplete(subActivity)
+    );
+
+    return activity.completed && allSubActivitiesComplete;
+  }
+
+  getActivityCompletionStatus(activity, parentActivity = null) {
+    // If it's a leaf activity (no sub-activities)
+    if (!activity.subActivities || activity.subActivities.length === 0) {
+      return activity.completed ? 'completed' : 'pending';
+    }
+
+    // Check if all sub-activities are complete
+    const allSubActivitiesComplete = activity.subActivities.every(subActivity =>
+      this.isActivityFullyComplete(subActivity)
+    );
+
+    // Check if some sub-activities are complete
+    const someSubActivitiesComplete = activity.subActivities.some(subActivity =>
+      this.isActivityFullyComplete(subActivity)
+    );
+
+    if (activity.completed && allSubActivitiesComplete) {
+      return 'completed';
+    } else if (activity.completed || someSubActivitiesComplete) {
+      return 'partial-completed';
+    } else {
+      return 'pending';
+    }
+  }
+
+  // Updated renderGanttRow method
+  renderGanttRow(activity, days, startDate, level = 0, parentActivity = null) {
     const activityStart = new Date(activity.startDate || activity.dueDate);
     const activityEnd = new Date(activity.dueDate);
-    const startOffset = this.getDaysBetween(startDate, activityStart).length;
     const duration = this.getDaysBetween(activityStart, activityEnd).length;
+    const completionStatus = this.getActivityCompletionStatus(activity, parentActivity);
 
     const rowHtml = `
-      <div class="gantt-row">
-        <div class="gantt-cell task-info task-name" data-activity-id="${activity._id}">${level === 1 ? "<span class=\"subactivity\"></span>" : ""} ${activity.name}</div>
-        <div class="gantt-cell days-column">${duration}</div>
-        <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
-        <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
-        <div class="gantt-cell participants-column">${activity.participants && (activity.participants.length > 0) ? activity.participants.join(', ') : "no one"}</div>
-${days.map((day, index) => {
+    <div class="gantt-row">
+      <div class="gantt-cell task-info task-name" data-activity-id="${activity._id}">
+        ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.name}
+      </div>
+      <div class="gantt-cell days-column">${duration}</div>
+      <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
+      <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
+      <div class="gantt-cell participants-column">
+        ${activity.participants?.length > 0 ? activity.participants.join(', ') : 'no one'}
+      </div>
+      ${days.map(day => {
       const dayTimestamp = day.getTime();
       const activityStartTimestamp = activityStart.getTime();
       const activityEndTimestamp = activityEnd.getTime();
 
       if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-        return `<div class="gantt-cell ${activity.completed ? 'completed' : 'pending'}"></div>`;
+        return `<div class="gantt-cell ${completionStatus} gantt-task-cell "></div>`;
       }
-      return `<div class="gantt-cell"></div>`;
+      return '<div class="gantt-cell"></div>';
     }).join('')}
-      </div>
-    `;
+    </div>
+  `;
 
     const subActivitiesHtml = activity.subActivities
-      ? activity.subActivities.map(subActivities => this.renderGanttRow(subActivities, days, startDate, level + 1)).join('')
-      //this.renderGanttRow(activity.subActivities, days, startDate, level + 1)
+      ? activity.subActivities
+        .map(subActivity => this.renderGanttRow(subActivity, days, startDate, level + 1, activity))
+        .join('')
       : '';
 
     return rowHtml + subActivitiesHtml;
   }
+
 
   getDaysBetween(start, end) {
     const days = [];
