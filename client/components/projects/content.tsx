@@ -38,8 +38,8 @@ export default function Content({ projects, user }: ContentProps) {
   }, [projects, user]);
 
   return (
-    <>
+    <div className="m-3">
       <project-component ref={projectComponentRef}></project-component>
-    </>
+    </div>
   );
 }

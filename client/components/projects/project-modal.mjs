@@ -44,6 +44,7 @@ class Modal extends HTMLElement {
         border: 1px solid #888;
         width: 80%;
         max-width: 500px;
+        border-radius: 15px;
       }
       .close {
         color: #aaa;
@@ -60,6 +61,9 @@ class Modal extends HTMLElement {
       }
       .text-error {
         color: red;
+      }
+      h2 {
+        color: #333;
       }
     `;
 
