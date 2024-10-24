@@ -68,7 +68,7 @@ class ProjectCard extends HTMLElement {
         color: #2196F3;
       }
       .subactivity {
-        margin-left: 10px;
+        margin-left: 20px;
       }
       .days-column, .start-date-column, .end-date-column {
         min-width: 100px;
@@ -444,7 +444,7 @@ class ProjectCard extends HTMLElement {
 
   renderGanttHeader(days) {
     return `
-      <div class="gantt-cell task-info">Task</div>
+      <div class="gantt-cell task-info"><h2>Task</h2></div>
       <div class="gantt-cell days-column">Days</div>
       <div class="gantt-cell start-date-column">Start Date</div>
       <div class="gantt-cell end-date-column">End Date</div>
