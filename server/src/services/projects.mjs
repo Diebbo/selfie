@@ -61,7 +61,7 @@ export default function createProjectService(models, lib) {
 
       let result = await projectModel.findOneAndUpdate({ _id: projectId, creator: uid }, project, { new: true });
       if (!result) throw new Error("Errore nell'aggiornamento del progetto");
-      
+
       result = await populateMembers(result);
 
       return lib.addDatesToProjectActivities(result);
@@ -154,7 +154,27 @@ export default function createProjectService(models, lib) {
       }
 
       return addedProject;
-    }
+    },
 
-  };
+    async toggleActivityStatus(uid, projectId, activityId) {
+      const project = await projectModel.findOne({ _id: projectId, creator: uid });
+      if (!project) throw new Error("Progetto non trovato");
+
+      const activity = project.activities.id(activityId);
+
+      if (activity) {
+        activity.completed = !activity.completed;
+      } else {
+        project.activities.forEach(a => {
+          const subActivity = a.subActivities.id(activityId);
+          if (subActivity) {
+            subActivity.completed = !subActivity.completed;
+          }
+        });
+      }
+      await project.save();
+
+      return project;
+    }
+  }
 }

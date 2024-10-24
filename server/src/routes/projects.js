@@ -16,7 +16,7 @@ export function createProjectRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "progetto aggiunto correttamente", project:result });
+    return res.status(200).json({ message: "progetto aggiunto correttamente", project: result });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
@@ -48,7 +48,7 @@ export function createProjectRouter(db) {
 
     if (!result) return res.status(404).json({ message: "Errore nell'aggiornamento del progetto" });
 
-    return res.status(200).json({ message: "progetto aggiornato correttamente", project:result });
+    return res.status(200).json({ message: "progetto aggiornato correttamente", project: result });
   });
 
   //delete projects
@@ -112,5 +112,22 @@ export function createProjectRouter(db) {
     return res.status(200).json(result);
   });
 
+  //patch attività
+  router.post('/:projectId/activities/:activityId/togglecompleted', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const projectId = req.params.projectId;
+    const activityId = req.params.activityId;
+
+    try {
+      var result = await db.projectService.toggleActivityStatus(uid, projectId, activityId);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Errore nell'aggiornamento dell'attività" });
+
+    return res.status(200).json({ message: "attività aggiornata correttamente", project: result });
+
+  });
   return router;
 }
