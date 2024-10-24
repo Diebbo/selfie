@@ -18,5 +18,23 @@ export default function createUserRouter(db) {
     }
   });
 
+  router.post("/gps", cookieJwtAuth, async (req, res) => {
+    try {
+      const response = await db.userService.updateGps(req.user._id, req.body);
+      return res.status(200).json(response);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
+  router.get("/gps", cookieJwtAuth, async (req, res) => {
+    try {
+      const gps = await db.userService.getGps(req.user._id);
+      return res.status(200).json(gps);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
   return router;
 }
