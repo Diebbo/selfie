@@ -54,8 +54,23 @@ class ProjectCard extends HTMLElement {
         height: 20px;
         border-radius: 3px;
       }
-      .gantt-task.completed {
-        background-color: #2196F3;
+      .gantt-task-cell.completed {
+        background-color: #4CAF50;  /* Full green for completed */
+      }
+      
+      .gantt-task-cell.partial-completed {
+        background-color: #8BC34A;  /* Light green for partially completed */
+      }
+      
+      .gantt-task-cell.pending {
+        background-color: #f5f5f5;  /* Gray for pending */
+      }
+      .gantt-task-cell.passed {
+        background-color: #FFC107;  /* Yellow for passed due date */
+      }
+      
+      .gantt-task-cell.child-completed {
+        background-color: #81C784;  /* Different green for completed child tasks */
       }
       .task-info {
         min-width: 200px;
@@ -77,12 +92,6 @@ class ProjectCard extends HTMLElement {
       .participants-column {
         min-width: 150px;
         max-width: 150px;
-      }
-      .pending {
-        background-color: #f5f5f5;
-      }
-      .completed {
-        background-color: #4CAF50;
       }
       .success {
         background-color: #4CAF50;
@@ -180,18 +189,55 @@ class ProjectCard extends HTMLElement {
     }
   }
 
+  toggleActivityCompletion(activityId, project) {
+    fetch(`/api/projects/${project._id}/activities/${activityId}/togglecompleted`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then((res) => {
+      if (res.ok) {
+        return res.json();
+      }
+      throw new Error('Error updating activity');
+    }).then((data) => {
+      this.modifyProject(data.project);
+      console.log(data.message);
+    }).catch((error) => {
+      console.error(error);
+    });
+  }
+
+
   addEventListeners(project) {
-    const taskElements = this.shadowRoot.querySelectorAll('.task-name');
     this._modal = this.shadowRoot.querySelector('modal-component');
     const form = this.shadowRoot.querySelector('#activityForm');
     const addActivityBtn = this.shadowRoot.querySelector('.add-activity-btn');
     const deleteProjectBtn = this.shadowRoot.querySelector("#delete-proj");
     const deleteActivityBtn = form.querySelector('#delete-activity');
 
-    taskElements.forEach((task) => {
-      const taskId = task.getAttribute('data-activity-id');
-      task.addEventListener('click', () => this.openModal(taskId, project, false));
-    });
+// Event delegation for task name and completion toggle
+  const ganttChart = this.shadowRoot.querySelector('.gantt-chart');
+  ganttChart.addEventListener('click', (event) => {
+    const taskNameCell = event.target.closest('.task-name');
+    const taskCell = event.target.closest('.gantt-task-cell');
+    
+    if (taskNameCell) {
+      const taskId = taskNameCell.getAttribute('data-activity-id');
+      if (taskId) {
+        this.openModal(taskId, project, false);
+      }
+    } else if (taskCell) {
+      const row = taskCell.closest('.gantt-row');
+      if (row) {
+        const taskNameCell = row.querySelector('.task-name');
+        const taskId = taskNameCell?.getAttribute('data-activity-id');
+        if (taskId) {
+          this.toggleActivityCompletion(taskId, project);
+        }
+      }
+    }
+  });
 
     addActivityBtn.addEventListener('click', () => {
       this.openModal(null, project, true);
