@@ -96,6 +96,7 @@ dummyPeople[3].friends = [dummyPeople[1], dummyPeople[2]];
 const dummyEvents: SelfieEvent[] = [
   {
     title: "Beach Party",
+    allDay: true,
     participants: [dummyPeople[0], dummyPeople[1], dummyPeople[2]],
     dtstart: new Date("2024-08-15T14:00:00"),
     dtend: new Date("2024-08-15T20:00:00"),
@@ -133,6 +134,7 @@ const dummyEvents: SelfieEvent[] = [
   },
   {
     title: "Movie Night",
+    allDay: false,
     participants: [dummyPeople[1], dummyPeople[3]],
     dtstart: new Date("2024-08-20T19:00:00"),
     dtend: new Date("2024-08-20T23:00:00"),
@@ -170,6 +172,7 @@ const dummyEvents: SelfieEvent[] = [
   },
   {
     title: "Picnic in the Park",
+    allDay: false,
     participants: dummyPeople,
     dtstart: new Date("2024-08-25T12:00:00"),
     dtend: new Date("2024-08-25T16:00:00"),

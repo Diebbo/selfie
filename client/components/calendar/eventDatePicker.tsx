@@ -6,7 +6,7 @@ import {
   RangeValue,
   DateValue,
 } from "@nextui-org/react";
-import { mobileContext } from "./reloadContext"
+import { mobileContext } from "./contextStore"
 import { parseDateTime } from "@internationalized/date";
 
 interface EventDatePickerProps {
@@ -51,7 +51,10 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
   return (
     <DateRangePicker
       label="Event duration"
-      className="max-w-[430px]"
+      className={`${isMobile
+        ? "w-full max-w-[95vw] mx-auto flex flex-col space-y-2 overflow-hidden"
+        : "max-w-[430px] flex flex-row space-x-2"
+        }`}
       isRequired
       hideTimeZone
       visibleMonths={isMobile ? 1 : 2}
@@ -59,6 +62,8 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
       granularity={isAllDay ? "day" : "minute"}
       defaultValue={getDefaultDateRange(isAllDay)}
     />
+
+
   );
 };
 

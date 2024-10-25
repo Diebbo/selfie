@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, People } from "@/helpers/types";
-import { reloadContext, mobileContext } from "./reloadContext"
+import { reloadContext, mobileContext } from "./contextStore";
 
 interface CalendarPageProps {
   initialEvents: SelfieEvent[];
@@ -18,7 +18,6 @@ const CalendarPage = (props: CalendarPageProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(props.dbdate);
   const [reloadEvents, setReloadEvents] = useState(false);
-  // const [participants, setParticipants] = useState<Person[]>([]);
   const EVENTS_API_URL = "/api/events";
 
   async function fetchEvents() {
@@ -35,7 +34,7 @@ const CalendarPage = (props: CalendarPageProps) => {
       } else if (res.status >= 500) {
         throw new Error(`Server error: ${res.statusText}`);
       } else if (!res.ok) {
-        throw new Error("Failed to create events");
+        throw new Error("Failed to fetch all the events");
       }
     } catch (e: unknown) {
       throw new Error(`Error during fetch events: ${(e as Error).message}`);
@@ -78,6 +77,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     setEvents(events);
   };
 
+
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
@@ -86,6 +86,12 @@ const CalendarPage = (props: CalendarPageProps) => {
       setReloadEvents(false);
     }
   }, [reloadEvents]);
+
+
+  useEffect(() => {
+    console.log("primo fetch degli eventi gli eventi");
+    setAllEvents();
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -178,7 +184,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
       <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
         <div
-          className="flex flex-col md:flex-row min-h-screen"
+          className="flex flex-col md:flex-row min-h-screen relative"
           aria-label="Back Ground Calendar"
         >
           <div className="flex-grow">
@@ -192,6 +198,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 </button>
                 <EventAdder
                   friends={props.friends}
+                  isMobile={isMobile}
                   aria-label="Event Adder Button"
                 />
                 <Tooltip

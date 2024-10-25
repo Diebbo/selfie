@@ -425,6 +425,17 @@ export async function createDataBase() {
     return events;
   };
 
+
+  const getEvent = async (uid, eventid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventid);
+    if (!event) throw new Error("Event not found");
+
+    return event;
+  };
+
   const createEvent = async (uid, event) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not foun");
@@ -1584,6 +1595,7 @@ export async function createDataBase() {
               username: otherUser.username,
               lastMessage: { ...msg, sender: sender.username },           
           }
+
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1708,6 +1720,7 @@ export async function createDataBase() {
     getNoteById,
     removeNoteById,
     getEvents,
+    getEvent,
     deleteEvent,
     partecipateEvent,
     modifyEvent,
