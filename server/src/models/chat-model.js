@@ -13,6 +13,11 @@ export const messageSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    status: {
+        type: String,
+        enum: ['sent', 'delivered', 'read'],
+        default: 'sent'
     }
 });
 

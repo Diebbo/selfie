@@ -154,4 +154,7 @@ export const userSchema = new mongoose.Schema({
       ref: "Project",
     },
   ],
+
+  isOnline: Boolean,
+  lasteSeen: Date,
 });
