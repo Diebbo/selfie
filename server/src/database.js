@@ -1437,6 +1437,16 @@ export async function createDataBase() {
         $or: [{ sender: uid }, { receiver: uid }],
       });
     },
+    
+    async readMessage(messageId) {
+      const message = await chatModel.findByIdAndUpdate(messageId, {
+        status: "read",
+        }, { new: true });
+      if (!message) throw new Error("Message not found");
+      message.receiver = await userService.fromIdtoUsername(message.receiver);
+      message.sender = await userService.fromIdtoUsername(message.sender);
+      return message;
+    },
 
     async sendMessage(senderId, receiverUsername, message) {
       const sender = await userModel.findById(senderId);
@@ -1455,6 +1465,7 @@ export async function createDataBase() {
         receiver: receiver._id,
         message: message,
         createdAt: now,
+        'status': 'sent',
       });
 
       // send notification
@@ -1567,11 +1578,11 @@ export async function createDataBase() {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: msg.lastMessage,
-                date: msg.date,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: msg.lastMessage,
+              date: msg.date,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1625,11 +1636,12 @@ export async function createDataBase() {
     },
     async fromUsernamesToIds(usernames) {
       const users = await userModel.find({ username: { $in: usernames } });
-      return users.map((user) => user._id);
+      return users.map((user) => user._id.toString());
     },
     async fromUsernameToId(username) {
       const user = await userModel.findOne({ username: username });
       if (!user) throw new Error("User not found");
+      return user._id.toString();
     },
     async fromIdtoUsername(id) {
       const user = await getUserById(id);
@@ -1662,8 +1674,15 @@ export async function createDataBase() {
       if (!user) throw new Error("User not found");
       return user.position;
     },
+    async update(id, data) {
+      const user = await userModel.findByIdAndUpdate(id, data, { new: true });
+      if (!user) throw new Error("User not found");
+      return user;
+    },
+    async find(query) {
+      return await userModel.find(query);
+    }
 
-    //TODO: add other methods
   };
 
   const projectService = createProjectService(models, {
