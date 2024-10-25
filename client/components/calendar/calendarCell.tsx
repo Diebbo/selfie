@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
-import ShowEvent from "./showEvent";
 import { SelfieEvent } from "@/helpers/types";
+import { useRouter } from 'next/navigation';
 
 const areSameDay = (date1: Date, date2: Date): boolean => {
   return (
@@ -85,7 +85,7 @@ const useIsMobile = () => {
 const showEvents = (
   events: SelfieEvent[] | undefined,
   date: Date,
-  handleOpen: (event: SelfieEvent) => void,
+  handleClick: (event: SelfieEvent) => void,
   isMobile: boolean
 ): JSX.Element[] | null => {
   const todayEvents = getEventsByDay(events, date);
@@ -94,7 +94,7 @@ const showEvents = (
   return (
     !isMobile ? eventsToShow.map((event, index) => (
       <button
-        onClick={() => handleOpen(event)}
+        onClick={() => handleClick(event)}
         key={index}
         className={`rounded-[100px] p-1 px-2 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${event.allDay ? "bg-violet-600" : ""}`}
       >
@@ -141,24 +141,17 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   isToday,
   events = [],
 }) => {
-  const [selectedEvents, setSelectedEvents] = useState<SelfieEvent | null>(null);
-  const [isOpenSE, setIsOpenSE] = useState(false);
   const [isAllEventsOpen, setIsAllEventsOpen] = useState(false);
   const isMobile = useIsMobile();
   const cellDate = new Date(date.getFullYear(), date.getMonth(), day);
   const safeEvents = Array.isArray(events) ? events : [];
   const todayEvents = getEventsByDay(safeEvents, cellDate);
   const hasMoreEvents = todayEvents.length > 2;
+  const router = useRouter();
 
-  const handleClose = () => {
-    setSelectedEvents(null);
-    setIsOpenSE(false);
-  };
 
-  const handleOpen = (e: SelfieEvent) => {
-    console.log(e);
-    setSelectedEvents(e);
-    setIsOpenSE(true);
+  const handleClick = (e: SelfieEvent) => {
+    router.push(`/calendar/${e._id}`);
   };
 
   const formatEventTime = (event: SelfieEvent) => {
@@ -179,7 +172,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           {day}
         </Button>
         <div className="mt-1 space-y-1 text-xs overflow-hidden">
-          {showEvents(safeEvents, cellDate, handleOpen, isMobile)}
+          {showEvents(safeEvents, cellDate, handleClick, isMobile)}
           {hasMoreEvents && (
             <Button
               className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
@@ -190,12 +183,6 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           )}
         </div>
       </CardBody>
-
-      <ShowEvent
-        isOpen={isOpenSE}
-        onClose={handleClose}
-        selectedEvent={selectedEvents}
-      />
 
       <Modal
         isOpen={isAllEventsOpen}
@@ -211,7 +198,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                   key={index}
                   className="p-3 border rounded-lg border-2 hover:border-secondary cursor-pointer"
                   onClick={() => {
-                    handleOpen(event);
+                    handleClick(event);
                     setIsAllEventsOpen(false);
                   }}
                 >

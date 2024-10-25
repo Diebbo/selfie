@@ -31,7 +31,7 @@ import {
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
-import { reloadContext } from "./reloadContext";
+import { reloadContext } from "./contextStore";
 
 async function createEvent(event: SelfieEvent): Promise<boolean> {
   try {
