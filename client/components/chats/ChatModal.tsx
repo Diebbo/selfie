@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { MessageModel, StatusEnum } from '@/helpers/types';
 import { Modal, ModalContent, Input, ModalHeader, ModalBody, ModalFooter, Avatar, Button } from "@nextui-org/react";
 import { io } from "socket.io-client";
+import { PreviousIcon } from "../music-player/PreviousIcon";
 
 interface ChatModalProps {
     receiverUsername: string;
@@ -25,6 +26,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
     const socketRef = useRef<any>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout>();
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [isOnline, setIsOnline] = useState(false);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,7 +39,8 @@ const ChatModal: React.FC<ChatModalProps> = ({
         // Join the chat
         socketRef.current.emit('join', {
             userId: currentUserId,
-            username: currentUsername
+            username: currentUsername,
+            receiverUsername
         });
 
         // Listen for incoming messages
@@ -58,6 +61,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
         });
 
         socketRef.current.on('user_stopped_typing', (data: { username: string }) => {
+            console.log('user_stopped_typing', data);
             if (data.username === receiverUsername) {
                 setIsTyping(false);
             }
@@ -71,6 +75,25 @@ const ChatModal: React.FC<ChatModalProps> = ({
                 return msg;
             }));
         });
+
+        // Listen for online/offline events
+        socketRef.current.on("user_online", (data: any) => {
+            const { username } = data;
+            updateUserStatus(username, true);
+        });
+
+        socketRef.current.on("user_offline", (data: any) => {
+            const { username } = data;
+            updateUserStatus(username, false);
+        });
+
+        // Function to update user status in the UI
+        function updateUserStatus(username: string, isOnline: boolean) {
+            if (username === receiverUsername) {
+                setIsOnline(isOnline);
+            }
+        }
+
 
         socketRef.current.on('message_sent', (data: MessageModel) => {
             setMessages(prev => [...prev, data]);
@@ -112,7 +135,11 @@ const ChatModal: React.FC<ChatModalProps> = ({
         setMessage(e.target.value);
 
         // Emit typing start
-        socketRef.current?.emit('typing_start', { senderUsername:currentUsername, receiverUsername });
+        if (e.target.value !== '') {
+            socketRef.current?.emit('typing_start', { senderUsername: currentUsername, receiverUsername });
+        } else {
+            socketRef.current?.emit('typing_end', { senderUsername: currentUsername, receiverUsername });
+        }
 
         // Clear existing timeout
         if (typingTimeoutRef.current) {
@@ -121,19 +148,20 @@ const ChatModal: React.FC<ChatModalProps> = ({
 
         // Set new timeout for typing end
         typingTimeoutRef.current = setTimeout(() => {
-            socketRef.current?.emit('typing_end', { receiverUsername });
-        }, 1000);
+            socketRef.current?.emit('typing_end', { senderUsername: currentUsername, receiverUsername });
+        }, 3000);
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            socketRef.current?.emit('typing_end', { senderUsername: currentUsername, receiverUsername });
             handleSendMessage();
         }
     };
 
     const handleClose = () => {
-        socketRef?.current.disconnect();
+        socketRef.current.disconnect();
         router.refresh();
         router.push('/chats');
     };
@@ -157,7 +185,10 @@ const ChatModal: React.FC<ChatModalProps> = ({
         >
             <ModalContent>
                 <ModalHeader className="flex flex-col gap-1">
-                    <h3 className="text-lg font-semibold">{receiverUsername}</h3>
+                    <h3 className="text-lg font-semibold">{
+                        isOnline ? <span className="text-green-500">Online</span> : <span className="text-gray-500">Offline</span>
+
+                    } {receiverUsername}</h3>
                     {isTyping && (
                         <p className="text-sm text-gray-500">typing...</p>
                     )}
