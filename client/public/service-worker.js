@@ -7,15 +7,21 @@ self.addEventListener("push", function (event) {
 
     const notificationPromise = self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/icon.png", // Assicurati di avere un'icona nel tuo progetto
-      badge: "/badge.png", // Opzionale
-      data: data, // Passa tutti i dati alla notifica
+      icon: "/icon.png",
+      badge: "/badge.png",
+      data: { url: data.data.url },
+      actions: [
+        {
+          action: "open_url",
+          title: "Apri",
+        },
+      ],
     });
 
     event.waitUntil(notificationPromise);
   } catch (error) {
     console.error("Error handling push event:", error);
-    // Mostra una notifica di fallback in caso di errore
+    // Show error notification
     event.waitUntil(
       self.registration.showNotification("Notification Error", {
         body: "There was an error processing the notification.",
@@ -28,10 +34,23 @@ self.addEventListener("notificationclick", function (event) {
   console.log("Notification click received:", event);
   event.notification.close();
 
-  // Puoi aggiungere qui la logica per gestire il click sulla notifica
-  // Ad esempio, aprire una specifica URL
-  if (event.notification.data && event.notification.data.url) {
-    event.waitUntil(clients.openWindow(event.notification.data.url));
+  // Hnadle click on the notification
+  if (event.action === "open_url" || !event.action) {
+    const urlToOpen = event.notification.data?.url || "/";
+    console.log("Opening URL:", urlToOpen);
+
+    event.waitUntil(
+      clients.matchAll({ type: "window" }).then((windowClients) => {
+        // Check if there is already a window/tab open with the target URL
+        for (let client of windowClients) {
+          if (client.url === urlToOpen && "focus" in client) {
+            return client.focus();
+          }
+        }
+        // Otherwise open a new window
+        return clients.openWindow(urlToOpen);
+      }),
+    );
   }
 });
 

@@ -4,7 +4,10 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
-import { sendPushNotifications } from "../pushNotificationWorker.js";
+import {
+  sendNotification,
+  sendPushNotifications,
+} from "../pushNotificationWorker.js";
 
 const router = express.Router();
 
@@ -365,14 +368,15 @@ export function createAuthRouter(db) {
   router.get("/send-test-notification", cookieJwtAuth, async (req, res) => {
     console.log("Sending test notification");
     try {
-      const subscriptions = await db.getSubscriptions(req.user._id);
-      console.log("Subscription:", subscriptions);
+      const user = await db.userService.getById(req.user._id);
+
       const payload = {
         title: "Test Notification",
         body: "This is a server-side test notification",
+        link: "https://site232454.tw.cs.unibo.it/",
       };
 
-      //await sendPushNotification(subscription, payload);
+      await sendNotification(user, payload);
       res.status(200).json({ message: "Notification sent successfully" });
     } catch (error) {
       console.error("Error in send-test-notification:", error);
