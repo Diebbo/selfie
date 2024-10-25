@@ -86,6 +86,7 @@ export interface SelfieEvent {
   dtstart: Date;
   dtend: Date;
   dtstamp: String;
+  allDay: Boolean;
   categories: String[];
   location: String;
   geo: {

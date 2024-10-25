@@ -207,7 +207,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                            shadow-sm hover:shadow-md
                            active:scale-95 w-full"
                   onClick={() => {
-                    // TODO: Push to events detail in calendar
+                    router.push(`/calendar/${event.id}`);
                   }}
                 >
                   Vedi Dettagli
