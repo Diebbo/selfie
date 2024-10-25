@@ -36,7 +36,6 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
     };
 
     const handleNewChat = async (bro: Person) => {
-        console.log(bro);
         const res = await fetch(`/api/chats/${bro.username}`, {
             method: 'POST',
             headers: {
@@ -48,7 +47,6 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
             console.error(data);
             return;
         }
-        console.log(data);
         setChats(data);
         router.push(`/chats/${bro.username}`);
     };
