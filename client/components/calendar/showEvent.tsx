@@ -1,4 +1,6 @@
-import React, { useReducer, useContext } from "react";
+"use client";
+
+import React, { useReducer, useContext, useState, useEffect } from "react";
 import {
   Modal,
   ModalContent,
@@ -8,16 +10,14 @@ import {
   Button,
   Input,
   DateRangePicker,
+  Spinner
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
-import { reloadContext } from "./reloadContext";
+import { reloadContext } from "./contextStore";
 import { SelfieEvent, SelfieNotification } from "@/helpers/types";
+import { useRouter } from 'next/navigation';
 
-interface ShowEventProps {
-  isOpen: boolean;
-  onClose: () => void;
-  selectedEvent: SelfieEvent | null;
-}
+const EVENTS_API_URL = "/api/events";
 
 type State = {
   isEditing: boolean;
@@ -100,25 +100,102 @@ function eventReducer(state: State, action: Action): State {
   }
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({
-  isOpen,
-  onClose,
-  selectedEvent,
-}) => {
+async function fetchEvent(eventid: string) {
+  try {
+    const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store"
+    });
+
+    if (res.status === 401) {
+      throw new Error("Unauthorized, please login.");
+    } else if (res.status >= 500) {
+      throw new Error(`Server error: ${res.statusText}`);
+    } else if (!res.ok) {
+      throw new Error("Failed to fetch the event");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (e: unknown) {
+    throw new Error(`Error during fetch event: ${(e as Error).message}`);
+  }
+}
+
+interface ShowEventProps {
+  eventid: string;
+}
+
+const ShowEvent: React.FC<ShowEventProps> = ({ eventid }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
-    dateRange: null
+    dateRange: null,
   };
 
   const [state, dispatch] = useReducer(eventReducer, initialState);
-  const EVENTS_API_URL = "/api/events";
-  const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
+  const [isOpen, setIsOpen] = useState(true);
+  const router = useRouter();
+  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const getEvent = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const event = await fetchEvent(eventid);
+
+        if (isMounted) {
+          setSelectedEvent(event);
+          // Initialize dateRange with the fetched event dates
+          if (event?.dtstart && event?.dtend) {
+            dispatch({
+              type: 'UPDATE_DATE_RANGE',
+              payload: {
+                start: new Date(event.dtstart),
+                end: new Date(event.dtend)
+              }
+            });
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError((err as Error).message);
+          console.error('Error fetching event:', err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    if (eventid) {
+      getEvent();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleEdit = () => {
     if (selectedEvent) {
       dispatch({ type: 'START_EDITING', payload: selectedEvent });
     }
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    router.refresh();
+    router.push('/calendar');
   };
 
   const handleReset = () => {
@@ -162,12 +239,11 @@ const ShowEvent: React.FC<ShowEventProps> = ({
         throw new Error(`Failed to modify event: ${res.statusText}`);
       }
 
-      setReloadEvents(true);
       dispatch({ type: 'RESET_STATE' });
-      onClose();
+      handleClose();
     } catch (e: unknown) {
       console.error(`Error during modify event: ${(e as Error).message}`);
-      // Here you might want to show an error notification to the user
+      setError((e as Error).message);
     }
   }
 
@@ -184,132 +260,153 @@ const ShowEvent: React.FC<ShowEventProps> = ({
         throw new Error(`Failed to delete event: ${res.statusText}`);
       }
 
-      setReloadEvents(true);
       dispatch({ type: 'RESET_STATE' });
-      onClose();
+      handleClose();
     } catch (e: unknown) {
       console.error(`Error during delete event: ${(e as Error).message}`);
-      // Here you might want to show an error notification to the user
+      setError((e as Error).message);
     }
   }
 
-  if (!selectedEvent) return null;
-
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
+
+  if (!isOpen) return null;
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       size="2xl"
       scrollBehavior="outside"
     >
       <ModalContent>
-        <ModalHeader className="flex justify-between items-center">
-          <Input
-            isReadOnly={!state.isEditing}
-            value={displayEvent?.title as string}
-            onChange={(e) => handleInputChange('title', e.target.value)}
-            className="max-w-xs"
-          />
-          <div className="justify-end">
-            <Button
-              className={`mx-2 ${state.isEditing ? "" : "hidden"}`}
-              onClick={handleReset}
-              color="secondary"
-            >
-              Cancel
-            </Button>
-            <Button
-              className="mx-2 mr-4"
-              onClick={handleEdit}
-              isDisabled={state.isEditing}
-              color="primary"
-            >
-              Edit
+        {isLoading ? (
+          <div className="flex justify-center items-center p-8">
+            <Spinner size="lg" />
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-500">
+            <p>Error: {error}</p>
+            <Button color="primary" className="mt-4" onClick={handleClose}>
+              Close
             </Button>
           </div>
-        </ModalHeader>
-        <ModalBody>
-          <DateRangePicker
-            label="Event duration"
-            className="max-w-[430px] mb-4"
-            hideTimeZone
-            defaultValue={{
-              start: parseDate(displayEvent?.dtstart.toString().split('T')[0] as string),
-              end: parseDate(displayEvent?.dtend.toString().split('T')[0] as string),
-            }}
-            value={state.dateRange ? {
-              start: parseDate(state.dateRange.start.toISOString().split('T')[0]),
-              end: parseDate(state.dateRange.end.toISOString().split('T')[0])
-            } : undefined}
-            onChange={handleDateRangeChange as any}
-            isDisabled={!state.isEditing}
-            visibleMonths={2}
-          />
-          <Input
-            isReadOnly={!state.isEditing}
-            label="Location"
-            value={displayEvent?.location as string}
-            onChange={(e) => handleInputChange('location', e.target.value)}
-            className="mb-4"
-          />
-          <Input
-            isReadOnly={!state.isEditing}
-            label="Description"
-            value={displayEvent?.description as string}
-            onChange={(e) => handleInputChange('description', e.target.value)}
-            className="mb-4"
-          />
-          <Input
-            isReadOnly={!state.isEditing}
-            label="URL"
-            value={displayEvent?.URL as string}
-            onChange={(e) => handleInputChange('URL', e.target.value)}
-            className="mb-4"
-          />
-          <Input
-            isReadOnly={!state.isEditing}
-            label="Categories"
-            value={displayEvent?.categories?.join(", ")}
-            onChange={(e) => handleInputChange('categories', e.target.value.split(", "))}
-            className="mb-4"
-          />
-          {displayEvent?.notification && (
-            <>
+        ) : displayEvent ? (
+          <>
+            <ModalHeader className="flex justify-between items-center">
               <Input
                 isReadOnly={!state.isEditing}
-                label="Notification Title"
-                value={displayEvent?.notification?.title as string}
-                onChange={(e) => handleNotificationChange('title', e.target.value)}
+                value={displayEvent?.title as string}
+                onChange={(e) => handleInputChange('title', e.target.value)}
+                className="max-w-xs"
+              />
+              <div className="justify-end">
+                <Button
+                  className={`mx-2 ${state.isEditing ? "" : "hidden"}`}
+                  onClick={handleReset}
+                  color="secondary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="mx-2 mr-4"
+                  onClick={handleEdit}
+                  isDisabled={state.isEditing}
+                  color="primary"
+                >
+                  Edit
+                </Button>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <DateRangePicker
+                label="Event duration"
+                className="max-w-[430px] mb-4"
+                hideTimeZone
+                defaultValue={{
+                  start: parseDate(displayEvent.dtstart.toString().split('T')[0]),
+                  end: parseDate(displayEvent.dtend.toString().split('T')[0]),
+                }}
+                value={state.dateRange ? {
+                  start: parseDate(state.dateRange.start.toISOString().split('T')[0]),
+                  end: parseDate(state.dateRange.end.toISOString().split('T')[0])
+                } : undefined}
+                onChange={handleDateRangeChange as any}
+                isDisabled={!state.isEditing}
+                visibleMonths={2}
+              />
+              <Input
+                isReadOnly={!state.isEditing}
+                label="Location"
+                value={displayEvent.location as string}
+                onChange={(e) => handleInputChange('location', e.target.value)}
                 className="mb-4"
               />
               <Input
                 isReadOnly={!state.isEditing}
-                label="Notification Start Date"
-                value={displayEvent?.notification?.fromDate.toString().split('T')[0]}
-                onChange={(e) => handleNotificationChange('fromDate', new Date(e.target.value))}
-                type="date"
+                label="Description"
+                value={displayEvent.description as string}
+                onChange={(e) => handleInputChange('description', e.target.value)}
                 className="mb-4"
               />
-            </>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            color="danger"
-            variant="light"
-            onPress={deleteEvent}
-          >
-            Delete Event
-          </Button>
-          <Button
-            color="primary"
-            onPress={state.isEditing ? modifyEvent : onClose}
-          >
-            {state.isEditing ? "Save" : "Close"}
-          </Button>
-        </ModalFooter>
+              <Input
+                isReadOnly={!state.isEditing}
+                label="URL"
+                value={displayEvent.URL as string}
+                onChange={(e) => handleInputChange('URL', e.target.value)}
+                className="mb-4"
+              />
+              <Input
+                isReadOnly={!state.isEditing}
+                label="Categories"
+                value={displayEvent.categories?.join(", ")}
+                onChange={(e) => handleInputChange('categories', e.target.value.split(", "))}
+                className="mb-4"
+              />
+              {displayEvent.notification && (
+                <>
+                  <Input
+                    isReadOnly={!state.isEditing}
+                    label="Notification Title"
+                    value={displayEvent.notification.title as string}
+                    onChange={(e) => handleNotificationChange('title', e.target.value)}
+                    className="mb-4"
+                  />
+                  <Input
+                    isReadOnly={!state.isEditing}
+                    label="Notification Start Date"
+                    value={displayEvent.notification.fromDate.toString().split('T')[0]}
+                    onChange={(e) => handleNotificationChange('fromDate', new Date(e.target.value))}
+                    type="date"
+                    className="mb-4"
+                  />
+                </>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                color="danger"
+                variant="light"
+                onPress={deleteEvent}
+              >
+                Delete Event
+              </Button>
+              <Button
+                color="primary"
+                onPress={state.isEditing ? modifyEvent : handleClose}
+              >
+                {state.isEditing ? "Save" : "Close"}
+              </Button>
+            </ModalFooter>
+          </>
+        ) : (
+          <div className="p-8 text-center">
+            <p>No event data found</p>
+            <Button color="primary" className="mt-4" onClick={handleClose}>
+              Close
+            </Button>
+          </div>
+        )}
       </ModalContent>
     </Modal>
   );

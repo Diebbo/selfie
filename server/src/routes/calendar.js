@@ -35,6 +35,22 @@ function createCalendarRouter(db) {
     return res.status(200).json(result);
   });
 
+  router.get('/:id', cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const eventid = req.params.id;
+    console.log(uid);
+    try {
+      var result = await db.getEvent(uid, eventid);
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+
+    if (!result) return res.status(404).json({ message: "Nessun evento trovato" });
+
+    //console.log(result);
+    return res.status(200).json(result);
+  });
+
   router.delete('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;

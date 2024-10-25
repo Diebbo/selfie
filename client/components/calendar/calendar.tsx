@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, People } from "@/helpers/types";
-import { reloadContext, mobileContext } from "./reloadContext";
+import { reloadContext, mobileContext } from "./contextStore";
 
 interface CalendarPageProps {
   initialEvents: SelfieEvent[];
@@ -34,7 +34,7 @@ const CalendarPage = (props: CalendarPageProps) => {
       } else if (res.status >= 500) {
         throw new Error(`Server error: ${res.statusText}`);
       } else if (!res.ok) {
-        throw new Error("Failed to create events");
+        throw new Error("Failed to fetch all the events");
       }
     } catch (e: unknown) {
       throw new Error(`Error during fetch events: ${(e as Error).message}`);
@@ -77,6 +77,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     setEvents(events);
   };
 
+
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
@@ -85,6 +86,12 @@ const CalendarPage = (props: CalendarPageProps) => {
       setReloadEvents(false);
     }
   }, [reloadEvents]);
+
+
+  useEffect(() => {
+    console.log("primo fetch degli eventi gli eventi");
+    setAllEvents();
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
