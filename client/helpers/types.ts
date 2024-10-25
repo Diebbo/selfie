@@ -2,16 +2,23 @@
 export interface ChatModel {
   uid: string;
   username: string;
-  lastMessage: string;
+  lastMessage: MessageModel;
   date: Date;
 }
 
 export interface MessageModel {
-  _id: string;
+  _id?: string;
   message: string;
   sender: string;
   receiver: string;
   createdAt: Date;
+  status: "sent" | "delivered" | "read";
+}
+
+export enum StatusEnum {
+  SENT = "sent",
+  DELIVERED = "delivered",
+  READ = "read",
 }
 
 export interface NoteModel {
