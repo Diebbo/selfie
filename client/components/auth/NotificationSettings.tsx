@@ -231,6 +231,10 @@ export default function NotificationSettings() {
         >
           Rimuovi
         </Button>
+        {/* TODO: remove. ONLY FOR TESTING */}
+        <Button variant="ghost" color="primary" onClick={sendTestNotification}>
+          Test
+        </Button>
       </div>
 
       <p
