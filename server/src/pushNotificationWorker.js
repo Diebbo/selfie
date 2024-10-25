@@ -6,7 +6,7 @@ import { config } from "dotenv";
 
 const result = config();
 if (result.error) {
-  config({ path: "/webaèè/.env" });
+  config({ path: "/webapp/.env" });
 }
 
 async function checkAndSendNotifications() {
