@@ -1561,8 +1561,9 @@ export async function createDataBase() {
                 "$sender",
               ],
             },
-            lastMessage: { $first: "$message" },
+            message: { $first: "$message" },
             date: { $first: "$createdAt" },
+            sender: { $first: "$sender" },
           },
         },
         {
@@ -1576,13 +1577,13 @@ export async function createDataBase() {
       const chats = messages
         .map((msg) => {
           const otherUser = otherUsers.find((u) => u._id.equals(msg._id));
+          const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
               uid: otherUser._id,
               username: otherUser.username,
-              lastMessage: msg.lastMessage,
-              date: msg.date,
-            }
+              lastMessage: { ...msg, sender: sender.username },           
+          }
             : null;
         })
         .filter((chat) => chat !== null);

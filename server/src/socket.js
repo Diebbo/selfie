@@ -1,15 +1,13 @@
-// src/websocket.js
 // import { addNotification } from './services/notificationService.js';
 
 export function createWebSocket(io, database) {
   const activeUsers = new Map(); // Store socket.id -> { userId, username }
   const userSockets = new Map(); // Store userId -> socket.id
+  const activeChats = new Map(); // Store userId -> userId
 
   io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-
     // Handle user joining
-    socket.on('join', async ({ userId, username }) => {
+    socket.on('join', async ({ userId, username, receiverUsername }) => {
       try {
         activeUsers.set(socket.id, { userId, username });
         userSockets.set(userId, socket.id);
@@ -22,6 +20,16 @@ export function createWebSocket(io, database) {
           isOnline: true,
           lastSeen: await database.getDateTime()
         });
+
+        // Notify user of online status
+        const socketId = userSockets.get(userId);
+        const receiverId = await database.userService.fromUsernameToId(receiverUsername);
+        activeChats.set(userId, receiverId);
+        const receiverSocketId = userSockets.get(receiverId);
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit('user_online', { username });
+          io.to(socketId).emit('user_online', { username: receiverUsername });
+        }
 
         console.log(`User ${username} joined chat`);
       } catch (error) {
@@ -61,7 +69,7 @@ export function createWebSocket(io, database) {
 
         // Send to receiver if online
         const receiverId = await database.userService.fromUsernameToId(receiverUsername);
-        console.log({receiverId, receiverUsername});
+        console.log({ receiverId, receiverUsername });
         const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
           console.log('receiver online:', receiverSocketId);
@@ -88,7 +96,8 @@ export function createWebSocket(io, database) {
 
     let typingTimeout = null;
 
-    socket.on('typing_start', ({ senderUsername, receiverUsername}) => {
+    socket.on('typing_start', ({ senderUsername, receiverUsername }) => {
+      console.log('typing_start');
       if (typingTimeout) clearTimeout(typingTimeout);
       typingTimeout = setTimeout(async () => {
         const receiverId = await database.userService.fromUsernameToId(receiverUsername);
@@ -99,18 +108,16 @@ export function createWebSocket(io, database) {
       }, 500); // Only emits if no new typing event is triggered within 500ms
     });
 
-    socket.on('typing_end', async ({ receiverUsername }) => {
+    socket.on('typing_end', async ({ senderUsername, receiverUsername }) => {
+      console.log('typing_end');
       try {
-        const sender = activeUsers.get(socket.id);
-        if (!sender) return;
+        const receiverId = await database.userService.fromUsernameToId(receiverUsername);
+        if (!receiverId) return;
 
-        const receiver = await database.userService.find({ username: receiverUsername });
-        if (!receiver) return;
-
-        const receiverSocketId = userSockets.get(receiver._id);
+        const receiverSocketId = userSockets.get(receiverId);
         if (receiverSocketId) {
           io.to(receiverSocketId).emit('user_stopped_typing', {
-            username: sender.username
+            username: senderUsername
           });
         }
       } catch (error) {
@@ -137,6 +144,7 @@ export function createWebSocket(io, database) {
       }
     });
 
+
     // Handle disconnection
     socket.on('disconnect', async () => {
       try {
@@ -148,10 +156,24 @@ export function createWebSocket(io, database) {
             lastSeen: await database.getDateTime()
           });
 
-          // Clean up user maps
+          // Notify other users in active chats
+          for (const [userId, receiverId] of activeChats.entries()) {
+            if (userId === user.userId || receiverId === user.userId) {
+              const otherUserId = userId === user.userId ? receiverId : userId;
+              const otherSocketId = userSockets.get(otherUserId);
+              if (otherSocketId) {
+                io.to(otherSocketId).emit('user_offline', { username: user.username });
+              }
+            }
+          }
+
+          // Clean up user mappings and active chats
+          activeChats.delete(user.userId);
           userSockets.delete(user.userId);
           activeUsers.delete(socket.id);
         }
+
+
       } catch (error) {
         console.error('Error in disconnect handler:', error);
       }

@@ -2,7 +2,7 @@
 export interface ChatModel {
   uid: string;
   username: string;
-  lastMessage: string;
+  lastMessage: MessageModel;
   date: Date;
 }
 
