@@ -36,7 +36,6 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
     };
 
     const handleNewChat = async (bro: Person) => {
-        console.log(bro);
         const res = await fetch(`/api/chats/${bro.username}`, {
             method: 'POST',
             headers: {
@@ -48,7 +47,6 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
             console.error(data);
             return;
         }
-        console.log(data);
         setChats(data);
         router.push(`/chats/${bro.username}`);
     };
@@ -56,7 +54,7 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
     return (
         <>
             <div className="p-5">
-                <h3 className="text-xl font-semibold">Chats</h3>
+                    <h3 className="mb-2 ms-1 text-xl font-semibold">Chats</h3>
                 <Popover>
                     <PopoverTrigger>
                         <Button color="success" radius="full" size="sm" variant="solid" className="max-w-[130px]">New Chat</Button>
@@ -86,7 +84,7 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
                     </div>
                 ) : chats.length > 0 ? (
                     chats.map((chat, index) => (
-                        <Card key={index} className="max-h-[100px] min-w-[300px]">
+                        <Card key={index} className="min-w-[300px]">
                             <CardHeader className="justify-between">
                                 <div className="flex gap-5">
                                     <Avatar isBordered radius="full" size="md" src="https://nextui.org/avatars/avatar-1.png" />
@@ -104,8 +102,8 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
                                     Chat with
                                 </Button>
                             </CardHeader>
-                            <CardBody className="px-3 py-0 text-small text-default-400">
-                                <p>{chat.lastMessage}</p>
+                            <CardBody className="p-3 text-small text-default-400">
+                                <p><b>{chat.lastMessage.sender === chat.username ? chat.username : "You"}</b>: {chat.lastMessage.message}</p>
                             </CardBody>
                         </Card>
                     ))

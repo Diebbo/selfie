@@ -1,48 +1,54 @@
+// Modified server.js
 import { createApp } from "./src/app.js";
 import { config } from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createDataBase } from "./src/database.js";
-import { fork } from "child_process";
+import { Server } from "socket.io";
+import { createServer } from 'http';
+import { createWebSocket } from './src/socket.js';
 
 config();
 
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const PORT = 8000;
 
-// connect to the database
-try {
-  var db = await createDataBase();
-  console.log("server.js: connected to database");
-} catch (err) {
-  console.log(err);
-  exit(1);
-}
+async function startServer() {
+  try {
+    // Connect to database
+    const db = await createDataBase();
+    console.log("server.js: connected to database");
 
-// start the notification worker
-/*
-try {
-    const notificationWorker = fork(
-    path.join(__dirname, "notificationWorker.js"),
-  );
-  notificationWorker.send({ message: "Notification worker started" });
-  notificationWorker.on("message", (message) => {
-    console.log("Notification Worker:", message);
+    // Create Express app
+    const app = createApp({
+      dirpath: __dirname,
+      database: db,
     });
-} catch (error) {
-  console.log("Error starting notification worker:", error);
-  exit(1);
+
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Create WebSocket server
+    const io = new Server(httpServer, {
+      cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
+      },
+    });
+
+    // Initialize WebSocket with database access
+    createWebSocket(io, db);
+
+    // Start server
+    httpServer.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
 }
-*/
 
-console.log("server.js: createApp");
-const app = createApp({
-  dirpath: __dirname,
-  database: db,
-});
-
-app.listen(PORT, function () {
-  console.log(`Server listening on port ${PORT}`);
-});
+startServer();

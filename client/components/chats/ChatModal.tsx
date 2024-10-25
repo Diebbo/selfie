@@ -1,81 +1,246 @@
-// File: /components/ChatModal.tsx
 'use client';
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
-import { MessageModel } from '@/helpers/types';
+import { MessageModel, StatusEnum } from '@/helpers/types';
 import { Modal, ModalContent, Input, ModalHeader, ModalBody, ModalFooter, Avatar, Button } from "@nextui-org/react";
+import { io } from "socket.io-client";
+import { PreviousIcon } from "../music-player/PreviousIcon";
 
 interface ChatModalProps {
     receiverUsername: string;
     initialMessages: MessageModel[];
+    currentUsername: string;
+    currentUserId: string;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername, initialMessages }) => {
+const ChatModal: React.FC<ChatModalProps> = ({
+    receiverUsername,
+    initialMessages,
+    currentUsername,
+    currentUserId
+}) => {
     const router = useRouter();
     const [messages, setMessages] = useState<MessageModel[]>(initialMessages);
     const [message, setMessage] = useState<string>('');
+    const [isTyping, setIsTyping] = useState(false);
+    const socketRef = useRef<any>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout>();
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [isOnline, setIsOnline] = useState(false);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        // Initialize socket connection
+        socketRef.current = io('http://localhost:8000');
+
+        // Join the chat
+        socketRef.current.emit('join', {
+            userId: currentUserId,
+            username: currentUsername,
+            receiverUsername
+        });
+
+        // Listen for incoming messages
+        socketRef.current.on('receive_message', (newMessage: MessageModel) => {
+            setMessages(prev => [...prev, newMessage]);
+            scrollToBottom();
+            // Send read receipt
+            if (newMessage._id) {
+                socketRef.current.emit('message_read', { messageId: newMessage._id });
+            }
+        });
+
+        // Handle typing indicators
+        socketRef.current.on('user_typing', (data: { username: string }) => {
+            if (data.username === receiverUsername) {
+                setIsTyping(true);
+            }
+        });
+
+        socketRef.current.on('user_stopped_typing', (data: { username: string }) => {
+            console.log('user_stopped_typing', data);
+            if (data.username === receiverUsername) {
+                setIsTyping(false);
+            }
+        });
+
+        socketRef.current.on('message_status', (data: { messageId: string, status: string }) => {
+            setMessages(prev => prev.map(msg => {
+                if (msg._id === data.messageId) {
+                    return { ...msg, status: data.status as StatusEnum };
+                }
+                return msg;
+            }));
+        });
+
+        // Listen for online/offline events
+        socketRef.current.on("user_online", (data: any) => {
+            const { username } = data;
+            updateUserStatus(username, true);
+        });
+
+        socketRef.current.on("user_offline", (data: any) => {
+            const { username } = data;
+            updateUserStatus(username, false);
+        });
+
+        // Function to update user status in the UI
+        function updateUserStatus(username: string, isOnline: boolean) {
+            if (username === receiverUsername) {
+                setIsOnline(isOnline);
+            }
+        }
+
+
+        socketRef.current.on('message_sent', (data: MessageModel) => {
+            setMessages(prev => [...prev, data]);
+        });
+
+        // Cleanup on unmount
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
+    }, [currentUserId, currentUsername, receiverUsername]);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const handleSendMessage = async () => {
         try {
-            if (message) {
-                const res = await fetch(`/api/chats/messages/${receiverUsername}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message,
-                    }),
+            if (message && socketRef.current) {
+                // Send message through WebSocket
+                socketRef.current.emit('private_message', {
+                    message,
+                    receiverUsername
                 });
-                if (res.ok) {
-                    const newMessage = await res.json();
-                    setMessages([...messages, newMessage]);
-                    setMessage('');
-                } else {
-                    console.error('Failed to send message');
-                }
+
+                // Clear input
+                setMessage('');
             }
         } catch (error) {
             console.error('Failed to send message:', error);
         }
     };
 
+    const handleMessageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setMessage(e.target.value);
+
+        // Emit typing start
+        if (e.target.value !== '') {
+            socketRef.current?.emit('typing_start', { senderUsername: currentUsername, receiverUsername });
+        } else {
+            socketRef.current?.emit('typing_end', { senderUsername: currentUsername, receiverUsername });
+        }
+
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Set new timeout for typing end
+        typingTimeoutRef.current = setTimeout(() => {
+            socketRef.current?.emit('typing_end', { senderUsername: currentUsername, receiverUsername });
+        }, 3000);
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            socketRef.current?.emit('typing_end', { senderUsername: currentUsername, receiverUsername });
+            handleSendMessage();
+        }
+    };
+
     const handleClose = () => {
-        router.refresh();  // Refresh the page
-        router.push('/chats');  // Redirect to the chats page
+        socketRef.current.disconnect();
+        router.refresh();
+        router.push('/chats');
+    };
+
+    const formatDate = (date: Date) => {
+        return new Date(date).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
-        <Modal backdrop="blur" scrollBehavior="inside" placement="center" isOpen={true} onClose={handleClose} isDismissable={false}>
+        <Modal
+            backdrop="blur"
+            scrollBehavior="inside"
+            placement="center"
+            isOpen={true}
+            onClose={handleClose}
+            isDismissable={false}
+            className="max-h-[80vh]"
+        >
             <ModalContent>
-                <ModalHeader>{receiverUsername}</ModalHeader>
+                <ModalHeader className="flex flex-col gap-1">
+                    <h3 className="text-lg font-semibold">{
+                        isOnline ? <span className="text-green-500">Online</span> : <span className="text-gray-500">Offline</span>
+
+                    } {receiverUsername}</h3>
+                    {isTyping && (
+                        <p className="text-sm text-gray-500">typing...</p>
+                    )}
+                </ModalHeader>
                 <ModalBody>
-                    {messages.length > 0 ? (
-                        messages.map((msg, idx) => (
-                            <div key={idx} className={"flex gap-5 " + (msg.sender === receiverUsername ? "flex-row" : "flex-row-reverse")} >
-                                <Avatar isBordered radius="full" size="md" src="https://nextui.org/avatars/avatar-1.png" />
-                                <div className="flex flex-col gap-1 items-start justify-center">
-                                    <h4 className="text-small font-semibold leading-none text-default-600">{msg.sender}</h4>
-                                    <p className="text-small text-default-400">{msg.message}</p>
+                    <div className="flex flex-col gap-4">
+                        {messages.map((msg, idx) => (
+                            <div
+                                key={msg._id || idx}
+                                className={`flex gap-5 ${msg.sender === currentUsername ? "flex-row-reverse" : "flex-row"
+                                    }`}
+                            >
+                                <Avatar
+                                    isBordered
+                                    radius="full"
+                                    size="sm"
+                                    src="/api/placeholder/40/40"
+                                />
+                                <div className={`flex flex-col gap-1 max-w-[70%] ${msg.sender === currentUsername ? "items-end" : "items-start"
+                                    }`}>
+                                    <p className={`px-4 py-2 rounded-lg ${msg.sender === currentUsername
+                                        ? "bg-primary text-white"
+                                        : "bg-gray-100 dark:bg-gray-800"
+                                        }`}>
+                                        {msg.message}
+                                    </p>
+                                    <span className="text-xs text-gray-500">
+                                        {formatDate(msg.createdAt)}
+                                    </span>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <div>No messages yet</div>
-                    )}
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
                 </ModalBody>
                 <ModalFooter>
-                    <div className="flex flex-flow-row gap-5">
+                    <div className="flex flex-row gap-5 w-full">
                         <Input
-                            className="m-r-5 lg:min-w-[300px] w-full"
+                            className="flex-grow"
                             radius="full"
-                            type="text"
                             placeholder="Type your message"
                             value={message}
-                            onChange={(e) => setMessage(e.target.value)}
+                            onChange={handleMessageInput}
+                            onKeyPress={handleKeyPress}
                         />
-                        <Button color="primary" radius="full" size="sm" variant="solid" onPress={() => handleSendMessage()}>
+                        <Button
+                            color="primary"
+                            radius="full"
+                            size="sm"
+                            variant="solid"
+                            onPress={handleSendMessage}
+                        >
                             Send
                         </Button>
                     </div>
