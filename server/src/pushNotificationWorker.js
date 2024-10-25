@@ -18,7 +18,6 @@ async function checkAndSendNotifications() {
     const now = await db.getDateTime();
 
     for (const user of users) {
-      // Verifica se l'utente ha attivato le notifiche
       if (!user.notifications) continue;
 
       for (const event of user.events) {
@@ -159,9 +158,54 @@ export async function sendEmailNotification(payload) {
   });
 }
 
+export async function sendNotification({ user, payload }) {
+  try {
+    if (!payload.title || !payload.body) {
+      throw new Error("Title and body are required in the payload");
+    }
+
+    if (!user || !user.isVerified) {
+      throw new Error("User not found or not verified");
+    }
+
+    const notifications = [];
+
+    if (
+      user.notifications?.pushOn &&
+      user.notifications.subscriptions?.length > 0
+    ) {
+      const pushPayload = {
+        title: payload.title,
+        body: payload.body,
+        data: { url: payload.link },
+      };
+
+      notifications.push(
+        sendPushNotifications(user.notifications.subscriptions, pushPayload),
+      );
+    }
+
+    if (user.notifications?.emailOn && user.email) {
+      const emailPayload = {
+        email: user.email,
+        title: payload.title,
+        body: `${payload.body}\n\nPer maggiori informazioni: ${payload.link}`,
+      };
+
+      notifications.push(sendEmailNotification(emailPayload));
+    }
+
+    await Promise.all(notifications);
+    console.log(`Notifications sent successfully to user ${user.username}`);
+  } catch (error) {
+    console.error("Error sending notifications:", error);
+    throw error;
+  }
+}
+
 const notifyON = process.env.NOTIFICATION === "true";
 
 if (notifyON) {
+  // Check every minute
   schedule.scheduleJob("* * * * *", checkAndSendNotifications);
 }
-// Programma l'esecuzione del controllo ogni minuto
