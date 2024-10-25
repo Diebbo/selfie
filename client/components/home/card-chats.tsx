@@ -54,7 +54,7 @@ export const CardChats = ({ chats }: PropContent) => {
 
                   <div className="max-w-[8rem] overflow-hidden text-ellipsis whitespace-nowrap">
                     <span className="text-success text-xs">
-                      {item.lastMessage}
+                      {item.lastMessage.message}
                     </span>
                   </div>
 
