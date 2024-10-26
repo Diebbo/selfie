@@ -4,6 +4,15 @@ import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 export default function createUserRouter(db) {
   const router = express.Router();
 
+  router.get("/usernames", async (_, res) => {
+    try {
+      const usernames = await db.userService.getAllUsernames();
+      return res.status(200).json({message: "get successuflly", usernames});
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
   router.get("/id", cookieJwtAuth, async (req, res) => {
     try {
       const dbuser = (await db.userService.getById(req.user._id)).toObject();
