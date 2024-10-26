@@ -1,9 +1,9 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
-import { CardAgents } from "./card-agents";
+import { CardFriends } from "./card-friends";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
 import { SelfieEvent } from "@/helpers/types";
@@ -28,8 +28,10 @@ interface ContentProps {
 }
 
 export const Content = (props: ContentProps) => {
-  const [friends, setFriends] = React.useState<People>(props.friends);
+  const [friends, setFriends] = useState<People>(props.friends);
   const { position, error } = useGeolocation();
+  const [userNames, setUserNames] = useState<string[]>([]);
+
 
   useEffect(() => {
     if (position) {
@@ -75,7 +77,7 @@ export const Content = (props: ContentProps) => {
             <h4 className="text-l font-semibold">Your Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
               {Array.isArray(props.events.created) &&
-              props.events.created.length > 0 ? (
+                props.events.created.length > 0 ? (
                 props.events.created
                   .slice(0, 5)
                   .map((event: SelfieEvent, index: number) => (
@@ -94,7 +96,7 @@ export const Content = (props: ContentProps) => {
             <h4 className="text-l font-semibold">Participating Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
               {Array.isArray(props.events.participating) &&
-              props.events.participating.length > 0 ? (
+                props.events.participating.length > 0 ? (
                 props.events.participating
                   .slice(0, 5)
                   .map((event: SelfieEvent, index: number) => (
@@ -122,7 +124,7 @@ export const Content = (props: ContentProps) => {
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardAgents friends={friends} setFriends={setFriends} />
+            <CardFriends friends={friends} setFriends={setFriends} />
             <CardChats chats={props.chats} />
           </div>
         </div>
