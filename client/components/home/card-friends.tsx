@@ -56,18 +56,20 @@ const pictureUsers = [
 interface CardFriendsProps {
   friends: People;
   setFriends: React.Dispatch<React.SetStateAction<People>>;
+  currentUserId: string;
 }
 
-export const CardFriends = ({ friends, setFriends }: CardFriendsProps) => {
+export const CardFriends = ({ friends, setFriends, currentUserId }: CardFriendsProps) => {
   const [newFriendUser, setNewFriendUsername] = React.useState<string>('');
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [userErrorMessage, setUserErrorMessage] = React.useState<string | null>(null);
   const [usersCasted, setUsersCasted] = React.useState<peopleProp[]>([]);
 
   React.useEffect(() => {
     const awaitUsernames = async () => {
       try {
         const peopleUsernames: peopleProp[] = await getAllUsernames();
-        const filteredUsernames = peopleUsernames.filter((user) => !friends.find((friend) => friend.username === user.username));
+        const filteredUsernames = peopleUsernames.filter((user) => currentUserId !== user._id && !friends.find((friend) => friend.username === user.username));
         setUsersCasted(filteredUsernames);
       } catch (error) {
         setErrorMessage("Failed to fetch usernames");
@@ -95,12 +97,15 @@ export const CardFriends = ({ friends, setFriends }: CardFriendsProps) => {
     }
   };
 
-  const handleDelteFriend = (id: string) => {
+  const handleDeleteFriend = (id: string) => {
     try {
       const response = fetchDeleteFriend(id);
       setFriends(friends.filter((friend) => friend._id !== id));
+      setUserErrorMessage(null);
+      // close popover
+
     } catch (error) {
-      setErrorMessage("Failed to delete friend");
+      setUserErrorMessage("Failed to delete friend");
     }
   }
 
@@ -113,9 +118,9 @@ export const CardFriends = ({ friends, setFriends }: CardFriendsProps) => {
           </div>
         </div>
         <div className="flex flex-row flex-wrap gap-6">
-          {friends && friends.length > 0 ? (
+          {friends?.length > 0 ? (
             friends.map((item: Person, index: number) => (
-              <Popover key={index} showArrow placement="bottom" color="default">
+              <Popover key={item._id} showArrow placement="bottom" color="default">
                 <PopoverTrigger>
                   <Avatar src={pictureUsers[index % pictureUsers.length]} className="min-w-[40px]" />
                 </PopoverTrigger>
@@ -123,11 +128,16 @@ export const CardFriends = ({ friends, setFriends }: CardFriendsProps) => {
                   <div className="flex flex-col gap-2">
                     <h4 className="text-lg font-semibold flex justify-between items-center">
                       <span className="mr-2">{item.username}</span>
-                      <Button size="sm" color="danger" isIconOnly variant="bordered" radius="lg" onClick={() => handleDelteFriend(item._id)}>
+                      <Button size="sm" color="danger" isIconOnly variant="bordered" radius="lg" onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFriend(item._id)
+                      }}
+                      >
                         <TrashIcon size={15} className={"fill-danger"} />
                       </Button>
                     </h4>
                     <p className="text-sm text-italic">{item.email}</p>
+                    {userErrorMessage && <p className="text-red-500 text-sm">{userErrorMessage}</p>}
                   </div>
                 </PopoverContent>
               </Popover>

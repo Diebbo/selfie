@@ -19,6 +19,7 @@ const Chart = dynamic(
 );
 
 interface ContentProps {
+  _id: string;
   events: {
     created: SelfieEvent[];
     participating: SelfieEvent[];
@@ -30,8 +31,6 @@ interface ContentProps {
 export const Content = (props: ContentProps) => {
   const [friends, setFriends] = useState<People>(props.friends);
   const { position, error } = useGeolocation();
-  const [userNames, setUserNames] = useState<string[]>([]);
-
 
   useEffect(() => {
     if (position) {
@@ -124,7 +123,7 @@ export const Content = (props: ContentProps) => {
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardFriends friends={friends} setFriends={setFriends} />
+            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props._id}/>
             <CardChats chats={props.chats} />
           </div>
         </div>
