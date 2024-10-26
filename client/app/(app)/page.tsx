@@ -15,7 +15,7 @@ export default async function Home() {
     // Pass the fetched data to the client-side component
     return (
       <>
-        <Content events={user.events} chats={chats} friends={user.friends} />
+        <Content events={user.events} chats={chats} friends={user.friends}/>
       </>
     );
   } catch (error: any) {
