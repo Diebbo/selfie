@@ -11,6 +11,7 @@ function createCalendarRouter(db) {
     if (!event) return res.status(400).json({ message: "Evento non fornito" });
 
     try {
+      console.log(event);
       var result = await db.createEvent(uid, event);
 
       res.status(200).json({ message: "evento aggiunto correttamente", result });
@@ -19,7 +20,6 @@ function createCalendarRouter(db) {
     }
   });
 
-  // TODO: fare un get per :eventId
   router.get('/', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     console.log(uid);
@@ -75,14 +75,24 @@ function createCalendarRouter(db) {
     return res.status(200).json({ message: "partecipazione all'evento confermata", result });
   });
 
+  //  per togliere il partecipante dall'evento faccio una query parametrica dove
+  // metto l'id del partecipante
+  // /api/events/:id/?userId
   router.patch('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
-    const event = req.body.event;
-    if (!event) return res.status(400).json({ message: "Id dell'evento non fornito" });
+    //user to remove
+    const isDodge = req.query.fields ?? false;
+    console.log(isDodge);
+
+    if (!isDodge) {
+      var event = req.body.event;
+      if (!event) return res.status(400).json({ message: "Id dell'evento non fornito" });
+    }
 
     try {
-      const result = await db.modifyEvent(uid, event, eventId);
+      // toglimi dall'evento || modifica evento
+      const result = await (isDodge ? db.dodgeEvent(uid, eventId) : db.modifyEvent(uid, event, eventId));
 
       if (!result || Object.keys(result).length === 0) {
         return res.status(404).json({ message: "evento vuoto" });

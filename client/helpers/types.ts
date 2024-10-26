@@ -95,7 +95,7 @@ export interface SelfieEvent {
   };
   description: String;
   URL: String;
-  participants: People;
+  participants: string[];
   notification: SelfieNotification;
   _id: string;
 }

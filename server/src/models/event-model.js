@@ -63,7 +63,7 @@ const eventSchema = new mongoose.Schema({
   summary: String,
   uid: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users",
+    ref: "User",
   },
   sequence: Number,
   status: {
@@ -91,6 +91,7 @@ const eventSchema = new mongoose.Schema({
     lon: Number,
   },
   description: String,
+  participants: [String],
   URL: String,
   notification: notificationSchema,
 });
