@@ -460,13 +460,11 @@ export async function createDataBase() {
       // Gestione partecipanti
       if (addedEvent.participants && addedEvent.participants.length > 0) {
         for (const participant of addedEvent.participants) {
-          console.log("LOLOLOL: ", uid, participant);
           try {
             // Usa findOneAndUpdate invece di find + save
-            console.log("dio cane: ", participant, addedEvent._id);
             const updated = await userModel.findByIdAndUpdate(
               participant,
-              { $push: { events: addedEvent._id } },
+              { $push: { invitedEvents: addedEvent._id } },
               { new: true }
             );
 
