@@ -28,6 +28,7 @@ import {
   SelfieNotification,
   FrequencyType,
   People,
+  Person,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
@@ -78,7 +79,7 @@ const initialEvent = {
   location: "",
   description: "",
   URL: "",
-  participants: [] as People,
+  participants: [] as string[],
   rrule: {
     freq: "weekly" as FrequencyType,
     interval: 1,
@@ -119,12 +120,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [isError, setIsError] = useState(false);
   const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
-
   const availableFriends = friends.filter(
-    (friend) =>
-      !eventData.participants?.some(
-        (participant) => participant.email === friend.email,
-      ),
+    (friend) => !eventData.participants?.includes(friend._id)
   );
 
   useEffect(() => {
@@ -313,18 +310,20 @@ const EventAdder: React.FC<EventAdderProps> = ({
     }));
   };
 
-  const handleParticipantSelect = (friend: any) => {
+  const handleParticipantSelect = (friend: Person) => {
     setEventData((prev) => ({
       ...prev,
-      participants: [...(prev.participants || []), friend],
+      participants: [...(prev.participants || []), friend._id],
     }));
+    console.log(eventData.participants);
   };
 
-  const handleRemoveParticipant = (friendToRemove: any) => {
+
+  const handleRemoveParticipant = (friendToRemove: Person) => {
     setEventData((prev) => ({
       ...prev,
       participants: (prev.participants || []).filter(
-        (friend) => friend.email !== friendToRemove.email,
+        (participantId) => participantId !== friendToRemove._id
       ),
     }));
   };
@@ -364,7 +363,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
       } as SelfieEvent;
 
       try {
-        console.log("allday: ", newEvent.allDay);
+        console.log("partecipanti ", newEvent.participants);
         const success = await createEvent(newEvent);
         if (success) {
           console.log("Event created successfully");
@@ -435,7 +434,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   className="mb-1"
                   classNames={{
                     base: cn(
-                      "inline-flex flex-row-reverse w-full max-w-lg bg-[#27272a] hover:bg-content2 items-center",
+                      "inline-flex flex-row-reverse w-full max-w-lg bg-[#f4f4f5] dark:bg-[#27272a]  hover:bg-content2 items-center",
                       "justify-between rounded-lg gap-2 p-2 border-2 border-transparent",
                     ),
                     wrapper: "p-0 h-4 overflow-visible",
@@ -474,69 +473,78 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 }
 
               </div>
-              <div className="flex pb-4 gap-4 ">
-                <Switch
-                  className="w-fit min-w-[120px]"
-                  isSelected={repeatEvent}
-                  onValueChange={handleRepeatChange}
-                >
-                  Si ripete
-                </Switch>
-                <RepetitionMenu
-                  value={repeatEvent}
-                  frequency={eventData.rrule?.freq}
-                  onChange={handleRruleChange}
-                />
-                <Input
-                  className={`${eventData.rrule?.freq ? "w-fit" : "hidden"}`}
-                  label="Intervallo fra eventi"
-                  value={eventData.rrule?.interval.toString()}
-                />
-                <Input
-                  className={`${eventData.rrule?.freq === "monthly" ? "w-fit" : "hidden"}`}
-                  label="Per giorno del mese"
-                  value={eventData.rrule?.bymonthday.toString()}
-                />
-                <Input
-                  className={`${eventData.rrule?.freq === "yearly" ? "w-fit" : "hidden"}`}
-                  label="Per mese"
-                  value={eventData.rrule?.bymonth.toString()}
-                />
+              <div className="flex flex-wrap gap-4 ">
+                <div className="flex items-center gap-4 w-full md:w-auto max-h-[50px]">
+                  <Switch
+                    className="min-w-[120px]"
+                    isSelected={repeatEvent}
+                    onValueChange={handleRepeatChange}
+                  >
+                    Si ripete
+                  </Switch>
+                  <RepetitionMenu
+                    value={repeatEvent}
+                    frequency={eventData.rrule?.freq}
+                    isMobile={isMobile}
+                    onChange={handleRruleChange}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-4 w-full md:w-auto">
+                  <Input
+                    className={`${eventData.rrule?.freq ? "w-full sm:w-48" : "hidden"}`}
+                    label="Intervallo fra eventi"
+                    value={eventData.rrule?.interval.toString()}
+                  />
+                  <Input
+                    className={`${eventData.rrule?.freq === "monthly" ? "w-full sm:w-48" : "hidden"}`}
+                    label="Per giorno del mese"
+                    value={eventData.rrule?.bymonthday.toString()}
+                  />
+                  <Input
+                    className={`${eventData.rrule?.freq === "yearly" ? "w-full sm:w-48" : "hidden"}`}
+                    label="Per mese"
+                    value={eventData.rrule?.bymonth.toString()}
+                  />
+                </div>
               </div>
-              <Autocomplete
-                label="Luogo"
-                placeholder="Inserisci il luogo"
-                defaultItems={locationSuggestions}
-                onInputChange={(value) => {
-                  handleInputChange({ target: { name: "location", value } });
-                  fetchLocationSuggestions(value);
-                }}
-                onSelectionChange={(value) =>
-                  handleLocationSelect(value as string)
-                }
-                defaultFilter={(textValue, inputValue) => {
-                  const lowerCaseInput = inputValue.toLowerCase().trim();
-                  const searchWords = lowerCaseInput.split(/\s+/);
-                  return searchWords.every((word) =>
-                    textValue.toLowerCase().includes(word),
-                  );
-                }}
-              >
-                {(item: LocationSuggestion) => (
-                  <AutocompleteItem key={item.id} textValue={item.label}>
-                    {item.label}
-                  </AutocompleteItem>
-                )}
-              </Autocomplete>
+              <div className={`${isMobile ? "" : "mb-4"}`}>
+                <Autocomplete
+                  label="Luogo"
+                  placeholder="Inserisci il luogo"
+                  defaultItems={locationSuggestions}
+                  onInputChange={(value) => {
+                    handleInputChange({ target: { name: "location", value } });
+                    fetchLocationSuggestions(value);
+                  }}
+                  onSelectionChange={(value) =>
+                    handleLocationSelect(value as string)
+                  }
+                  defaultFilter={(textValue, inputValue) => {
+                    const lowerCaseInput = inputValue.toLowerCase().trim();
+                    const searchWords = lowerCaseInput.split(/\s+/);
+                    return searchWords.every((word) =>
+                      textValue.toLowerCase().includes(word),
+                    );
+                  }}
+                >
+                  {(item: LocationSuggestion) => (
+                    <AutocompleteItem key={item.id} textValue={item.label}>
+                      {item.label}
+                    </AutocompleteItem>
+                  )}
+                </Autocomplete>
+              </div>
               <Textarea
                 label="Descrizione"
                 name="description"
                 value={eventData.description?.toString()}
                 onChange={handleInputChange}
                 placeholder="Inserisci una descrizione"
-                className="mb-4"
+                className={`${isMobile ? "" : "mb-4"}`}
               />
-              <div className="flex gap-4 items-start mb-4 items-center">
+              <div
+                className={`flex w-full gap-4 ${isMobile ? "flex-wrap items-start items-center" : "mb-4"}`}
+              >
                 <Autocomplete
                   variant="bordered"
                   label="Amici"
@@ -573,11 +581,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     </AutocompleteItem>
                   ))}
                 </Autocomplete>
-
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full">
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button variant="flat" className={`{min-w-[200px]}`}>
+                      <Button variant="flat" className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}>
                         Invitati ({eventData.participants?.length || 0})
                       </Button>
                     </DropdownTrigger>
@@ -586,41 +593,46 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       className="max-h-[300px] overflow-y-auto"
                     >
                       {eventData.participants?.length ? (
-                        eventData.participants.map((participant) => (
-                          <DropdownItem
-                            key={participant.email}
-                            className="py-2"
-                            endContent={
-                              <Button
-                                size="sm"
-                                color="danger"
-                                variant="light"
-                                onPress={() =>
-                                  handleRemoveParticipant(participant)
+                        eventData.participants
+                          .map((participantId) => {
+                            const participant = friends.find(friend => friend._id === participantId);
+                            if (!participant) return null;
+
+                            return (
+                              <DropdownItem
+                                key={participantId}
+                                className="py-2"
+                                endContent={
+                                  <Button
+                                    size="sm"
+                                    color="danger"
+                                    variant="light"
+                                    onPress={() => handleRemoveParticipant(participant)}
+                                  >
+                                    Rimuovi
+                                  </Button>
                                 }
                               >
-                                Rimuovi
-                              </Button>
-                            }
-                          >
-                            <div className="flex gap-2 items-center">
-                              <Avatar
-                                alt={participant.username}
-                                className="flex-shrink-0"
-                                size="sm"
-                                src={participant.avatar}
-                              />
-                              <div className="flex flex-col">
-                                <span className="text-small">
-                                  {participant.username}
-                                </span>
-                                <span className="text-tiny text-default-400">
-                                  {participant.email}
-                                </span>
-                              </div>
-                            </div>
-                          </DropdownItem>
-                        ))
+                                <div className="flex gap-2 items-center">
+                                  <Avatar
+                                    alt={participant.username}
+                                    className="flex-shrink-0"
+                                    size="sm"
+                                    src={participant.avatar}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-small">
+                                      {participant.username}
+                                    </span>
+                                    <span className="text-tiny text-default-400">
+                                      {participant.email}
+                                    </span>
+                                  </div>
+                                </div>
+                              </DropdownItem>
+                            );
+                          })
+                          .filter((item): item is JSX.Element => item !== null)
                       ) : (
                         <DropdownItem className="text-default-400">
                           Nessun invitato
@@ -628,7 +640,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       )}
                     </DropdownMenu>
                   </Dropdown>
-
                   <Button
                     size="md"
                     color="danger"

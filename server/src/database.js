@@ -437,44 +437,56 @@ export async function createDataBase() {
   };
 
   const createEvent = async (uid, event) => {
+    // Validazione iniziale dell'utente
     const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not foun");
+    if (!user) throw new Error("User not found");
 
-    // Validate event object
-    if (!event.title) {
-      throw new Error("Event must have a title");
-    }
+    // Validazione evento
+    if (!event.title) throw new Error("Event must have a title");
+    if (!event.dtstart || !event.dtend) throw new Error("Event must have a date");
 
-    if (!event.dtstart || !event.dtend) {
-      throw new Error("Event must have a date");
-    }
-    // add event to the user's events
-    var addedEvent = await eventModel.create({ ...event, uid: uid });
-    user.events.push(addedEvent._id);
-    await user.save();
+    try {
+      // Creazione evento
+      const addedEvent = await eventModel.create({ ...event, uid: uid });
+      if (!addedEvent) throw new Error("Failed to create event");
 
-    // invite all users in the event
-    /*
-    var err = "Invited users not found: ";
-    if (event.invitedUsers) {
-      event.invitedUsers.forEach(async (invitedUser) => {
-        const invitedUserDoc = await userModel.findOne({
-          username: invitedUser,
-        });
-        if (!invitedUserDoc) err += invitedUser + ", ";
-        else {
-          invitedUserDoc.invitedEvents.push(addedEvent._id);
-          await invitedUserDoc.save();
+      // Aggiungi l'evento all'utente creatore
+      await userModel.findByIdAndUpdate(
+        uid,
+        { $push: { events: addedEvent._id } },
+        { new: true }
+      );
+
+      // Gestione partecipanti
+      if (addedEvent.participants && addedEvent.participants.length > 0) {
+        for (const participant of addedEvent.participants) {
+          console.log("LOLOLOL: ", uid, participant);
+          try {
+            // Usa findOneAndUpdate invece di find + save
+            console.log("dio cane: ", participant, addedEvent._id);
+            const updated = await userModel.findByIdAndUpdate(
+              participant,
+              { $push: { events: addedEvent._id } },
+              { new: true }
+            );
+
+            if (!updated) {
+              console.log(`User not found: ${participant}`);
+            } else {
+              console.log(`Event added to user: ${participant}`);
+              console.log('Updated participating events:', updated.participatingEvents);
+            }
+          } catch (err) {
+            console.error(`Error updating participant ${participant}:`, err);
+          }
         }
-      });
+      }
+
+      return addedEvent;
+    } catch (error) {
+      console.error("Error in createEvent:", error);
+      throw error;
     }
-    if (err !== "Invited users not found: ") throw new Error(err);
-    */
-
-    // generate notifications for all the invited users
-    //await generateNotificationsForEvent(addedEvent, [user]);
-
-    return addedEvent;
   };
 
   const addNotification = async (user, notification) => {
@@ -666,6 +678,20 @@ export async function createDataBase() {
       throw new Error("Event did not get changed: " + e.message);
     }
   };
+
+  const dodgeEvent = async (uid, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+
+    // togliere l'evento dalla lista degli eventi dello user
+    await userModel.findByIdAndUpdate(uid, { $pull: { events: eventId } });
+
+    // togliere le notifiche (credo)
+    //removeNotifications(uid, eventId) ??
+  }
 
   const partecipateEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
@@ -1717,16 +1743,16 @@ export async function createDataBase() {
     updateEmail,
     updatePassword,
     changeDateTime,
-    createEvent,
     postNote,
     getNotes,
     getNoteById,
     removeNoteById,
-    getEvents,
+    createEvent,
     getEvent,
+    getEvents,
     deleteEvent,
-    partecipateEvent,
     modifyEvent,
+    partecipateEvent,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,
