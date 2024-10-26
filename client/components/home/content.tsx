@@ -6,10 +6,11 @@ import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
-import { SelfieEvent } from "@/helpers/types";
+import { Person, ProjectModel, SelfieEvent } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
 import { useGeolocation } from "@/helpers/useGeolocation";
+import { ProjectTable } from "./project-table";
 
 const Chart = dynamic(
   () => import("../charts/steam").then((mod) => mod.Steam),
@@ -19,13 +20,14 @@ const Chart = dynamic(
 );
 
 interface ContentProps {
-  _id: string;
   events: {
     created: SelfieEvent[];
     participating: SelfieEvent[];
   };
   chats: any[];
   friends: People;
+  projects: ProjectModel[];
+  user: Person;
 }
 
 export const Content = (props: ContentProps) => {
@@ -123,7 +125,7 @@ export const Content = (props: ContentProps) => {
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props._id}/>
+            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props.user._id}/>
             <CardChats chats={props.chats} />
           </div>
         </div>
@@ -136,6 +138,23 @@ export const Content = (props: ContentProps) => {
           <p>Longitude: {position.longitude}</p>
         </div>
       )}
+
+
+      {/* Table Of Projects */}
+      <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
+        <div className="flex  flex-wrap justify-between">
+          <h3 className="text-center text-xl font-semibold">Projects</h3>
+          <Link
+            href="/projects"
+            as={NextLink}
+            color="primary"
+            className="cursor-pointer"
+          >
+            View All
+          </Link>
+        </div>
+        <ProjectTable projects={props.projects} creator={props.user} />
+      </div>
 
       {/* Table Latest Users */}
       <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">

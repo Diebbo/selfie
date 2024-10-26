@@ -3,19 +3,23 @@
 import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
 import { getUser } from "@/actions/user";
-import { ChatModel, Person } from "@/helpers/types";
+import { ChatModel, Person, ProjectModel } from "@/helpers/types";
+import getProjects from "@/actions/projects";
 
 export default async function Home() {
   try {
-    const [user, chats]: [Person, ChatModel[]] = await Promise.all([
+    const [user, chats, projects]: [Person, ChatModel[], ProjectModel[]] = await Promise.all([
       getUser(),
       getChats(),
+      getProjects(),
     ]);
+
+    console.log("User p:", projects);
 
     // Pass the fetched data to the client-side component
     return (
       <>
-        <Content events={user.events} chats={chats} friends={user.friends} _id={user._id} />
+        <Content events={user.events} chats={chats} friends={user.friends} user={user} projects={projects} />
       </>
     );
   } catch (error: any) {
