@@ -13,8 +13,13 @@ import {
 } from "@nextui-org/react";
 import { CalendarIcon, UsersIcon } from "lucide-react";
 
+interface columnsModel {
+  name: string;
+  uid: string;
+}
+
 // Define table columns
-const columns = [
+const columns: columnsModel[] = [
   { name: "PROJECT", uid: "title" },
   { name: "DESCRIPTION", uid: "description" },
   { name: "CREATOR", uid: "creator" },
@@ -23,12 +28,14 @@ const columns = [
   { name: "PROGRESS", uid: "progress" },
 ];
 
-// Component to render different cell content based on column type
-const RenderCell = ({ project, columnKey, creator }: {
+interface RenderCellProps {
   project: ProjectModel;
   columnKey: string;
   creator?: Person;
-}) => {
+}
+
+// Component to render different cell content based on column type
+const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) => {
   switch (columnKey) {
     case "title":
       return (
@@ -143,7 +150,11 @@ export const ProjectTable: React.FC<ProjectComponentProps> = ({ projects, creato
             <TableRow key={item._id}>
               {(columnKey) => (
                 <TableCell>
-                  <RenderCell project={item} columnKey={columnKey} creator={creator} />
+                  <RenderCell
+                    project={item}
+                    columnKey={columnKey.toString()}
+                    creator={creator}
+                  />
                 </TableCell>
               )}
             </TableRow>

@@ -125,7 +125,7 @@ export const Content = (props: ContentProps) => {
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props.user._id}/>
+            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props.user._id} />
             <CardChats chats={props.chats} />
           </div>
         </div>
