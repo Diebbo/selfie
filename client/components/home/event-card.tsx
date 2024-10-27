@@ -1,21 +1,7 @@
 import { Card, CardBody } from "@nextui-org/react";
 import React from "react";
 import { Community } from "../icons/community";
-import { SelfieEvent, People, Person } from "@/helpers/types";
-
-function parseParticipants(participants: People) {
-  if (!participants || participants.length === 0) return "No participants";
-
-  var participantsNames = "";
-  for (const partcipant of participants) {
-    participantsNames += partcipant.name + ", ";
-  }
-  participantsNames =
-    participantsNames.length < 30
-      ? participantsNames
-      : participantsNames.substring(0, 30) + "...";
-  return participantsNames;
-}
+import { SelfieEvent } from "@/helpers/types";
 
 interface EventCardTheme {
   bg: string;
@@ -56,7 +42,7 @@ export const EventCard = (props: { data: SelfieEvent; theme: number }) => {
           <div className="flex flex-col">
             <span className="text-white">Participants</span>
             <span className="text-white text-xs">
-              {parseParticipants(data.participants)}
+              {data.participants}
             </span>
           </div>
         </div>
