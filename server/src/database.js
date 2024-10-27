@@ -13,6 +13,7 @@ import { messageSchema } from "./models/chat-model.js";
 // services import
 import createProjectService from "./services/projects.mjs";
 import { sendEmailNotification } from "./pushNotificationWorker.js";
+import { sendNotification } from "web-push";
 
 export async function createDataBase() {
   const uri =
@@ -468,6 +469,15 @@ export async function createDataBase() {
               { new: true }
             );
 
+            //costruzione della notifica per i partecipanti
+            var payload = {
+              title: "Notifica da Selfie",
+              body: user.username + " ti ha invitato all'evento " + addedEvent.title + "\nClicca il link per accettare l'invito.",
+              URL: `localhost:3000/calendar/partecipate/${addedEvent._id}`,
+            };
+            //const result = sendNotification(participant, payload);
+            //console.log(result.statusCode);
+
             if (!updated) {
               console.log(`User not found: ${participant}`);
             } else {
@@ -677,6 +687,7 @@ export async function createDataBase() {
     }
   };
 
+  // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
   const dodgeEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -691,6 +702,7 @@ export async function createDataBase() {
     //removeNotifications(uid, eventId) ??
   }
 
+  // accetto la proposta dell'evento [componente participateevent]
   const partecipateEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -708,7 +720,30 @@ export async function createDataBase() {
     await user.save();
 
     // add notifications for the event
-    await generateNotificationsForEvent(event, [user]);
+    //await generateNotificationsForEvent(event, [user]);
+
+    return user.invitedEvents;
+  };
+
+  // rifiuto la proposta dell'evento [componente participateevent]
+  const rejectEvent = async (uid, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+
+    // Check if user is already participating
+    if (user.participatingEvents.includes(eventId))
+      throw new Error("User is already participating in this event");
+    //tolgo l'evento dai pending events
+    user.invitedEvents = user.invitedEvents.filter(
+      (e) => e.toString() !== eventId.toString(),
+    );
+    await user.save();
+
+    // add notifications for the event
+    //await generateNotificationsForEvent(event, [user]);
 
     return user.invitedEvents;
   };
@@ -1750,7 +1785,9 @@ export async function createDataBase() {
     getEvents,
     deleteEvent,
     modifyEvent,
+    dodgeEvent,
     partecipateEvent,
+    rejectEvent,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,

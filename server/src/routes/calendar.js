@@ -66,13 +66,16 @@ function createCalendarRouter(db) {
   router.post('/partecipate/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
+    const response = req.body.response === "accept" ? true : false;
+
     try {
-      var result = await db.partecipateEvent(uid, eventId);
+      var result = await (response ? db.partecipateEvent(uid, eventId) : db.rejectEvent(uid, eventId));
+
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "partecipazione all'evento confermata", result });
+    return res.status(200).json({ message: "partecipazione/rifiuto all'evento confermata", result });
   });
 
   //  per togliere il partecipante dall'evento faccio una query parametrica dove
