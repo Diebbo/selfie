@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useReducer, useContext, useState, useEffect } from "react";
+import React, { useReducer, useState, useEffect } from "react";
 import {
   Modal,
   ModalContent,
@@ -13,8 +13,7 @@ import {
   Spinner
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
-import { reloadContext } from "./contextStore";
-import { SelfieEvent, SelfieNotification } from "@/helpers/types";
+import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 
 const EVENTS_API_URL = "/api/events";
@@ -127,9 +126,10 @@ async function fetchEvent(eventid: string) {
 
 interface ShowEventProps {
   eventid: string;
+  user: Person;
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ eventid }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
@@ -142,6 +142,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid }) => {
   const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isOwner = user.events.created?.some(event => event._id === eventid) || false;
 
   useEffect(() => {
     let isMounted = true;
@@ -251,6 +252,27 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid }) => {
     try {
       const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete event: ${res.statusText}`);
+      }
+
+      dispatch({ type: 'RESET_STATE' });
+      handleClose();
+    } catch (e: unknown) {
+      console.error(`Error during delete event: ${(e as Error).message}`);
+      setError((e as Error).message);
+    }
+  }
+
+  async function dodgeEvent() {
+    try {
+      const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}/?fields=true`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
@@ -384,19 +406,43 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid }) => {
               )}
             </ModalBody>
             <ModalFooter>
-              <Button
-                color="danger"
-                variant="light"
-                onPress={deleteEvent}
-              >
-                Delete Event
-              </Button>
-              <Button
-                color="primary"
-                onPress={state.isEditing ? modifyEvent : handleClose}
-              >
-                {state.isEditing ? "Save" : "Close"}
-              </Button>
+
+              {isOwner && (
+                <div>
+                  <Button
+                    color="danger"
+                    variant="light"
+                    onPress={deleteEvent}
+                  >
+                    Delete Event
+                  </Button>
+                  <Button
+                    color="primary"
+                    onPress={state.isEditing ? modifyEvent : handleClose}
+                  >
+                    {state.isEditing ? "Save" : "Close"}
+                  </Button>
+                </div>
+              )}
+
+              {!isOwner && (
+                <div>
+                  <Button
+                    color="danger"
+                    variant="light"
+                    onPress={dodgeEvent}
+                  >
+                    Dodge Event
+                  </Button>
+                  <Button
+                    color="primary"
+                    onPress={handleClose}
+                  >
+                    {"Close"}
+                  </Button>
+                </div>
+              )}
+
             </ModalFooter>
           </>
         ) : (
