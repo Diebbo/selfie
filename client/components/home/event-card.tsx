@@ -48,43 +48,31 @@ export const EventCard = (props: { data: SelfieEvent; theme: number }) => {
   const theme = themes[props.theme % themes.length];
   return (
     <Card
-      className={`xl:max-w-sm rounded-xl shadow-md px-3 w-full ${theme.bg}`}
+      className={`xl:max-w-sm rounded-xl shadow-md px-2 w-full ${theme.bg}`}
     >
-      <CardBody className="py-5 overflow-hidden">
-        <div className="flex gap-2.5">
+      <CardBody className="py-4 overflow-hidden">
+        <div className="flex gap-2">
           <Community />
           <div className="flex flex-col">
-            <span className="text-white">Participants</span>
-            <span className="text-white text-xs">
+            <span className="text-white text-xs mt-1">
               {parseParticipants(data.participants)}
             </span>
           </div>
         </div>
-        <div className="flex gap-2.5 py-2 items-center">
-          <span className="text-white text-xl font-semibold">{data.title}</span>
+        <div className="flex gap-2.5 py-2 items-center ">
+          <span className="text-white text-lg font-medium">{data.title}</span>
         </div>
-        <div className="flex items-center gap-6">
-          <div>
-            <div>
-              <span className={`font-semibold text-xs mr-1 ${theme.text}`}>
-                from
-              </span>
-              <span className="text-s text-white">
-                {formatDate(data.dtstart)}
-              </span>
-            </div>
-          </div>
 
-          <div>
-            <div>
-              <span className={`font-semibold text-xs mr-1 ${theme.text}`}>
-                to
-              </span>
-              <span className="text-s text-white">
-                {formatDate(data.dtend)}
-              </span>
-            </div>
-          </div>
+        <div>
+          <span className={`font-semibold text-xs mr-1 ${theme.text}`}>
+            from
+          </span>
+          <span className="text-s text-white">{formatDate(data.dtstart)}</span>
+        </div>
+
+        <div>
+          <span className={`font-semibold text-xs mr-1 ${theme.text}`}>to</span>
+          <span className="text-s text-white">{formatDate(data.dtend)}</span>
         </div>
       </CardBody>
     </Card>
