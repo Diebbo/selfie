@@ -20,6 +20,7 @@ const frequencyOptions: Record<FrequencyType, string> = {
 interface RepetitionMenuProps {
   value: boolean;
   frequency: FrequencyType | undefined;
+  isMobile: Boolean;
   onChange: (frequency: FrequencyType) => void;
 }
 
@@ -30,6 +31,7 @@ function getFrequencyLabel(key: FrequencyType): string {
 const RepetitionMenu: React.FC<RepetitionMenuProps> = ({
   value,
   frequency,
+  isMobile,
   onChange,
 }) => {
   const handleSelectionChange = (key: FrequencyType) => {
@@ -37,24 +39,26 @@ const RepetitionMenu: React.FC<RepetitionMenuProps> = ({
   };
 
   return (
-    <Dropdown>
-      <DropdownTrigger>
-        <Button
-          isDisabled={!value}
-          className="py-2 mt-[0.5rem]"
+    <div className={`${isMobile ? "flex flex-wrap gap-2 w-full" : ""}`}>
+      <Dropdown>
+        <DropdownTrigger>
+          <Button
+            isDisabled={!value}
+            className="mt-[0.5rem]"
+          >
+            {value ? "Ogni " + getFrequencyLabel(frequency as FrequencyType) : "Ogni ..."}
+          </Button>
+        </DropdownTrigger>
+        <DropdownMenu
+          aria-label="Repetition Frequency"
+          onAction={(key) => handleSelectionChange(key as FrequencyType)}
         >
-          {value ? "Ogni " + getFrequencyLabel(frequency as FrequencyType) : "Ogni ..."}
-        </Button>
-      </DropdownTrigger>
-      <DropdownMenu
-        aria-label="Repetition Frequency"
-        onAction={(key) => handleSelectionChange(key as FrequencyType)}
-      >
-        {Object.entries(frequencyOptions).map(([key, label]) => (
-          <DropdownItem key={key}>{label}</DropdownItem>
-        ))}
-      </DropdownMenu>
-    </Dropdown>
+          {Object.entries(frequencyOptions).map(([key, label]) => (
+            <DropdownItem key={key}>{label}</DropdownItem>
+          ))}
+        </DropdownMenu>
+      </Dropdown>
+    </div>
   );
 };
 
