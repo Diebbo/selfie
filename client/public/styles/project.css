@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host {
+  @apply block font-sans;
+}
+
+.navigation {
+  @apply flex justify-center mt-5;
+}
+
+.navigation button {
+  @apply px-4 py-2 mx-1 cursor-pointer bg-secondary text-white border-none rounded-md text-sm ml-2.5 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed;
+}
+
+#projectForm input,
+#projectForm textarea {
+  @apply w-full p-2 my-2 box-border rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary;
+}
+
+#projectForm button {
+  @apply text-white py-2.5 px-4 border-none cursor-pointer mt-2.5 rounded-md;
+}
+
+.success {
+  @apply bg-success hover:bg-success-600;
+}
+
+.modal {
+  @apply fixed inset-0 z-10 bg-black bg-opacity-40 flex items-center justify-center hidden overflow-auto;
+}
+
+.modal-content {
+  @apply bg-default rounded-lg p-5  w-4/5 max-w-lg mx-auto my-20;
+}
+
+.modal-header {
+  @apply text-xl font-semibold mb-4;
+}
+
+.close {
+  @apply text-gray-400 text-2xl font-bold float-right cursor-pointer hover:text-black;
+}
+
+.error-message {
+  @apply text-red-500 text-sm mt-2;
+}
+
+h2 {
+  @apply text-2xl text-center font-semibold;
+}
