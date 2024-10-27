@@ -1,16 +1,18 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
-import { CardAgents } from "./card-agents";
+import { CardFriends } from "./card-friends";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
-import { PomodoroStats, SelfieEvent } from "@/helpers/types";
+
+import { PomodoroStats, SelfieEvent, Person, ProjectModel } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
 import { useGeolocation } from "@/helpers/useGeolocation";
 import { PomodoroStatistics } from "./pomodoro-stats";
+import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
 
@@ -30,10 +32,12 @@ interface ContentProps {
   friends: People;
   notes: any[];
   pomodoro: PomodoroStats;
+  projects: ProjectModel[];
+  user: Person;
 }
 
 export const Content = (props: ContentProps) => {
-  const [friends, setFriends] = React.useState<People>(props.friends);
+  const [friends, setFriends] = useState<People>(props.friends);
   const { position, error } = useGeolocation();
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export const Content = (props: ContentProps) => {
             <h4 className="text-l font-semibold">Your Events</h4>
             <div className="grid md:grid-cols-2 sm:grid-cols-2 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4 justify-center w-full ">
               {Array.isArray(props.events.created) &&
-              props.events.created.length > 0 ? (
+                props.events.created.length > 0 ? (
                 props.events.created
                   .slice(0, 5)
                   .map((event: SelfieEvent, index: number) => (
@@ -100,7 +104,7 @@ export const Content = (props: ContentProps) => {
             <h4 className="text-l font-semibold">Participating Events</h4>
             <div className="grid md:grid-cols-2 grid-cols-1 xl:grid-cols-3 2xl:grid-cols-4 gap-4 justify-center w-full">
               {Array.isArray(props.events.participating) &&
-              props.events.participating.length > 0 ? (
+                props.events.participating.length > 0 ? (
                 props.events.participating
                   .slice(0, 5)
                   .map((event: SelfieEvent, index: number) => (
@@ -157,7 +161,7 @@ export const Content = (props: ContentProps) => {
           <WeatherCard position={position} />
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardAgents friends={friends} setFriends={setFriends} />
+            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props.user._id} />
             <CardChats chats={props.chats} />
           </div>
         </div>
@@ -170,6 +174,23 @@ export const Content = (props: ContentProps) => {
           <p>Longitude: {position.longitude}</p>
         </div>
       )}
+
+
+      {/* Table Of Projects */}
+      <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
+        <div className="flex  flex-wrap justify-between">
+          <h3 className="text-center text-xl font-semibold">Projects</h3>
+          <Link
+            href="/projects"
+            as={NextLink}
+            color="primary"
+            className="cursor-pointer"
+          >
+            View All
+          </Link>
+        </div>
+        <ProjectTable projects={props.projects} creator={props.user} />
+      </div>
 
       {/* Table Latest Users */}
       <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">

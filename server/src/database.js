@@ -1448,11 +1448,11 @@ export async function createDataBase() {
         $or: [{ sender: uid }, { receiver: uid }],
       });
     },
-    
+
     async readMessage(messageId) {
       const message = await chatModel.findByIdAndUpdate(messageId, {
         status: "read",
-        }, { new: true });
+      }, { new: true });
       if (!message) throw new Error("Message not found");
       message.receiver = await userService.fromIdtoUsername(message.receiver);
       message.sender = await userService.fromIdtoUsername(message.sender);
@@ -1593,8 +1593,8 @@ export async function createDataBase() {
             ? {
               uid: otherUser._id,
               username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },           
-          }
+              lastMessage: { ...msg, sender: sender.username },
+            }
 
             : null;
         })
@@ -1643,6 +1643,9 @@ export async function createDataBase() {
   };
 
   const userService = {
+    async getAllUsernames() {
+      return await userModel.find({}, { username: 1 });
+    },
     async fromsIdsToUsernames(ids) {
       const users = await userModel.find({ _id: { $in: ids } });
       return users.map((user) => user.username);

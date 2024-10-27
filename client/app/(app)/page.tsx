@@ -3,9 +3,11 @@
 import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
 import { getUser } from "@/actions/user";
-import { ChatModel, NoteModel, Person, PomodoroStats } from "@/helpers/types";
+
+import { ChatModel, NoteModel, Person, PomodoroStats, ProjectModel } from "@/helpers/types";
 import { getNotes } from "@/actions/notes";
 import { getStats } from "@/actions/pomodoro";
+import getProjects from "@/actions/projects";
 
 export default async function Home() {
   try {
@@ -14,7 +16,11 @@ export default async function Home() {
       ChatModel[],
       NoteModel[],
       PomodoroStats,
-    ] = await Promise.all([getUser(), getChats(), getNotes(), getStats()]);
+      ProjectModel[]
+    ] = await Promise.all([getUser(), getChats(), getNotes(), getStats(), getProjects()]);
+
+
+    console.log("User p:", projects);
 
     // Pass the fetched data to the client-side component
     return (
@@ -24,6 +30,8 @@ export default async function Home() {
           chats={chats}
           friends={user.friends}
           notes={notes}
+          user={user} 
+          projects={projects}
           pomodoro={pomodoro}
         />
       </>
