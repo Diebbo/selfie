@@ -91,18 +91,15 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
       );
 
     case "deadline":
-      const daysLeft = Math.ceil(
-        (new Date(project.deadline).getTime() - new Date().getTime()) / (1000 * 3600 * 24)
-      );
       return (
         <div className="flex items-center gap-2">
           <CalendarIcon className="w-4 h-4" />
           <span>{""}</span>
           <Chip
             size="sm"
-            color={daysLeft < 7 ? "danger" : daysLeft < 14 ? "warning" : "success"}
+            color={project.activities.filter(task => !task.completed).length === 0 ? "success" : "warning"}
           >
-            {daysLeft} days left
+            {new Date(project.deadline).toDateString()}
           </Chip>
         </div>
       );
@@ -113,7 +110,7 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
       return (
         <Chip
           className="capitalize"
-          color={progress === 100 ? "success" : progress > 50 ? "warning" : "danger"}
+          color={progress === 100 ? "success" : progress >= 50 ? "warning" : "danger"}
           size="sm"
           variant="flat"
         >
