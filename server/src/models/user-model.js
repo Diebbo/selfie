@@ -122,6 +122,14 @@ export const userSchema = new mongoose.Schema({
     },
   ],
 
+  inbox: [
+    {
+      title: String,
+      body: String,
+      link: String,
+    },
+  ],
+
   // lista di notifiche
   inboxNotifications: [
     {

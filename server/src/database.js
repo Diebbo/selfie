@@ -425,7 +425,6 @@ export async function createDataBase() {
     return events;
   };
 
-
   const getEvent = async (uid, eventid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -776,7 +775,9 @@ export async function createDataBase() {
     }
 
     if (!activity.name || !activity.dueDate || !activity.startDate) {
-      throw new Error(`Activity must have a name, start and due date: ${JSON.stringify(activity)}`);
+      throw new Error(
+        `Activity must have a name, start and due date: ${JSON.stringify(activity)}`,
+      );
     }
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
@@ -789,11 +790,15 @@ export async function createDataBase() {
       );
     }
     if (new Date(activity.dueDate) > new Date(project.deadline)) {
-      throw new Error(`Activity due date must be on or before the project deadline: ${project.deadline}`);
+      throw new Error(
+        `Activity due date must be on or before the project deadline: ${project.deadline}`,
+      );
     }
 
     if (new Date(activity.startDate) < new Date(project.startDate)) {
-      throw new Error(`Activity start date must be after the project start date: ${project.startDate}`);
+      throw new Error(
+        `Activity start date must be after the project start date: ${project.startDate}`,
+      );
     }
 
     // Check if the sub activities are valid
@@ -810,7 +815,9 @@ export async function createDataBase() {
         }
 
         if (new Date(subActivity.startDate) < new Date(activity.startDate)) {
-          throw new Error(`Sub-activity start date must be after the parent activity start date: ${activity.startDate}`);
+          throw new Error(
+            `Sub-activity start date must be after the parent activity start date: ${activity.startDate}`,
+          );
         }
       }
     }
@@ -1060,6 +1067,31 @@ export async function createDataBase() {
       return { success: true };
     } catch (error) {
       console.error("Error deleting like:", error);
+      throw error;
+    }
+  };
+
+  const addNotificationToInbox = async (uid, notification) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      user.inbox.push(notification);
+      await user.save();
+    } catch (error) {
+      console.error("Error adding notification:", error);
+      throw error;
+    }
+  };
+
+  const getInbox = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      return user.inbox;
+    } catch (error) {
+      console.error("Error getting inbox:", error);
       throw error;
     }
   };
@@ -1450,9 +1482,13 @@ export async function createDataBase() {
     },
 
     async readMessage(messageId) {
-      const message = await chatModel.findByIdAndUpdate(messageId, {
-        status: "read",
-      }, { new: true });
+      const message = await chatModel.findByIdAndUpdate(
+        messageId,
+        {
+          status: "read",
+        },
+        { new: true },
+      );
       if (!message) throw new Error("Message not found");
       message.receiver = await userService.fromIdtoUsername(message.receiver);
       message.sender = await userService.fromIdtoUsername(message.sender);
@@ -1476,7 +1512,7 @@ export async function createDataBase() {
         receiver: receiver._id,
         message: message,
         createdAt: now,
-        'status': 'sent',
+        status: "sent",
       });
 
       // send notification
@@ -1591,11 +1627,10 @@ export async function createDataBase() {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },
-            }
-
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: { ...msg, sender: sender.username },
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1697,8 +1732,7 @@ export async function createDataBase() {
     },
     async find(query) {
       return await userModel.find(query);
-    }
-
+    },
   };
 
   const projectService = createProjectService(models, {
@@ -1734,6 +1768,8 @@ export async function createDataBase() {
     getPrevSong,
     getRandomSong,
     addSong,
+    addNotificationToInbox,
+    getInbox,
     getNextNotifications,
     getDateTime,
     verifyEmail,
