@@ -20,55 +20,14 @@ class ProjectComponent extends HTMLElement {
     });
   }
 
+  // Inject Tailwind styles into shadow DOM
   setupStyle() {
-    const style = document.createElement('style');
-    style.textContent = `
-      :host {
-        display: block;
-        font-family: Arial, sans-serif;
-      }
-      .navigation {
-        display: flex;
-        justify-content: center;
-        margin-top: 20px;
-      }
-      .navigation button {
-        padding: 8px 16px;
-        margin: 0 5px;
-        cursor: pointer;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-size: 14px;
-        margin-left: 10px;
-      }
-      .navigation button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-#projectForm input, #projectForm textarea {
-        width: 100%;
-        padding: 8px;
-        margin: 8px 0;
-        box-sizing: border-box;
-      }
-#projectForm button {
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        cursor: pointer;
-        margin-top: 10px;
-        border-radius: 4px;
-      }
-.success {
-        background-color: #4CAF50;
-}
-
-    `;
-
-    this.shadowRoot.appendChild(style);
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/style/project-o.css';
+    this.shadowRoot.appendChild(link);
   }
+
 
   handleDeleteProject(event) {
     const projectId = event.detail.projectId;
@@ -102,7 +61,6 @@ class ProjectComponent extends HTMLElement {
 
   connectedCallback() {
     this.setupStyle();
-    this.render();
   }
 
   set projects(value) {
@@ -149,8 +107,8 @@ class ProjectComponent extends HTMLElement {
 
         return {
           title,
-          startDate:new Date(startDate),
-          deadline:new Date(deadline),
+          startDate: new Date(startDate),
+          deadline: new Date(deadline),
           description,
           activities: [],
           members
@@ -162,7 +120,7 @@ class ProjectComponent extends HTMLElement {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({project:newProject})
+        body: JSON.stringify({ project: newProject })
       }).then((res) => {
         if (res.ok) {
           return res.json();
@@ -177,23 +135,24 @@ class ProjectComponent extends HTMLElement {
   };
 
   render() {
-    // Save the style element
-    const style = this.shadowRoot.querySelector('style');
-
     // Clear the shadow DOM
     this.shadowRoot.innerHTML = '';
 
-    // Re-add the style element
-    if (style) {
-      this.shadowRoot.appendChild(style);
+    this.setupStyle();
+
+    if (this._projects.length > 0) {
+      const projectCard = document.createElement('project-card');
+      projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
+      projectCard.setAttribute('user', JSON.stringify(this._user));
+      this.shadowRoot.appendChild(projectCard);
+    } else {
+      const noProjdiv = document.createElement('div');
+      noProjdiv.className = 'no-projects';
+      this.shadowRoot.appendChild(noProjdiv);
+      const noProjects = document.createElement('p');
+      noProjects.textContent = 'No projects found';
+      noProjdiv.appendChild(noProjects);
     }
-
-    if (this._projects.length === 0) return;
-
-    const projectCard = document.createElement('project-card');
-    projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
-    projectCard.setAttribute('user', JSON.stringify(this._user));
-    this.shadowRoot.appendChild(projectCard);
 
 
     const modal = document.createElement('modal-component');
