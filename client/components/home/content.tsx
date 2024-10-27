@@ -4,10 +4,15 @@ import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
-import { Link } from "@nextui-org/react";
+import { Link, Button } from "@nextui-org/react";
 import NextLink from "next/link";
 
-import { PomodoroStats, SelfieEvent, Person, ProjectModel } from "@/helpers/types";
+import {
+  PomodoroStats,
+  SelfieEvent,
+  Person,
+  ProjectModel,
+} from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
 import { useGeolocation } from "@/helpers/useGeolocation";
@@ -38,6 +43,12 @@ interface ContentProps {
 
 export const Content = (props: ContentProps) => {
   const [friends, setFriends] = useState<People>(props.friends);
+  const [createdEventsFilter, setCreatedEventsFilter] = useState<
+    "today" | "week" | "all"
+  >("all");
+  const [participatingEventsFilter, setParticipatingEventsFilter] = useState<
+    "today" | "week" | "all"
+  >("all");
   const { position, error } = useGeolocation();
 
   useEffect(() => {
@@ -75,47 +86,170 @@ export const Content = (props: ContentProps) => {
     console.error("Geolocation error:", error);
   }
 
+  const filterEvents = (
+    events: SelfieEvent[],
+    filter: "today" | "week" | "all",
+  ) => {
+    if (!Array.isArray(events)) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Imposta l'ora a mezzanotte
+
+    const weekEnd = new Date(today);
+    weekEnd.setDate(today.getDate() + 7);
+    weekEnd.setHours(23, 59, 59, 999); // Imposta l'ora a fine giornata
+
+    return events.filter((event) => {
+      // Ignora eventi cancellati
+      if (event.status === "CANCELLED") return false;
+
+      const eventStart = new Date(event.dtstart);
+      const eventEnd = new Date(event.dtend);
+
+      switch (filter) {
+        case "today":
+          // Un evento è considerato "di oggi" se:
+          // - inizia oggi
+          // - è in corso (è iniziato prima di oggi ma finisce dopo)
+          return (
+            eventStart.toDateString() === today.toDateString() ||
+            (eventStart <= today && eventEnd >= today)
+          );
+        case "week":
+          // Un evento è considerato "della settimana" se:
+          // - inizia questa settimana
+          // - è in corso durante la settimana
+          return (
+            (eventStart >= today && eventStart <= weekEnd) ||
+            (eventStart <= today && eventEnd >= today)
+          );
+        default:
+          return true;
+      }
+    });
+  };
+
   return (
     <div className="h-full lg:px-6">
       <div className="flex justify-center gap-5 pt-4 px-4 xl:px-3 2xl:px-5 flex-wrap xl:flex-nowrap max-w-[100rem] mx-auto w-full">
         <div className="mt-6 gap-6 flex flex-col w-full">
           {/* Card Section Top */}
-          <div className="flex flex-col gap-2">
-            <h3 className="text-xl font-semibold">Next Events</h3>
-            <h4 className="text-l font-semibold">Your Events</h4>
-            <div className="grid md:grid-cols-2 sm:grid-cols-2 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4 justify-center w-full ">
-              {Array.isArray(props.events.created) &&
-                props.events.created.length > 0 ? (
-                props.events.created
-                  .slice(0, 5)
-                  .map((event: SelfieEvent, index: number) => (
-                    <EventCard data={event} theme={index} key={index} />
-                  ))
-              ) : (
-                <div className="text-success">No future events</div> // Your alternative content here
-              )}
-              {/*<EventCard data={dummy.dummyEvents[0]} theme={5}/>
-            <EventCard data={dummy.dummyEvents[1]} theme={1}/>
-            <EventCard data={dummy.dummyEvents[2]} theme={0}/>*/}
-              {/*<CardBalance1 />
-            <CardBalance2 />
-            <CardBalance3 /> */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="flex flex-col border rounded-lg p-4 h-[500px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">Your Events</h3>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={createdEventsFilter === "today" ? "solid" : "flat"}
+                    color="primary"
+                    onClick={() => setCreatedEventsFilter("today")}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={createdEventsFilter === "week" ? "solid" : "flat"}
+                    color="primary"
+                    onClick={() => setCreatedEventsFilter("week")}
+                  >
+                    This Week
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={createdEventsFilter === "all" ? "solid" : "flat"}
+                    color="primary"
+                    onClick={() => setCreatedEventsFilter("all")}
+                  >
+                    All
+                  </Button>
+                </div>
+              </div>
+              <div className="overflow-y-hidden hover:overflow-y-scroll h-full pr-2 border-t scrollbar-thin">
+                {" "}
+                {/* h-full invece di flex-1 */}
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  {Array.isArray(props.events.created) &&
+                  filterEvents(props.events.created, createdEventsFilter)
+                    .length > 0 ? ( // Applica filterEvents qui
+                    filterEvents(props.events.created, createdEventsFilter).map(
+                      // E qui
+                      (event: SelfieEvent, index: number) => (
+                        <EventCard data={event} theme={index} key={index} />
+                      ),
+                    )
+                  ) : (
+                    <div className="text-success">
+                      No events for this period
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <h4 className="text-l font-semibold">Participating Events</h4>
-            <div className="grid md:grid-cols-2 grid-cols-1 xl:grid-cols-3 2xl:grid-cols-4 gap-4 justify-center w-full">
-              {Array.isArray(props.events.participating) &&
-                props.events.participating.length > 0 ? (
-                props.events.participating
-                  .slice(0, 5)
-                  .map((event: SelfieEvent, index: number) => (
-                    <EventCard data={event} theme={index} key={index} />
-                  ))
-              ) : (
-                <div className="text-success">No group events</div> // Your alternative content here
-              )}
+
+            <div className="flex flex-col border rounded-lg p-4 h-[500px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">Your Events</h3>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={
+                      participatingEventsFilter === "today" ? "solid" : "flat"
+                    }
+                    color="primary"
+                    onClick={() => setParticipatingEventsFilter("today")}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={
+                      participatingEventsFilter === "week" ? "solid" : "flat"
+                    }
+                    color="primary"
+                    onClick={() => setParticipatingEventsFilter("week")}
+                  >
+                    This Week
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={
+                      participatingEventsFilter === "all" ? "solid" : "flat"
+                    }
+                    color="primary"
+                    onClick={() => setParticipatingEventsFilter("all")}
+                  >
+                    All
+                  </Button>
+                </div>
+              </div>
+              <div className="overflow-y-auto h-full pr-2 border-t">
+                {" "}
+                {/* h-full invece di flex-1 */}
+                <div className="grid grid-cols-1 gap-4 pt-4">
+                  {Array.isArray(props.events.participating) &&
+                  filterEvents(
+                    props.events.participating,
+                    participatingEventsFilter,
+                  ).length > 0 ? ( // Applica filterEvents qui
+                    filterEvents(
+                      props.events.participating,
+                      participatingEventsFilter,
+                    ).map(
+                      // E qui
+                      (event: SelfieEvent, index: number) => (
+                        <EventCard data={event} theme={index} key={index} />
+                      ),
+                    )
+                  ) : (
+                    <div className="text-success">
+                      No events for this period
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-
           <div className="grid grid-cols-1 max-w-[500px]">
             <PomodoroStatistics stats={props.pomodoro} />
           </div>
@@ -161,7 +295,11 @@ export const Content = (props: ContentProps) => {
           <WeatherCard position={position} />
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
-            <CardFriends friends={friends} setFriends={setFriends} currentUserId={props.user._id} />
+            <CardFriends
+              friends={friends}
+              setFriends={setFriends}
+              currentUserId={props.user._id}
+            />
             <CardChats chats={props.chats} />
           </div>
         </div>
@@ -174,7 +312,6 @@ export const Content = (props: ContentProps) => {
           <p>Longitude: {position.longitude}</p>
         </div>
       )}
-
 
       {/* Table Of Projects */}
       <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">

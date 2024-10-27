@@ -15,5 +15,9 @@ module.exports = {
     extend: {},
   },
   darkMode: "class",
-  plugins: [nextui(), require("@tailwindcss/typography")],
+  plugins: [
+    nextui(),
+    require("@tailwindcss/typography"),
+    require("tailwind-scrollbar"),
+  ],
 };
