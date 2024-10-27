@@ -7,7 +7,7 @@ export default function createUserRouter(db) {
   router.get("/usernames", async (_, res) => {
     try {
       const usernames = await db.userService.getAllUsernames();
-      return res.status(200).json({message: "get successuflly", usernames});
+      return res.status(200).json({ message: "get successuflly", usernames });
     } catch (error) {
       return res.status(404).json({ message: error.message });
     }
@@ -40,6 +40,16 @@ export default function createUserRouter(db) {
     try {
       const gps = await db.userService.getGps(req.user._id);
       return res.status(200).json(gps);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
+  router.get("/inbox", cookieJwtAuth, async (req, res) => {
+    try {
+      console.log("req.user._id", req.user._id);
+      const notifications = await db.getInbox(req.user._id);
+      return res.status(200).json(notifications);
     } catch (error) {
       return res.status(404).json({ message: error.message });
     }

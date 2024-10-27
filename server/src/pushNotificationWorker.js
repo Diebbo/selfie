@@ -9,11 +9,12 @@ if (result.error) {
   config({ path: "/webapp/.env" });
 }
 
+var db = await createDataBase();
+
 async function checkAndSendNotifications() {
   console.log(`Checking notifications at ${new Date().toISOString()}`);
 
   try {
-    var db = await createDataBase();
     const users = await db.getAllUserEvents();
     const now = await db.getDateTime();
 
@@ -194,7 +195,7 @@ export async function sendNotification(user, payload) {
 
       notifications.push(sendEmailNotification(emailPayload));
     }
-
+    notifications.push(db.addNotificationToInbox(user._id, payload));
     await Promise.all(notifications);
     console.log(`Notifications sent successfully to user ${user.username}`);
   } catch (error) {
@@ -207,5 +208,5 @@ const notifyON = process.env.NOTIFICATION === "true";
 
 if (notifyON) {
   // Check every minute
-  schedule.scheduleJob("* * * * *", checkAndSendNotifications);
+  schedule.scheduleJob("* * * * *", checkAndSendNotifications(db));
 }
