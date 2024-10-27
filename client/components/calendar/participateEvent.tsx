@@ -13,7 +13,8 @@ import {
   Chip
 } from "@nextui-org/react";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
-import { CalendarIcon, MapPinIcon, ClockIcon } from "lucide-react";
+import { useRouter } from 'next/navigation';
+import getBaseUrl from "@/config/proxy";
 
 interface ParticipantContentProps {
   eventid: string;
@@ -24,16 +25,36 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
   const [isOpen, setIsOpen] = useState(true);
   const [event, setEvent] = useState<SelfieEvent | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const EVENTS_API_URL = "/api/events";
+
+  const handleReturnToCalendar = () => {
+    setIsOpen(false);
+    router.refresh();
+    router.push("/calendar");
+  }
 
   useEffect(() => {
-    // Qui dovresti implementare la chiamata API per ottenere i dettagli dell'evento
-    // Esempio di mock data:
-    const fetchEvent = async () => {
+    async function fetchEvent() {
       try {
-        // Simula chiamata API
-        const response = await fetch(`/api/events/${eventid}`);
-        const data = await response.json();
-        setEvent(data);
+        const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store"
+        });
+
+        if (res.status === 401) {
+          throw new Error("Unauthorized, please login.");
+        } else if (res.status >= 500) {
+          throw new Error(`Server error: ${res.statusText}`);
+        } else if (!res.ok) {
+          throw new Error("Failed to fetch the event");
+        }
+
+        setEvent(await res.json());
       } catch (error) {
         console.error('Error fetching event:', error);
       } finally {
@@ -45,9 +66,11 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
   }, [eventid]);
 
   const handleResponse = async (response: 'accept' | 'decline') => {
+    console.log("dentro handle response");
     try {
+      console.log("faccio la post");
       // Implementa la logica per inviare la risposta al server
-      await fetch(`/api/events/participate/${eventid}`, {
+      const res = await fetch(`/api/events/participate/${eventid}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,8 +80,9 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           response: response,
         }),
       });
+      console.log(await res.json());
 
-      setIsOpen(false);
+      handleReturnToCalendar();
     } catch (error) {
       console.error('Error sending response:', error);
     }
@@ -71,7 +95,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => setIsOpen(false)}
+      onClose={handleReturnToCalendar}
       size="2xl"
     >
       <ModalContent>
@@ -87,14 +111,12 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
                 )}
 
                 <div className="flex items-center gap-2">
-                  <CalendarIcon className="w-5 h-5 text-gray-500" />
                   <span>
                     {new Date(event.dtstart).toLocaleDateString()} - {new Date(event.dtend).toLocaleDateString()}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <ClockIcon className="w-5 h-5 text-gray-500" />
                   <span>
                     {new Date(event.dtstart).toLocaleTimeString()} - {new Date(event.dtend).toLocaleTimeString()}
                   </span>
@@ -102,7 +124,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
 
                 {event.location && (
                   <div className="flex items-center gap-2">
-                    <MapPinIcon className="w-5 h-5 text-gray-500" />
                     <span>{event.location}</span>
                   </div>
                 )}

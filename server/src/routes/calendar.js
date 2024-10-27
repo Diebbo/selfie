@@ -63,13 +63,14 @@ function createCalendarRouter(db) {
     return res.status(200).json({ message: "evento eliminato correttamente", eventId });
   });
 
-  router.post('/partecipate/:id', cookieJwtAuth, async function(req, res) {
+  router.post('/participate/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     const response = req.body.response === "accept" ? true : false;
 
     try {
-      var result = await (response ? db.partecipateEvent(uid, eventId) : db.rejectEvent(uid, eventId));
+      console.log("prova");
+      var result = await (response ? db.participateEvent(uid, eventId) : db.rejectEvent(uid, eventId));
 
     } catch (e) {
       return res.status(400).json({ message: e.message });
@@ -78,14 +79,14 @@ function createCalendarRouter(db) {
     return res.status(200).json({ message: "partecipazione/rifiuto all'evento confermata", result });
   });
 
-  //  per togliere il partecipante dall'evento faccio una query parametrica dove
+  // per togliere il partecipante dall'evento faccio una query parametrica dove
   // metto l'id del partecipante
-  // /api/events/:id/?userId
+  // /api/events/:id/?fields=[true/false]
   router.patch('/:id', cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     //user to remove
-    const isDodge = req.query.fields ?? false;
+    const isDodge = req.query.fields === 'true' ? true : false;
     console.log(isDodge);
 
     if (!isDodge) {
@@ -96,6 +97,7 @@ function createCalendarRouter(db) {
     try {
       // toglimi dall'evento || modifica evento
       const result = await (isDodge ? db.dodgeEvent(uid, eventId) : db.modifyEvent(uid, event, eventId));
+      console.log(result);
 
       if (!result || Object.keys(result).length === 0) {
         return res.status(404).json({ message: "evento vuoto" });
