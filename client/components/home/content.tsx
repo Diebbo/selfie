@@ -6,10 +6,13 @@ import { EventCard } from "./event-card";
 import { CardAgents } from "./card-agents";
 import { Link } from "@nextui-org/react";
 import NextLink from "next/link";
-import { SelfieEvent } from "@/helpers/types";
+import { PomodoroStats, SelfieEvent } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
 import { useGeolocation } from "@/helpers/useGeolocation";
+import { PomodoroStatistics } from "./pomodoro-stats";
+import NoteCard from "../notes/NoteCard";
+import WeatherCard from "./WeatherCard";
 
 const Chart = dynamic(
   () => import("../charts/steam").then((mod) => mod.Steam),
@@ -25,6 +28,8 @@ interface ContentProps {
   };
   chats: any[];
   friends: People;
+  notes: any[];
+  pomodoro: PomodoroStats;
 }
 
 export const Content = (props: ContentProps) => {
@@ -32,7 +37,8 @@ export const Content = (props: ContentProps) => {
   const { position, error } = useGeolocation();
 
   useEffect(() => {
-    if (position) {
+    // !error because if user denied GPS we set default position to Bologna, but we also report error
+    if (position && !error) {
       sendPositionToServer(position);
     }
   }, [position]);
@@ -67,13 +73,13 @@ export const Content = (props: ContentProps) => {
 
   return (
     <div className="h-full lg:px-6">
-      <div className="flex justify-center gap-4 xl:gap-6 pt-3 px-4 lg:px-0  flex-wrap xl:flex-nowrap sm:pt-10 max-w-[90rem] mx-auto w-full">
+      <div className="flex justify-center gap-5 pt-4 px-4 xl:px-3 2xl:px-5 flex-wrap xl:flex-nowrap max-w-[100rem] mx-auto w-full">
         <div className="mt-6 gap-6 flex flex-col w-full">
           {/* Card Section Top */}
           <div className="flex flex-col gap-2">
             <h3 className="text-xl font-semibold">Next Events</h3>
             <h4 className="text-l font-semibold">Your Events</h4>
-            <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
+            <div className="grid md:grid-cols-2 sm:grid-cols-2 grid-cols-1 xl:grid-cols-2 2xl:grid-cols-4 gap-4 justify-center w-full ">
               {Array.isArray(props.events.created) &&
               props.events.created.length > 0 ? (
                 props.events.created
@@ -92,7 +98,7 @@ export const Content = (props: ContentProps) => {
             <CardBalance3 /> */}
             </div>
             <h4 className="text-l font-semibold">Participating Events</h4>
-            <div className="grid md:grid-cols-2 grid-cols-1 2xl:grid-cols-3 gap-5  justify-center w-full">
+            <div className="grid md:grid-cols-2 grid-cols-1 xl:grid-cols-3 2xl:grid-cols-4 gap-4 justify-center w-full">
               {Array.isArray(props.events.participating) &&
               props.events.participating.length > 0 ? (
                 props.events.participating
@@ -101,10 +107,38 @@ export const Content = (props: ContentProps) => {
                     <EventCard data={event} theme={index} key={index} />
                   ))
               ) : (
-                <div className="text-success">
-                  Niente attivita&apos; sociali
-                </div> // Your alternative content here
+                <div className="text-success">No group events</div> // Your alternative content here
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 max-w-[500px]">
+            <PomodoroStatistics stats={props.pomodoro} />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold">Notes Preview</h3>
+              <Link
+                href="/notes"
+                as={NextLink}
+                color="primary"
+                className="cursor-pointer"
+              >
+                View All
+              </Link>
+            </div>
+            <div className="bg-default-100 shadow-lg rounded-2xl p-6">
+              <div className="h-[350px] overflow-y-auto grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {props.notes?.map((note) => (
+                  <NoteCard
+                    key={note._id}
+                    note={note}
+                    onClick={() => {}} // Gestisci il click se necessario
+                    onDelete={() => {}} // Gestisci l'eliminazione se necessario
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -120,6 +154,7 @@ export const Content = (props: ContentProps) => {
 
         {/* Left Section */}
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
+          <WeatherCard position={position} />
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardAgents friends={friends} setFriends={setFriends} />
