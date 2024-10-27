@@ -24,6 +24,11 @@ export const useGeolocation = () => {
       },
       (error) => {
         setError(`Error: ${error.message}`);
+        // If GPS is OFF set Default Position to Bologna
+        setPosition({
+          latitude: 44.494887,
+          longitude: 11.3426163,
+        });
       },
     );
   }, []);

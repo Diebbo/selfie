@@ -117,6 +117,11 @@ export interface PomodoroSettings {
   longBreakDuration: number;
 }
 
+export interface PomodoroStats {
+  totalStudyTime: number;
+  totalBreakTime: number;
+}
+
 export interface Song {
   title: string;
   album: string;
