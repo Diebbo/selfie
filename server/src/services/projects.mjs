@@ -82,7 +82,7 @@ export default function createProjectService(models, lib) {
 
     async getProjects(uid) {
       let projects = await projectModel.find({ $or: [{ creator: uid }, { members: uid }] });
-      if (!projects || projects.length === 0) throw new Error("Nessun progetto trovato");
+      if (!projects || projects.length === 0) return [];
 
       for (let i = 0; i < projects.length; i++) {
         projects[i] = await populateMembers(projects[i]);
