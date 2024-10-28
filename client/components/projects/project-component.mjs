@@ -24,7 +24,7 @@ class ProjectComponent extends HTMLElement {
   setupStyle() {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = '/style/project-o.css';
+    link.href = '/styles/project.css';
     this.shadowRoot.appendChild(link);
   }
 

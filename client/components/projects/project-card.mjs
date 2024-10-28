@@ -7,184 +7,15 @@ class ProjectCard extends HTMLElement {
     this.user = null;
     this.project = null;
 
-    const style = document.createElement('style');
-    style.textContent = `
-  :host {
-    --bg-color: #f5f5f5;
-    --text-color: #333;
-    --gantt-bg-color: white;
-    --cell-bg-color: #e0e0e0;
-    --hover-bg-color: #F0F8FF;
-    --pending-color: silver;
-    --partial-completed-color: #F4A460;
-    --title-color: #333;
-    --success-color: #4CAF50;
-  }
+    const modalStyleLink = document.createElement('link');
+    modalStyleLink.href = '/styles/modal.css';
+    modalStyleLink.rel = 'stylesheet';
+    shadow.appendChild(modalStyleLink);
 
-  :host([dark-mode]) {
-    --bg-color: #333;
-    --text-color: #f5f5f5;
-    --gantt-bg-color: #444;
-    --cell-bg-color: #666;
-    --hover-bg-color: #555;
-  }
-
-  .project-card {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background-color: var(--bg-color);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  h2, h3{
-    margin-top: 0;
-    color: var(--text-color);
-  }
-  
-  .gantt-chart {
-    overflow-x: auto;
-    margin-top: 20px;
-    background-color: var(--gantt-bg-color);
-    border-radius: 4px;
-    padding: 10px;
-  }
-  
-  .gantt-cell {
-    flex: 1;
-    min-width: 40px;
-    height: 30px;
-    border-right: 1px solid var(--cell-bg-color);
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .gantt-task-cell:hover {
-    background-color: var(--hover-bg-color) !important;
-  }
-      .title {
-        color: var(--title-color);
-      }
-
-      .gantt-chart {
-        overflow-x: auto;
-        margin-top: 20px;
-        background-color: white;
-        border-radius: 4px;
-        padding: 10px;
-      }
-      .gantt-header, .gantt-row {
-        display: flex;
-        align-items: space-between;
-      }
-      .gantt-header {
-        font-weight: bold;
-      }
-      
-      .gantt-cell:last-child {
-        border-right: none;
-      }
-      .gantt-task {
-        background-color: #4CAF50;
-        height: 20px;
-        border-radius: 3px;
-      }
-      .gantt-task-cell.completed {
-        background-color: #4CAF50;  /* Full green for completed */
-      }
-      
-      .gantt-task-cell.partial-completed {
-        background-color: var(--partial-completed-color); 
-      }
-      
-      .gantt-task-cell.pending {
-        background-color: var(--pending-color);  
-      }
-      .gantt-task-cell.passed {
-        background-color: #FFC107;  /* Yellow for passed due date */
-      }
-      
-      .gantt-task-cell.child-completed {
-        background-color: #81C784;  /* Different green for completed child tasks */
-      }
-      .task-info {
-        min-width: 200px;
-        max-width: 200px;
-        padding-right: 10px;
-        justify-content: flex-start;
-      }
-      .task-info:hover {
-        cursor: pointer;
-        color: #2196F3;
-      }
-      .subactivity {
-        margin-left: 20px;
-      }
-      .days-column{
-        min-width: 50px;
-        max-width: 50px;
-      }
-      .start-date-column, .end-date-column {
-        min-width: 80px;
-        max-width: 80px;
-      }
-      .participants-column {
-        min-width: 150px;
-        max-width: 150px;
-        overflow: hidden;
-      }
-      .success {
-        background-color: #4CAF50;
-      }
-      .add-activity-btn {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        cursor: pointer;
-        margin-top: 10px;
-      }
-      .add-activity-btn {
-        background-color: var(--success-color);
-        border-radius: 4px;
-      }
-      .parent-activity-select {
-        width: 100%;
-        padding: 8px;
-        margin: 8px 0;
-        box-sizing: border-box;
-      }
-      .delete {
-        background-color: #f44336;
-        color: white;
-        padding: 5px 10px;
-        border: none;
-        cursor: pointer;
-        border-radius: 4px;
-        float: right;
-      }
-      #activityForm input, #activityForm textarea {
-        width: 100%;
-        padding: 8px;
-        margin: 8px 0;
-        box-sizing: border-box;
-      }
-      #activityForm button {
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        cursor: pointer;
-        margin-top: 10px;
-        border-radius: 4px;
-      }
-
-    `;
-
-    shadow.appendChild(style);
+    const ganttStyleLink = document.createElement('link');
+    ganttStyleLink.href = '/styles/gantt.css';
+    ganttStyleLink.rel = 'stylesheet';
+    shadow.appendChild(ganttStyleLink);
     shadow.appendChild(wrapper);
 
     this._modal = null;
@@ -205,8 +36,11 @@ class ProjectCard extends HTMLElement {
       const days = this.getDaysBetween(startDate, endDate);
 
       wrapper.innerHTML = `
-        <h2 class=".title">${this.project.title}<button class="delete" id="delete-proj">delete</button></h2>
-        <h3 class=".title">${this.project.description}</h3>
+        <div class="headers-inline">
+          <h2 class="title" style="display:inline;">${this.project.title}</h2>
+          <button class="delete" id="delete-proj">delete</button>
+        </div>
+        <h3>${this.project.description}</h3>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
           ${this.renderGanttChart(this.project.activities, days, startDate)}

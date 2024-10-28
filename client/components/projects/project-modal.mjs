@@ -25,7 +25,7 @@ class Modal extends HTMLElement {
   setupStyle() {
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/style/project-o.css';
+    style.href = '/styles/modal.css';
     this.shadowRoot.appendChild(style);
   }
     

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build-css": "npx tailwindcss -i public/style/project.css -o public/style/project-o.css --minify"
+    "build-css": "npx tailwindcss -i styles/project.css -o public/styles/project.css --minify; npx tailwind -i styles/modal.css -o public/styles/modal.css; npx tailwind -i styles/gantt.css -o public/styles/gantt.css"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
