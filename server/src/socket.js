@@ -1,6 +1,6 @@
 // import { addNotification } from './services/notificationService.js';
 
-import { sendNotification } from "./pushNotificationWorker";
+import { sendNotification } from "./pushNotificationWorker.js";
 
 export function createWebSocket(io, database) {
   const activeUsers = new Map(); // Store socket.id -> { userId, username }
@@ -91,12 +91,12 @@ export function createWebSocket(io, database) {
             status: "sent",
           });
           const user = await database.userService.getById(receiverId);
-          payload = {
-            title: "📨 New Message from" + sender.username,
+          const payload = {
+            title: "📨 New Message from " + sender.username,
             body: messageToSend.message,
-            link: "/chat/" + sender.username,
+            link: "/chats/" + sender.username,
           };
-          sendNotification(user, payload);
+          await sendNotification(user, payload);
         }
       } catch (error) {
         console.error("Error in private_message handler:", error);
