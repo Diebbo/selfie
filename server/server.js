@@ -32,7 +32,7 @@ async function startServer() {
     // Create WebSocket server
     const io = new Server(httpServer, {
       cors: {
-        origin: "http://localhost:3000",
+        origin: "*", // Add your client URLs
         methods: ["GET", "POST"],
         credentials: true,
       },
