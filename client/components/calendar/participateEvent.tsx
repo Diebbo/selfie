@@ -12,9 +12,12 @@ import {
   CardBody,
   Chip,
 } from "@nextui-org/react";
-import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
-import { useRouter } from "next/navigation";
-import getBaseUrl from "@/config/proxy";
+import {
+  Person,
+  SelfieEvent,
+  SelfieNotification,
+} from "@/helpers/types";
+import { useRouter } from 'next/navigation';
 
 interface ParticipantContentProps {
   eventid: string;

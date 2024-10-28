@@ -87,13 +87,25 @@ const showEvents = (
 ): JSX.Element[] | null => {
   const todayEvents = getEventsByDay(events, date);
   const eventsToShow = todayEvents.slice(0, 2);
+  console.log(todayEvents.map((event) => { console.log(event.title, event.participants.length > 1) }));
+
+  const handleColor = (event: SelfieEvent): string => {
+    if (event.participants.length > 0 && event.allDay)
+      return "bg-yellow-600"
+    else if (event.participants.length > 0)
+      return "bg-teal-600"
+    else if (event.allDay)
+      return "bg-violet-600";
+    else
+      return "bg-slate-700";
+  }
 
   return (
     !isMobile ? eventsToShow.map((event, index) => (
       <button
         onClick={() => handleClick(event)}
         key={index}
-        className={`rounded-[100px] p-1 px-2 border-1 border-black bg-slate-700 text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${event.allDay ? "bg-violet-600" : ""}`}
+        className={`rounded-[100px] p-1 px-2 border-1 border-slate-600 dark:border-black text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${handleColor(event)}`}
       >
         {(!isMobile && !event.allDay) && (
           <>
