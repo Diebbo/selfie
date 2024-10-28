@@ -17,6 +17,10 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Create .env.local file
+        run: |
+          echo "${{ secrets.WEATHER_API }}" > client/.env.local
+
       - name: Compile client
         run: |
           cd client
