@@ -47,9 +47,17 @@ export default function createUserRouter(db) {
 
   router.get("/inbox", cookieJwtAuth, async (req, res) => {
     try {
-      console.log("req.user._id", req.user._id);
       const notifications = await db.getInbox(req.user._id);
       return res.status(200).json(notifications);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
+  router.delete("/inbox", cookieJwtAuth, async (req, res) => {
+    try {
+      const response = await db.deleteInbox(req.user._id);
+      return res.status(200).json(response);
     } catch (error) {
       return res.status(404).json({ message: error.message });
     }

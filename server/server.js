@@ -5,8 +5,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createDataBase } from "./src/database.js";
 import { Server } from "socket.io";
-import { createServer } from 'http';
-import { createWebSocket } from './src/socket.js';
+import { createServer } from "http";
+import { createWebSocket } from "./src/socket.js";
 
 config();
 
@@ -34,7 +34,7 @@ async function startServer() {
       cors: {
         origin: "http://localhost:3000",
         methods: ["GET", "POST"],
-        credentials: true
+        credentials: true,
       },
     });
 

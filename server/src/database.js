@@ -12,7 +12,10 @@ import { messageSchema } from "./models/chat-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
-import { sendEmailNotification, sendNotification } from "./pushNotificationWorker.js";
+import {
+  sendEmailNotification,
+  sendNotification,
+} from "./pushNotificationWorker.js";
 
 export async function createDataBase() {
   const uri =
@@ -410,72 +413,6 @@ export async function createDataBase() {
     }
   };
 
-  const getEvents = async (uid) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    // Combina gli ID degli eventi creati e quelli a cui l'utente partecipa
-    const allEventIds = [
-      ...new Set([...user.events, ...user.participatingEvents]),
-    ];
-
-    // Recupera tutti gli eventi in una sola query
-    const events = await eventModel.find({ _id: { $in: allEventIds } });
-
-    return events;
-  };
-
-  const getEvent = async (uid, eventid) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    const event = await eventModel.findById(eventid);
-    if (!event) throw new Error("Event not found");
-
-    return event;
-  };
-
-  const createEvent = async (uid, event) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not foun");
-
-    // Validate event object
-    if (!event.title) {
-      throw new Error("Event must have a title");
-    }
-
-    if (!event.dtstart || !event.dtend) {
-      throw new Error("Event must have a date");
-    }
-    // add event to the user's events
-    var addedEvent = await eventModel.create({ ...event, uid: uid });
-    user.events.push(addedEvent._id);
-    await user.save();
-
-    // invite all users in the event
-    /*
-    var err = "Invited users not found: ";
-    if (event.invitedUsers) {
-      event.invitedUsers.forEach(async (invitedUser) => {
-        const invitedUserDoc = await userModel.findOne({
-          username: invitedUser,
-        });
-        if (!invitedUserDoc) err += invitedUser + ", ";
-        else {
-          invitedUserDoc.invitedEvents.push(addedEvent._id);
-          await invitedUserDoc.save();
-        }
-      });
-    }
-    if (err !== "Invited users not found: ") throw new Error(err);
-    */
-
-    // generate notifications for all the invited users
-    //await generateNotificationsForEvent(addedEvent, [user]);
-
-    return addedEvent;
-  };
-
   const addNotification = async (user, notification) => {
     if (!user.inobxNotifications) user.inboxNotifications = [];
     user.inboxNotifications.push(notification);
@@ -620,7 +557,6 @@ export async function createDataBase() {
     return events;
   };
 
-
   const getEvent = async (uid, eventid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -638,7 +574,8 @@ export async function createDataBase() {
 
     // Validazione evento
     if (!event.title) throw new Error("Event must have a title");
-    if (!event.dtstart || !event.dtend) throw new Error("Event must have a date");
+    if (!event.dtstart || !event.dtend)
+      throw new Error("Event must have a date");
 
     try {
       // Creazione evento
@@ -649,7 +586,7 @@ export async function createDataBase() {
       await userModel.findByIdAndUpdate(
         uid,
         { $push: { events: addedEvent._id } },
-        { new: true }
+        { new: true },
       );
 
       // Gestione partecipanti
@@ -660,25 +597,32 @@ export async function createDataBase() {
             const updated = await userModel.findByIdAndUpdate(
               participant,
               { $push: { invitedEvents: addedEvent._id } },
-              { new: true }
+              { new: true },
             );
 
             //costruzione della notifica per i partecipanti
-            /*
+
             var payload = {
-              title: "Notifica da Selfie",
-              body: user.username + " ti ha invitato all'evento " + addedEvent.title + "\nClicca il link per accettare l'invito.",
-              URL: `localhost:3000/calendar/partecipat/${addedEvent._id}`,
+              title: "📆 Sei stato invitato a un evento di gruppo",
+              body:
+                "L'utente " +
+                user.username +
+                " ti ha invitato all'evento " +
+                addedEvent.title +
+                "\nClicca qui per accettare l'invito.",
+              link: `/calendar/${addedEvent._id}/${participant}`,
             };
-            const result = sendNotification(participant, payload);
+            const result = sendNotification(updated, payload);
             console.log(result.statusCode);
-            */
 
             if (!updated) {
               console.log(`User not found: ${participant}`);
             } else {
               console.log(`Event added to user: ${participant}`);
-              console.log('Updated participating events:', updated.participatingEvents);
+              console.log(
+                "Updated participating events:",
+                updated.participatingEvents,
+              );
             }
           } catch (err) {
             console.error(`Error updating participant ${participant}:`, err);
@@ -758,10 +702,12 @@ export async function createDataBase() {
     if (!event) throw new Error("Event not found");
 
     // togliere l'evento dalla lista degli eventi dello user
-    const res = await userModel.findByIdAndUpdate(uid, { $pull: { participatingEvents: eventId } });
+    const res = await userModel.findByIdAndUpdate(uid, {
+      $pull: { participatingEvents: eventId },
+    });
 
     return res;
-  }
+  };
 
   // accetto la proposta dell'evento [componente participateevent]
   const participateEvent = async (uid, eventId) => {
@@ -781,7 +727,7 @@ export async function createDataBase() {
     );
     await user.save();
 
-    //devo fare altro per mandare le notifiche dell'evento? 
+    //devo fare altro per mandare le notifiche dell'evento?
     //non credo tanto l'evento c'è già nello user
 
     return user.invitedEvents;
@@ -1212,6 +1158,18 @@ export async function createDataBase() {
     } catch (error) {
       console.error("Error getting inbox:", error);
       throw error;
+    }
+  };
+
+  const deleteInbox = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      user.inbox = [];
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox:", error);
     }
   };
 
@@ -1746,10 +1704,10 @@ export async function createDataBase() {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: { ...msg, sender: sender.username },
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1891,6 +1849,7 @@ export async function createDataBase() {
     addSong,
     addNotificationToInbox,
     getInbox,
+    deleteInbox,
     getNextNotifications,
     getDateTime,
     verifyEmail,

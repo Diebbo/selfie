@@ -21,29 +21,48 @@ export const NotificationsDropdown = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch("/api/users/inbox", {
-          method: "GET",
-          credentials: "include",
-        });
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch("/api/users/inbox", {
+        method: "GET",
+        credentials: "include",
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch notifications");
-        }
-
-        const data = await response.json();
-        setNotifications(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Error fetching notifications",
-        );
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error("Failed to fetch notifications");
       }
-    };
 
+      const data = await response.json();
+      setNotifications(data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error fetching notifications",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      const response = await fetch("/api/users/inbox", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to clear notifications");
+      }
+
+      setNotifications([]); // Aggiorna lo stato locale dopo la cancellazione
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error clearing notifications",
+      );
+    }
+  };
+
+  useEffect(() => {
     fetchNotifications();
   }, []);
 
@@ -69,7 +88,17 @@ export const NotificationsDropdown = () => {
         variant="flat"
         color="success"
       >
-        <DropdownSection title="Notifiche">
+        <DropdownSection title="Notifiche" showDivider>
+          <DropdownItem
+            className="text-danger"
+            color="danger"
+            onClick={handleClearAll}
+          >
+            Clear All
+          </DropdownItem>
+        </DropdownSection>
+
+        <DropdownSection>
           {isLoading ? (
             <DropdownItem>Loading...</DropdownItem>
           ) : error ? (
