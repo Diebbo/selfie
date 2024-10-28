@@ -11,7 +11,11 @@ module.exports = {
     "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      boxShadow: {
+        'light': '0 4px 6px rgba(255, 255, 255, 0.1)', // Ombra chiara per dark mode
+      }
+    },
   },
   darkMode: "class",
   plugins: [nextui(), require("@tailwindcss/typography")],
