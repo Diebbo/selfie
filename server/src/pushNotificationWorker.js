@@ -161,6 +161,7 @@ export async function sendEmailNotification(payload) {
 
 export async function sendNotification(user, payload) {
   try {
+    console.log(`Sending notification to ${user}`);
     if (!payload.title || !payload.body) {
       throw new Error("Title and body are required in the payload");
     }
