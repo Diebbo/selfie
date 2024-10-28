@@ -13,6 +13,7 @@ export default function createUserRouter(db) {
     }
   });
 
+
   router.get("/id", cookieJwtAuth, async (req, res) => {
     try {
       const dbuser = (await db.userService.getById(req.user._id)).toObject();
@@ -31,6 +32,16 @@ export default function createUserRouter(db) {
     try {
       const response = await db.userService.updateGps(req.user._id, req.body);
       return res.status(200).json(response);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
+  router.get("/:id", async (req, res) => {
+    try {
+      const uid = req.params.id;
+      const username = await db.userService.fromIdtoUsername(uid);
+      return res.status(200).json(username);
     } catch (error) {
       return res.status(404).json({ message: error.message });
     }
