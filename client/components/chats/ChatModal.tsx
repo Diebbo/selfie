@@ -43,7 +43,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io("http://site232454.tw.cs.unibo.it:443");
+    socketRef.current = io("https://site232454.tw.cs.unibo.it");
 
     // Join the chat
     socketRef.current.emit("join", {
