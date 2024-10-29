@@ -168,14 +168,6 @@ export const Content = (props: ContentProps) => {
                   >
                     This Week
                   </Button>
-                  <Button
-                    size="sm"
-                    variant={timeFilter === "all" ? "solid" : "flat"}
-                    color="primary"
-                    onClick={() => setTimeFilter("all")}
-                  >
-                    All
-                  </Button>
                 </div>
               </div>
               <div className="overflow-y-hidden hover:overflow-y-auto h-full pr-2 border-t scrollbar-thin">
