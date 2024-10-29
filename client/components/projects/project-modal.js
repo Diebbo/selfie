@@ -23,12 +23,63 @@ class Modal extends HTMLElement {
   }
 
   setupStyle() {
-    const style = document.createElement('link');
-    style.rel = 'stylesheet';
-    style.href = '/styles/modal.css';
-    this.shadowRoot.appendChild(style);
+    this.shadowRoot.innerHTML = `
+      <style>
+
+.modal {
+  position: fixed;
+  inset: 0; /* Imposta top, right, bottom, left a 0 */
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.4); /* bg-black bg-opacity-40 */
+  display: flex;
+  align-items: center; /* items-center */
+  justify-content: center; /* justify-center */
+  display: none; /* hidden */
+  overflow: auto;
+}
+
+.modal-content {
+  background-color: hsl(var(--nextui-content4, 255, 255, 255));  border-radius: 0.5rem; /* rounded-lg */
+  padding: 1.25rem; /* p-5 */
+  width: 80%; /* w-4/5 */
+  max-width: 32rem; /* max-w-lg */
+  margin: 5rem auto; /* mx-auto my-20 */
+}
+
+.modal-header {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 600; /* font-semibold */
+  margin-bottom: 1rem; /* mb-4 */
+}
+
+.modal .close {
+  color: hsl(var(--nextui-grey), 255, 255, 255); /* text-white */
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 700; /* font-bold */
+  float: right;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.modal .close:hover {
+  color: black; /* hover:text-black */
+}
+
+.modal .error-message {
+  color: hsl(var(--nextui-error), 255, 255, 255); /* text-error */
+  font-size: 0.875rem; /* text-sm */
+  margin-top: 0.5rem; /* mt-2 */
+}
+
+.modal h2 {
+  font-size: 1.5rem; /* text-2xl */
+  text-align: center;
+  font-weight: 600; /* font-semibold */
+}
+      </style>
+`;
   }
-    
+
   setupModal() {
     this.setupStyle();
 
@@ -58,11 +109,11 @@ class Modal extends HTMLElement {
     });
   }
 
-  setTitle(t){
+  setTitle(t) {
     this.shadowRoot.getElementById('modalTitle').textContent = t;
   }
 
-  setError(e){
+  setError(e) {
     this.shadowRoot.getElementById('modalError').textContent = e;
   }
 
@@ -86,7 +137,7 @@ class Modal extends HTMLElement {
     }
   }
 
-  handleSave(){
+  handleSave() {
     if (this.onsave) {
       // Dispatch custom event that parent can listen to
       this.dispatchEvent(new CustomEvent('modalSave', {
@@ -101,4 +152,5 @@ class Modal extends HTMLElement {
   }
 }
 
-export default Modal;
+customElements.define('modal-component', Modal);
+
