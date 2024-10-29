@@ -2,7 +2,7 @@
 
 let ioInstance = null;
 
-export function createWebSocket(io, database) {
+export function createWebSocket(io, database, sendNotification) {
   ioInstance = io;
   const activeUsers = new Map(); // Store socket.id -> { userId, username }
   const userSockets = new Map(); // Store userId -> socket.id

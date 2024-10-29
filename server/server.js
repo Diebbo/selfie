@@ -44,7 +44,7 @@ async function startServer() {
     });
 
     // Initialize WebSocket with database access
-    const ws = createWebSocket(io, db);
+    const ws = createWebSocket(io, db, sendNotification);
 
     // Start server
     httpServer.listen(PORT, () => {
