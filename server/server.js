@@ -7,6 +7,8 @@ import { createDataBase } from "./src/database.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { createWebSocket } from "./src/socket.js";
+import { waitForDebugger } from "inspector";
+import createNotificationWorker from "./src/pushNotificationWorker.js";
 
 config();
 
@@ -20,10 +22,13 @@ async function startServer() {
     const db = await createDataBase();
     console.log("server.js: connected to database");
 
+    const sendNotification = createNotificationWorker(db);
+
     // Create Express app
     const app = createApp({
       dirpath: __dirname,
       database: db,
+      sendNotification: sendNotification,
     });
 
     // Create HTTP server
@@ -39,7 +44,7 @@ async function startServer() {
     });
 
     // Initialize WebSocket with database access
-    createWebSocket(io, db);
+    const ws = createWebSocket(io, db, sendNotification);
 
     // Start server
     httpServer.listen(PORT, () => {

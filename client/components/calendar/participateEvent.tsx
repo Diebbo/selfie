@@ -10,10 +10,10 @@ import {
   Button,
   Card,
   CardBody,
-  Chip
+  Chip,
 } from "@nextui-org/react";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import getBaseUrl from "@/config/proxy";
 
 interface ParticipantContentProps {
@@ -21,7 +21,10 @@ interface ParticipantContentProps {
   participantid: string;
 }
 
-const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, participantid }) => {
+const ParticipantContent: React.FC<ParticipantContentProps> = ({
+  eventid,
+  participantid,
+}) => {
   const [isOpen, setIsOpen] = useState(true);
   const [event, setEvent] = useState<SelfieEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
     setIsOpen(false);
     router.refresh();
     router.push("/calendar");
-  }
+  };
 
   useEffect(() => {
     async function fetchEvent() {
@@ -43,7 +46,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           headers: {
             "Content-Type": "application/json",
           },
-          cache: "no-store"
+          cache: "no-store",
         });
 
         if (res.status === 401) {
@@ -56,35 +59,48 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
 
         setEvent(await res.json());
       } catch (error) {
-        console.error('Error fetching event:', error);
+        console.error("Error fetching event:", error);
       } finally {
         setLoading(false);
       }
-    };
+    }
 
     fetchEvent();
   }, [eventid]);
 
-  const handleResponse = async (response: 'accept' | 'decline') => {
+  const handleResponse = async (response: "accept" | "decline") => {
     console.log("dentro handle response");
     try {
       console.log("faccio la post");
       // Implementa la logica per inviare la risposta al server
       const res = await fetch(`/api/events/participate/${eventid}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           participantId: participantid,
           response: response,
         }),
       });
+
+      const link = `/calendar/${eventid}/${participantid}`;
+
+      const del = await fetch(`/api/users/inbox/link`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          link: link,
+        }),
+      });
+
       console.log(await res.json());
 
       handleReturnToCalendar();
     } catch (error) {
-      console.error('Error sending response:', error);
+      console.error("Error sending response:", error);
     }
   };
 
@@ -93,11 +109,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleReturnToCalendar}
-      size="2xl"
-    >
+    <Modal isOpen={isOpen} onClose={handleReturnToCalendar} size="2xl">
       <ModalContent>
         <ModalHeader>
           <h3 className="text-xl font-semibold">{event.title}</h3>
@@ -112,13 +124,15 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
 
                 <div className="flex items-center gap-2">
                   <span>
-                    {new Date(event.dtstart).toLocaleDateString()} - {new Date(event.dtend).toLocaleDateString()}
+                    {new Date(event.dtstart).toLocaleDateString()} -{" "}
+                    {new Date(event.dtend).toLocaleDateString()}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span>
-                    {new Date(event.dtstart).toLocaleTimeString()} - {new Date(event.dtend).toLocaleTimeString()}
+                    {new Date(event.dtstart).toLocaleTimeString()} -{" "}
+                    {new Date(event.dtend).toLocaleTimeString()}
                   </span>
                 </div>
 
@@ -146,14 +160,11 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           <Button
             color="danger"
             variant="light"
-            onPress={() => handleResponse('decline')}
+            onPress={() => handleResponse("decline")}
           >
             Rifiuta
           </Button>
-          <Button
-            color="primary"
-            onPress={() => handleResponse('accept')}
-          >
+          <Button color="primary" onPress={() => handleResponse("accept")}>
             Accetta
           </Button>
         </ModalFooter>
