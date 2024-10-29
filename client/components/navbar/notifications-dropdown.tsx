@@ -10,6 +10,7 @@ import {
 import React, { useEffect, useState, useRef } from "react";
 import { NotificationIcon } from "../icons/navbar/notificationIcon";
 import { io } from "socket.io-client";
+import { ToastNotification } from "./toast-notification";
 
 interface Notification {
   title: string;
@@ -20,6 +21,8 @@ interface Notification {
 export const NotificationsDropdown = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [latestNotification, setLatestNotification] =
+    useState<Notification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
 
@@ -91,6 +94,12 @@ export const NotificationsDropdown = () => {
           (notification: Notification) => {
             console.log("Received new notification", notification);
             setNotifications((prev) => [notification, ...prev]);
+            setLatestNotification(notification);
+
+            // Rimuovi la latest notification dopo alcuni secondi
+            setTimeout(() => {
+              setLatestNotification(null);
+            }, 5000);
           },
         );
 
@@ -144,61 +153,68 @@ export const NotificationsDropdown = () => {
   };
 
   return (
-    <Dropdown placement="bottom-end">
-      <DropdownTrigger>
-        <NavbarItem>
-          <Badge
-            content={notifications.length}
-            color="danger"
-            shape="circle"
-            size="md"
-            className="mr-1 mt-1"
-            isInvisible={notifications.length === 0}
-          >
-            <NotificationIcon />
-          </Badge>
-        </NavbarItem>
-      </DropdownTrigger>
-      <DropdownMenu
-        className="w-60"
-        aria-label="Notifications"
-        variant="flat"
-        color="success"
-      >
-        <DropdownSection title="Notifiche" showDivider>
-          <DropdownItem
-            className="text-danger"
-            color="danger"
-            onClick={handleClearAll}
-          >
-            Clear All
-          </DropdownItem>
-        </DropdownSection>
+    <div className="flex items-center">
+      {latestNotification && (
+        <div className="absolute right-[400px] top-[5rem]">
+          <ToastNotification notification={latestNotification} />
+        </div>
+      )}
+      <Dropdown placement="bottom-end">
+        <DropdownTrigger>
+          <NavbarItem>
+            <Badge
+              content={notifications.length}
+              color="danger"
+              shape="circle"
+              size="md"
+              className="mr-1 mt-1"
+              isInvisible={notifications.length === 0}
+            >
+              <NotificationIcon />
+            </Badge>
+          </NavbarItem>
+        </DropdownTrigger>
+        <DropdownMenu
+          className="w-60"
+          aria-label="Notifications"
+          variant="flat"
+          color="success"
+        >
+          <DropdownSection title="Notifiche" showDivider>
+            <DropdownItem
+              className="text-danger"
+              color="danger"
+              onClick={handleClearAll}
+            >
+              Clear All
+            </DropdownItem>
+          </DropdownSection>
 
-        <DropdownSection>
-          {isLoading ? (
-            <DropdownItem>Loading...</DropdownItem>
-          ) : error ? (
-            <DropdownItem>Error: {error}</DropdownItem>
-          ) : notifications.length === 0 ? (
-            <DropdownItem>No notifications</DropdownItem>
-          ) : (
-            notifications.map((notification, index) => (
-              <DropdownItem
-                key={index}
-                classNames={{
-                  base: "py-2",
-                  title: "text-base font-semibold",
-                }}
-                description={notification.body}
-                href={notification.link}
-              >
-                {notification.title}
-              </DropdownItem>
-            ))
-          )}
-        </DropdownSection>
-      </DropdownMenu>
-    </Dropdown>
+          <DropdownSection>
+            {isLoading ? (
+              <DropdownItem>Loading...</DropdownItem>
+            ) : error ? (
+              <DropdownItem>Error: {error}</DropdownItem>
+            ) : notifications.length === 0 ? (
+              <DropdownItem>No notifications</DropdownItem>
+            ) : (
+              notifications.map((notification, index) => (
+                <DropdownItem
+                  key={index}
+                  classNames={{
+                    base: "py-2",
+                    title: "text-base font-semibold",
+                  }}
+                  description={notification.body}
+                  href={notification.link}
+                >
+                  {notification.title}
+                </DropdownItem>
+              ))
+            )}
+          </DropdownSection>
+        </DropdownMenu>
+      </Dropdown>
+    </div>
   );
 };
