@@ -16,21 +16,22 @@ class ProjectCard extends HTMLElement {
   setupStyle() {
     this.shadowRoot.innerHTML = `
       <style>
-.project-card {
-    padding: 1.25rem; /* p-5 */
-    border-radius: 0.5rem; /* rounded-lg */
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* shadow-xl */
-    background-color: hsl(var(--nextui-secondary-100)); /* bg-secondary-100 */
-}
+      .project-card {
+        min-width: 300px;
+        padding: 1.25rem; 
+        border-radius: 0.5rem; 
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); 
+        background-color: hsl(var(--nextui-secondary-100)); 
+      }
 
-.project-card .title {
-    margin-top: 0; /* mt-0 */
-    color: hsl(var(--nextui-secondary)); /* text-secondary */
-    font-weight: 600; /* font-semibold */
-    font-size: 1.5rem; /* text-2xl */
-}
+      .project-card .title {
+        margin-top: 0; 
+        color: hsl(var(--nextui-secondary)); 
+        font-weight: 600; 
+        font-size: 1.5rem; 
+      }
 
-.gantt-chart {
+      .gantt-chart {
           background-color: hsl(var(--nextui-gantt-bg-color));
           padding: 0.625rem; 
           display: flex;
@@ -57,31 +58,35 @@ class ProjectCard extends HTMLElement {
           flex-shrink: 0;
           border-right: 1px solid hsl(var(--nextui-default-400));
           text-align: center;
-          padding: 0.5rem; /* Adding some padding */
+          padding: 0.5rem; 
           font-size: 0.75rem;
           color: hsl(var(--nextui-text-color));
-    min-width: 30px; /* min-w-[40px] */
-    height: 20px; /* h-[30px] */
+          min-width: 30px; 
+          height: 20px; 
+          transition: background-color 0.3s ease; 
       }
 
       .overlay-gantt .gantt-cell:last-child {
-          border-right: none; /* Remove border on last cell */
+          border-right: none; 
+      }
+
+      .gantt-task-cell {
+        position: relative;
       }
 
       .gantt-task-cell.completed {
           background-color: hsl(var(--nextui-success)); 
       }
-
-      .gantt-task-cell.partial-completed {
+            .gantt-task-cell.partial-completed {
           background-color: hsl(var(--nextui-warning)); 
       }
 
       .gantt-task-cell.pending {
-          background-color: #2d3748; 
+          background-color: hsl(var(--nextui-primary-50));
       }
 
       .gantt-task-cell.passed {
-          background-color: #ecc94b;
+          background-color: hsl(var(--nextui-danger));
       }
 
       .task-title {
@@ -95,20 +100,45 @@ class ProjectCard extends HTMLElement {
           flex-shrink: 0;
           display: flex;
           align-items: center; /* Center content vertically */
+          overflow-y: hidden;
       }
 
-      .task-info:hover {
+      .task-info:hover, .task-info:active {
           cursor: pointer; 
           color: #3182ce; 
       }
 
       /* Responsive adjustments */
       @media (max-width: 768px) {
-          
+          .gantt-cell {
+              font-size: 0.625rem; 
+          }
+          .task-info {
+            max-width: 100px;
+            overflow-x: auto;
+          }
 
       }
 .subactivity {
     margin-left: 1.25rem; 
+}
+
+.tooltip {
+  position: absolute;
+  background: hsl(var(--nextui-default-100));
+  color: hsl(var(--nextui-foreground));
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tooltip.visible {
+  opacity: 1;
 }
 
 .days-column {
@@ -185,6 +215,15 @@ class ProjectCard extends HTMLElement {
     align-items: center; 
     justify-content: space-between; 
 } 
+      .edit-button { /* bg transparent */
+        background-color: transparent;
+        color: white; 
+        padding: 0.375rem 0.625rem; 
+        border: none; 
+        cursor: pointer; 
+        border-radius: 0.375rem; 
+        margin-right: 5px;
+      }
       </style>
     `;
   }
@@ -263,27 +302,38 @@ class ProjectCard extends HTMLElement {
     const deleteProjectBtn = this.shadowRoot.querySelector("#delete-proj");
     const deleteActivityBtn = form.querySelector('#delete-activity');
 
-    // Event delegation for task name and completion toggle
-    const ganttChart = this.shadowRoot.querySelector('.gantt-chart');
-    ganttChart.addEventListener('click', (event) => {
-      const taskNameCell = event.target.closest('.task-name');
-      const taskCell = event.target.closest('.gantt-task-cell');
+    const ganttCells = this.shadowRoot.querySelectorAll('.gantt-task-cell');
+    ganttCells.forEach(cell => {
+      cell.addEventListener('click', (e) => {
+        const activityId = cell.parentElement.dataset.activityId;
+        this.toggleActivityCompletion(activityId, project);
+      });
+      cell.addEventListener('mouseover', (e) => {
+        // make background color lighter
+        e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        e.target.style.cursor = 'pointer';
+      });
+      cell.addEventListener('mouseout', (e) => {
+        e.target.style.backgroundColor = '';
+      });
+    });
 
-      if (taskNameCell) {
-        const taskId = taskNameCell.getAttribute('data-activity-id');
-        if (taskId) {
-          this.openModal(taskId, project, false);
-        }
-      } else if (taskCell) {
-        const row = taskCell.closest('.gantt-row');
-        if (row) {
-          const taskNameCell = row.querySelector('.task-name');
-          const taskId = taskNameCell?.getAttribute('data-activity-id');
-          if (taskId) {
-            this.toggleActivityCompletion(taskId, project);
-          }
-        }
+    const editButtons = this.shadowRoot.querySelectorAll('.edit-button');
+    editButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation(); // Previene il bubbling dell'evento
+        const activityId = button.closest('.gantt-row').dataset.activityId;
+        this.openModal(activityId, project, false);
+      });
+    });
+
+    const infoCells = this.shadowRoot.querySelectorAll('.task-info');
+    infoCells.forEach(cell => {
+      cell.addEventListener('click', (e) => {
+        const activityId = cell.parentElement.dataset.activityId;
+        this.openModal(activityId, project, false);
       }
+      );
     });
 
     addActivityBtn.addEventListener('click', () => {
@@ -313,6 +363,8 @@ class ProjectCard extends HTMLElement {
 
 
     form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
+
+    this.setupTooltips();
   }
 
   addError(message) {
@@ -533,13 +585,13 @@ class ProjectCard extends HTMLElement {
     console.log(rowsHtml);
     const fixedGanttRows = rowsHtml.map(
       (row) => {
-        return `<div class="gantt-row">${row.rowHtml.fixedHtml}</div>` +
-        row?.subActivitiesHtml?.map(subActivity => `<div class="gantt-row">${subActivity.rowHtml.fixedHtml}</div>`).join('');
+        return row.rowHtml.fixedHtml +
+          row?.subActivitiesHtml?.map(subActivity => subActivity.rowHtml.fixedHtml).join('');
       }).join('');
     const overlayGanttRows = rowsHtml.map(
       (row) => {
-        return `<div class="gantt-row">${row.rowHtml.overlayHtml}</div>` +
-        row?.subActivitiesHtml?.map(subActivity => `<div class="gantt-row">${subActivity.rowHtml.overlayHtml}</div>`).join('');
+        return row.rowHtml.overlayHtml +
+          row?.subActivitiesHtml?.map(subActivity => subActivity.rowHtml.overlayHtml).join('');
       }).join('');
 
     return `
@@ -635,11 +687,19 @@ class ProjectCard extends HTMLElement {
 
     const rowHtml = {
       fixedHtml: `
-        <div class="gantt-cell task-info task-name" data-activity-id="${activity._id}">
+      <div class="gantt-row" data-activity-id="${activity._id}">
+        <div class="gantt-cell task-info task-name">
+          <button class="edit-button" title="Edit activity">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>
+          </button>
           ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.name}
         </div>
+      </div>
               `,
       overlayHtml: `
+      <div class="gantt-row" data-activity-id="${activity._id}">
         <div class="gantt-cell days-column">${duration}</div>
         <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
@@ -653,20 +713,57 @@ class ProjectCard extends HTMLElement {
         const activityEndTimestamp = activityEnd.getTime();
 
         if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-          return `<div class="gantt-cell ${completionStatus} gantt-task-cell "></div>`;
+          const statusText = completionStatus === 'completed' ? 'Completed' :
+            completionStatus === 'partial-completed' ? 'Partially Completed' :
+              completionStatus === 'pending' ? 'In Progress' : 'Not Started';
+          return `<div class="gantt-task-cell gantt-cell ${completionStatus}" 
+                 data-activity-name="${activity.name}"
+                 data-status="${statusText}"></div>`;
         }
         return '<div class="gantt-cell"></div>';
       }).join('')
         }
+      </div>
   `};
 
     const subActivitiesHtml = activity.subActivities
-        ? activity.subActivities.map(subActivity => this.renderGanttRow(subActivity, days, startDate, level + 1, activity))
-        : [];    
+      ? activity.subActivities.map(subActivity => this.renderGanttRow(subActivity, days, startDate, level + 1, activity))
+      : [];
 
     return { rowHtml, subActivitiesHtml };
   }
 
+  setupTooltips() {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    this.shadowRoot.appendChild(tooltip);
+
+    const taskCells = this.shadowRoot.querySelectorAll('.gantt-task-cell');
+
+    taskCells.forEach(cell => {
+      cell.addEventListener('mouseover', (e) => {
+        const activityName = cell.dataset.activityName;
+        const status = cell.dataset.status;
+        tooltip.textContent = `${activityName}: ${status}`;
+
+        // Posiziona il tooltip
+        // using the mouse coordinates
+        const cords = cell.getBoundingClientRect();
+        const sideBarOff = window.innerWidth > 768 ? 200 : 0;
+        const x = cords.left + window.scrollX - sideBarOff;
+        const y = cords.top + window.scrollY;
+        console.log(x, y);
+        tooltip.style.left = `${x + 10}px`;
+        tooltip.style.top = `${y + 20}px`;
+
+        tooltip.classList.add('visible');
+      });
+
+      cell.addEventListener('mouseout', () => {
+        tooltip.classList.remove('visible');
+      });
+    });
+  }
 
   getDaysBetween(start, end) {
     const days = [];
