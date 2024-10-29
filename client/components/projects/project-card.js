@@ -7,18 +7,191 @@ class ProjectCard extends HTMLElement {
     this.user = null;
     this.project = null;
 
-    const modalStyleLink = document.createElement('link');
-    modalStyleLink.href = '/styles/modal.css';
-    modalStyleLink.rel = 'stylesheet';
-    shadow.appendChild(modalStyleLink);
-
-    const ganttStyleLink = document.createElement('link');
-    ganttStyleLink.href = '/styles/gantt.css';
-    ganttStyleLink.rel = 'stylesheet';
-    shadow.appendChild(ganttStyleLink);
+    this.setupStyle();
     shadow.appendChild(wrapper);
 
     this._modal = null;
+  }
+
+  setupStyle() {
+    this.shadowRoot.innerHTML = `
+      <style>
+.project-card {
+    padding: 1.25rem; /* p-5 */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* shadow-xl */
+    background-color: hsl(var(--nextui-secondary-100)); /* bg-secondary-100 */
+}
+
+.project-card .title {
+    margin-top: 0; /* mt-0 */
+    color: hsl(var(--nextui-secondary)); /* text-secondary */
+    font-weight: 600; /* font-semibold */
+    font-size: 1.5rem; /* text-2xl */
+}
+
+.gantt-chart {
+    overflow-x: auto; /* overflow-x-auto */
+    margin-top: 1.25rem; /* mt-5 */
+    background-color: hsl(var(--nextui-gantt-bg-color)); /* bg-[var(--gantt-bg-color)] */
+    border-radius: 0.375rem; /* rounded-md */
+    padding: 0.625rem; /* p-2.5 */
+}
+
+.gantt-cell {
+    display: flex;
+    flex: 1;
+    min-width: 40px; /* min-w-[40px] */
+    height: 30px; /* h-[30px] */
+    border-right: 1px solid hsl(var(--nextui-default-400)); /* border-r border-default-400 */
+    text-align: center; /* text-center */
+    font-size: 0.75rem; /* text-xs */
+    color: hsl(var(--nextui-text-color)); /* text-[var(--text-color)] */
+    align-items: center; /* flex items-center */
+    justify-content: center; /* justify-center */
+    padding: 0; /* p-0 */
+    margin: 0 !important; /* margin: 0 !important; */
+}
+
+.gantt-task-cell:hover {
+    background-color: hsl(var(--nextui-hover-bg-color)); /* bg-[var(--hover-bg-color)] */
+}
+
+.title {
+    color: hsl(var(--nextui-title-color)); /* text-[var(--title-color)] */
+}
+
+.gantt-header,
+.gantt-row {
+    display: flex; /* flex */
+}
+
+.gantt-header {
+    font-weight: bold; /* font-bold */
+}
+
+.gantt-cell:last-child {
+    border-right: none; /* border-r-0 */
+}
+
+.gantt-task {
+    background-color: #38a169; /* bg-green-600 */
+    height: 20px; /* h-[20px] */
+    border-radius: 0.375rem; /* rounded-md */
+}
+
+.gantt-task-cell.completed {
+    background-color: hsl(var(--nextui-success)); /* bg-success */
+}
+
+.gantt-task-cell.partial-completed {
+    background-color: hsl(var(--nextui-warning)); /* bg-warning */
+}
+
+.gantt-task-cell.pending {
+    background-color: #2d3748; /* bg-primary-800 */
+}
+
+.gantt-task-cell.passed {
+    background-color: #ecc94b; /* bg-yellow-500 */
+}
+
+.gantt-task-cell.child-completed {
+    background-color: hsl(var(--nextui-success)); /* bg-success */
+}
+
+.task-info {
+    min-width: 200px; /* min-w-[200px] */
+    max-width: 200px; /* max-w-[200px] */
+    padding-right: 0.625rem; /* pr-2.5 */
+    justify-content: flex-start; /* justify-start */
+}
+
+.task-info:hover {
+    cursor: pointer; /* cursor-pointer */
+    color: #3182ce; /* text-blue-600 */
+}
+
+.subactivity {
+    margin-left: 1.25rem; /* ml-5 */
+}
+
+.days-column {
+    min-width: 50px; /* min-w-[50px] */
+    max-width: 50px; /* max-w-[50px] */
+}
+
+.start-date-column,
+.end-date-column {
+    min-width: 80px; /* min-w-[80px] */
+    max-width: 80px; /* max-w-[80px] */
+}
+
+.participants-column {
+    min-width: 150px; /* min-w-[150px] */
+    max-width: 150px; /* max-w-[150px] */
+    overflow: hidden; /* overflow-hidden */
+}
+
+.success {
+    background-color: #38a169; /* bg-green-600 */
+}
+
+.add-activity-btn {
+    background-color: hsl(var(--nextui-success)); /* bg-success */
+    color: white; /* text-white */
+    padding: 0.5rem; /* p-2 */
+    border: none; /* border-none */
+    cursor: pointer; /* cursor-pointer */
+    margin-top: 0.625rem; /* mt-2.5 */
+    border-radius: 0.375rem; /* rounded-md */
+}
+
+.parent-activity-select {
+    width: 100%; /* w-full */
+    padding: 0.5rem; /* p-2 */
+    margin: 0.5rem 0; /* my-2 */
+    box-sizing: border-box; /* box-border */
+}
+
+.delete {
+    background-color: hsl(var(--nextui-danger)); /* bg-error */
+    color: white; /* text-white */
+    padding: 0.375rem 0.625rem; /* py-1.5 px-2.5 */
+    border: none; /* border-none */
+    cursor: pointer; /* cursor-pointer */
+    border-radius: 0.375rem; /* rounded-md */
+    float: right; /* float-right */
+}
+
+#activityForm input,
+#activityForm textarea {
+    width: 100%; /* w-full */
+    padding: 0.5rem; /* p-2 */
+    margin: 0.5rem 0; /* my-2 */
+    box-sizing: border-box; /* box-border */
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid #e2e8f0; /* border border-gray-200 */
+    outline: none; /* focus:outline-none */
+    transition: ring-2 0.2s ease-in-out; /* focus:ring-2 focus:ring-primary */
+}
+
+#activityForm button {
+    color: white; /* text-white */
+    padding: 0.625rem 1rem; /* py-2.5 px-4 */
+    border: none; /* border-none */
+    cursor: pointer; /* cursor-pointer */
+    margin-top: 0.625rem; /* mt-2.5 */
+    border-radius: 0.375rem; /* rounded-md */
+}
+
+.header-inline {
+    display: flex; /* flex */
+    align-items: center; /* items-center */
+    justify-content: space-between; /* justify-between */
+}
+      </style>
+    `;
   }
 
   connectedCallback() {
@@ -95,28 +268,28 @@ class ProjectCard extends HTMLElement {
     const deleteProjectBtn = this.shadowRoot.querySelector("#delete-proj");
     const deleteActivityBtn = form.querySelector('#delete-activity');
 
-// Event delegation for task name and completion toggle
-  const ganttChart = this.shadowRoot.querySelector('.gantt-chart');
-  ganttChart.addEventListener('click', (event) => {
-    const taskNameCell = event.target.closest('.task-name');
-    const taskCell = event.target.closest('.gantt-task-cell');
-    
-    if (taskNameCell) {
-      const taskId = taskNameCell.getAttribute('data-activity-id');
-      if (taskId) {
-        this.openModal(taskId, project, false);
-      }
-    } else if (taskCell) {
-      const row = taskCell.closest('.gantt-row');
-      if (row) {
-        const taskNameCell = row.querySelector('.task-name');
-        const taskId = taskNameCell?.getAttribute('data-activity-id');
+    // Event delegation for task name and completion toggle
+    const ganttChart = this.shadowRoot.querySelector('.gantt-chart');
+    ganttChart.addEventListener('click', (event) => {
+      const taskNameCell = event.target.closest('.task-name');
+      const taskCell = event.target.closest('.gantt-task-cell');
+
+      if (taskNameCell) {
+        const taskId = taskNameCell.getAttribute('data-activity-id');
         if (taskId) {
-          this.toggleActivityCompletion(taskId, project);
+          this.openModal(taskId, project, false);
+        }
+      } else if (taskCell) {
+        const row = taskCell.closest('.gantt-row');
+        if (row) {
+          const taskNameCell = row.querySelector('.task-name');
+          const taskId = taskNameCell?.getAttribute('data-activity-id');
+          if (taskId) {
+            this.toggleActivityCompletion(taskId, project);
+          }
         }
       }
-    }
-  });
+    });
 
     addActivityBtn.addEventListener('click', () => {
       this.openModal(null, project, true);
@@ -485,4 +658,4 @@ class ProjectCard extends HTMLElement {
   }
 }
 
-export default ProjectCard;
+customElements.define('project-card', ProjectCard);

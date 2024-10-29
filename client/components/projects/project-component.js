@@ -1,3 +1,4 @@
+// project-component.js
 class ProjectComponent extends HTMLElement {
   constructor() {
     super();
@@ -22,10 +23,83 @@ class ProjectComponent extends HTMLElement {
 
   // Inject Tailwind styles into shadow DOM
   setupStyle() {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/styles/project.css';
-    this.shadowRoot.appendChild(link);
+    this.shadowRoot.innerHTML = `
+      <style>
+:host {
+  display: block;
+  font-family: var(--font-sans, system-ui, sans-serif); /* Fonte definita */
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem; /* mt-5 */
+}
+
+.navigation button {
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  margin-left: 0.25rem; /* mx-1 */
+  margin-right: 0.25rem;
+  cursor: pointer;
+  background-color: var(--tw-color-secondary, #3490dc); /* bg-secondary */
+  color: white;
+  border: none;
+  border-radius: 0.375rem; /* rounded-md */
+  font-size: 0.875rem; /* text-sm */
+  margin-left: 0.625rem; /* ml-2.5 */
+  transition: background-color 0.2s ease;
+}
+
+.navigation button:hover {
+  background-color: var(--tw-color-primary-600, #2563eb); /* hover:bg-primary-600 */
+}
+
+.navigation button:disabled {
+  background-color: #d1d5db; /* disabled:bg-gray-300 */
+  cursor: not-allowed;
+}
+
+#newProject {
+  background-color: var(--tw-color-primary, #4f46e5); /* bg-primary */
+}
+
+#projectForm input,
+#projectForm textarea {
+  width: 100%;
+  padding: 0.5rem; /* p-2 */
+  margin-top: 0.5rem; /* my-2 */
+  margin-bottom: 0.5rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+#projectForm input:focus,
+#projectForm textarea:focus {
+  box-shadow: 0 0 0 2px var(--tw-ring-primary, #3b82f6); /* focus:ring-primary */
+}
+
+#projectForm button {
+  color: white;
+  padding: 0.625rem 1rem; /* py-2.5 px-4 */
+  border: none;
+  cursor: pointer;
+  margin-top: 0.625rem; /* mt-2.5 */
+  border-radius: 0.375rem; /* rounded-md */
+}
+
+.success {
+  background-color: var(--tw-color-success, #10b981); /* bg-success */
+  transition: background-color 0.2s ease;
+}
+
+.success:hover {
+  background-color: var(--tw-color-success-600, #047857); /* hover:bg-success-600 */
+}
+      </style>
+    `;
   }
 
 
@@ -214,5 +288,4 @@ class ProjectComponent extends HTMLElement {
   }
 }
 
-
-export default ProjectComponent;
+customElements.define('project-component', ProjectComponent);
