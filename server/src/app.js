@@ -21,7 +21,7 @@ import createChatRouter from "./routes/chat.js";
 import { createFriendRouter } from "./routes/friend.js";
 import createUserRouter from "./routes/user.js";
 
-export function createApp({ dirpath, database }) {
+export function createApp({ dirpath, database, sendNotification }) {
   // loading environment variables
   dotenv.config();
 
@@ -41,7 +41,7 @@ export function createApp({ dirpath, database }) {
   app.use("/api/", indexRouter);
   app.use("/api/auth", createAuthRouter(database));
   app.use("/api/config", createTimeRouter(database));
-  app.use("/api/events", createCalendarRouter(database));
+  app.use("/api/events", createCalendarRouter(database, sendNotification));
   app.use("/api/notes", createNoteRouter(database));
   app.use("/api/projects", createProjectRouter(database));
   app.use("/api/pomodoro", createPomodoroRouter(database));
