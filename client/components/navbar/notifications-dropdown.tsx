@@ -11,8 +11,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { NotificationIcon } from "../icons/navbar/notificationIcon";
 import { io } from "socket.io-client";
 import { ToastNotification } from "./toast-notification";
+import { CloseIcon } from "../icons/close-icon";
 
 interface Notification {
+  _id: string;
   title: string;
   body: string;
   link: string;
@@ -39,6 +41,7 @@ export const NotificationsDropdown = () => {
       }
 
       const data = await response.json();
+
       setNotifications(data);
     } catch (err) {
       setError(
@@ -78,7 +81,7 @@ export const NotificationsDropdown = () => {
         console.log("id", user._id);
 
         // Inizializza la connessione socket
-        socketRef.current = io("http://localhost:8000");
+        socketRef.current = io("https://site232454.tw.cs.unibo.it");
         console.log("Connected to socket notification server");
 
         socketRef.current.on("connect", () => {
@@ -152,14 +155,36 @@ export const NotificationsDropdown = () => {
     }
   };
 
+  const handleDeleteOne = async (notification: Notification) => {
+    try {
+      const response = await fetch(`/api/users/inbox/${notification._id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete notification");
+      }
+
+      setNotifications((prev) =>
+        prev.filter((n) => n._id !== notification._id),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error deleting notification",
+      );
+    }
+  };
+
   return (
     <div className="flex items-center">
       {latestNotification && (
-        <div className="absolute right-[400px] top-[5rem]">
-          <ToastNotification notification={latestNotification} />
-        </div>
+        <ToastNotification notification={latestNotification} />
       )}
-      <Dropdown placement="bottom-end">
+      <Dropdown
+        className="overflow-y-auto scrollbar-hide"
+        placement="bottom-end"
+      >
         <DropdownTrigger>
           <NavbarItem>
             <Badge
@@ -175,7 +200,7 @@ export const NotificationsDropdown = () => {
           </NavbarItem>
         </DropdownTrigger>
         <DropdownMenu
-          className="w-60"
+          className="w-80 max-h-[40vh] "
           aria-label="Notifications"
           variant="flat"
           color="success"
@@ -201,14 +226,31 @@ export const NotificationsDropdown = () => {
               notifications.map((notification, index) => (
                 <DropdownItem
                   key={index}
-                  classNames={{
-                    base: "py-2",
-                    title: "text-base font-semibold",
+                  className="px-2 py-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = notification.link;
                   }}
-                  description={notification.body}
-                  href={notification.link}
+                  closeOnSelect={false}
                 >
-                  {notification.title}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-grow">
+                      <div className="font-semibold">{notification.title}</div>
+                      <div className="text-sm text-default-500">
+                        {notification.body}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteOne(notification);
+                      }}
+                      className="p-1 rounded-full hover:bg-default-200 transition-colors"
+                    >
+                      <CloseIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                 </DropdownItem>
               ))
             )}

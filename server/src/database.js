@@ -1167,6 +1167,33 @@ export async function createDataBase() {
     }
   };
 
+  const deleteInboxById = async (uid, id) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      user.inbox = user.inbox.filter((notification) => notification._id != id);
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox by ID:", error);
+    }
+  };
+
+  const deleteInboxByLink = async (uid, link) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      console.log(user.inbox);
+      user.inbox = user.inbox.filter(
+        (notification) => notification.link != link,
+      );
+      console.log("deleted");
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox by link:", error);
+    }
+  };
+
   const getNextNotifications = async () => {
     const users = await userModel.find({});
     let notifications = { email: [], pushNotification: [] };
@@ -1844,6 +1871,8 @@ export async function createDataBase() {
     addNotificationToInbox,
     getInbox,
     deleteInbox,
+    deleteInboxById,
+    deleteInboxByLink,
     getNextNotifications,
     getDateTime,
     verifyEmail,
