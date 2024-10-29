@@ -43,12 +43,8 @@ interface ContentProps {
 
 export const Content = (props: ContentProps) => {
   const [friends, setFriends] = useState<People>(props.friends);
-  const [createdEventsFilter, setCreatedEventsFilter] = useState<
-    "today" | "week" | "all"
-  >("all");
-  const [participatingEventsFilter, setParticipatingEventsFilter] = useState<
-    "today" | "week" | "all"
-  >("all");
+  const [eventType, setEventType] = useState<"your" | "group">("your");
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("all");
   const { position, error } = useGeolocation();
 
   useEffect(() => {
@@ -134,113 +130,75 @@ export const Content = (props: ContentProps) => {
       <div className="flex justify-center gap-5 pt-4 px-4 xl:px-3 2xl:px-5 flex-wrap xl:flex-nowrap max-w-[100rem] mx-auto w-full">
         <div className="mt-6 gap-6 flex flex-col w-full">
           {/* Card Section Top */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div className="flex flex-col border rounded-lg p-4 h-[500px]">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">Your Events</h3>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    variant={createdEventsFilter === "today" ? "solid" : "flat"}
+                    variant={eventType === "your" ? "solid" : "flat"}
                     color="primary"
-                    onClick={() => setCreatedEventsFilter("today")}
+                    onClick={() => setEventType("your")}
+                  >
+                    Your Events
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={eventType === "group" ? "solid" : "flat"}
+                    color="primary"
+                    onClick={() => setEventType("group")}
+                  >
+                    Group Events
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={timeFilter === "today" ? "solid" : "flat"}
+                    color="primary"
+                    onClick={() => setTimeFilter("today")}
                   >
                     Today
                   </Button>
                   <Button
                     size="sm"
-                    variant={createdEventsFilter === "week" ? "solid" : "flat"}
+                    variant={timeFilter === "week" ? "solid" : "flat"}
                     color="primary"
-                    onClick={() => setCreatedEventsFilter("week")}
+                    onClick={() => setTimeFilter("week")}
                   >
                     This Week
                   </Button>
                   <Button
                     size="sm"
-                    variant={createdEventsFilter === "all" ? "solid" : "flat"}
+                    variant={timeFilter === "all" ? "solid" : "flat"}
                     color="primary"
-                    onClick={() => setCreatedEventsFilter("all")}
+                    onClick={() => setTimeFilter("all")}
                   >
                     All
                   </Button>
                 </div>
               </div>
-              <div className="overflow-y-hidden hover:overflow-y-scroll h-full pr-2 border-t scrollbar-thin">
-                {" "}
-                {/* h-full invece di flex-1 */}
+              <div className="overflow-y-hidden hover:overflow-y-auto h-full pr-2 border-t scrollbar-thin">
                 <div className="grid grid-cols-2 gap-4 pt-4">
-                  {Array.isArray(props.events.created) &&
-                  filterEvents(props.events.created, createdEventsFilter)
-                    .length > 0 ? ( // Applica filterEvents qui
-                    filterEvents(props.events.created, createdEventsFilter).map(
-                      // E qui
-                      (event: SelfieEvent, index: number) => (
-                        <EventCard data={event} theme={index} key={index} />
-                      ),
-                    )
-                  ) : (
-                    <div className="text-success">
-                      No events for this period
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col border rounded-lg p-4 h-[500px]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">Your Events</h3>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant={
-                      participatingEventsFilter === "today" ? "solid" : "flat"
-                    }
-                    color="primary"
-                    onClick={() => setParticipatingEventsFilter("today")}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={
-                      participatingEventsFilter === "week" ? "solid" : "flat"
-                    }
-                    color="primary"
-                    onClick={() => setParticipatingEventsFilter("week")}
-                  >
-                    This Week
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={
-                      participatingEventsFilter === "all" ? "solid" : "flat"
-                    }
-                    color="primary"
-                    onClick={() => setParticipatingEventsFilter("all")}
-                  >
-                    All
-                  </Button>
-                </div>
-              </div>
-              <div className="overflow-y-auto h-full pr-2 border-t">
-                {" "}
-                {/* h-full invece di flex-1 */}
-                <div className="grid grid-cols-1 gap-4 pt-4">
-                  {Array.isArray(props.events.participating) &&
+                  {Array.isArray(
+                    eventType === "your"
+                      ? props.events.created
+                      : props.events.participating,
+                  ) &&
                   filterEvents(
-                    props.events.participating,
-                    participatingEventsFilter,
-                  ).length > 0 ? ( // Applica filterEvents qui
+                    eventType === "your"
+                      ? props.events.created
+                      : props.events.participating,
+                    timeFilter,
+                  ).length > 0 ? (
                     filterEvents(
-                      props.events.participating,
-                      participatingEventsFilter,
-                    ).map(
-                      // E qui
-                      (event: SelfieEvent, index: number) => (
-                        <EventCard data={event} theme={index} key={index} />
-                      ),
-                    )
+                      eventType === "your"
+                        ? props.events.created
+                        : props.events.participating,
+                      timeFilter,
+                    ).map((event: SelfieEvent, index: number) => (
+                      <EventCard data={event} theme={index} key={index} />
+                    ))
                   ) : (
                     <div className="text-success">
                       No events for this period
@@ -249,16 +207,46 @@ export const Content = (props: ContentProps) => {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 max-w-[500px]">
-            <PomodoroStatistics stats={props.pomodoro} />
+
+            <div className="flex flex-col gap-4">
+              <div className="bg-default-100 shadow-lg rounded-2xl p-4 h-[500px] flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-semibold text-foreground-900">
+                    Notes Preview
+                  </h3>
+                  <Link
+                    href="/notes"
+                    as={NextLink}
+                    color="primary"
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    View All
+                  </Link>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-thin">
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {props.notes?.map((note) => (
+                        <NoteCard
+                          key={note._id}
+                          note={note}
+                          onClick={() => {}}
+                          onDelete={() => {}}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Notes Preview</h3>
+          {/* Table Of Projects */}
+          <div className="flex flex-col justify-center w-full px-4 lg:px-0 max-w-[90rem] gap-2">
+            <div className="flex  flex-wrap justify-between">
+              <h3 className="text-center text-xl font-semibold">Projects</h3>
               <Link
-                href="/notes"
+                href="/projects"
                 as={NextLink}
                 color="primary"
                 className="cursor-pointer"
@@ -266,33 +254,25 @@ export const Content = (props: ContentProps) => {
                 View All
               </Link>
             </div>
-            <div className="bg-default-100 shadow-lg rounded-2xl p-6">
-              <div className="h-[350px] overflow-y-auto grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {props.notes?.map((note) => (
-                  <NoteCard
-                    key={note._id}
-                    note={note}
-                    onClick={() => {}} // Gestisci il click se necessario
-                    onDelete={() => {}} // Gestisci l'eliminazione se necessario
-                  />
-                ))}
-              </div>
-            </div>
+            <ProjectTable projects={props.projects} creator={props.user} />
           </div>
 
-          {/* Chart */}
-          <div className="h-full flex flex-col gap-2">
+          {/* <div className="h-full flex flex-col gap-2">
             <h3 className="text-xl font-semibold">Calendar</h3>
             <div className="w-full bg-default-50 shadow-lg rounded-2xl p-6 ">
-              {/* <Chart /> */}
+
               TODO
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Left Section */}
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <WeatherCard position={position} />
+          <div className="grid grid-cols-1 mt-1 max-w-[500px]">
+            <PomodoroStatistics stats={props.pomodoro} />
+          </div>
+
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardFriends
@@ -313,23 +293,7 @@ export const Content = (props: ContentProps) => {
         </div>
       )}
 
-      {/* Table Of Projects */}
-      <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
-        <div className="flex  flex-wrap justify-between">
-          <h3 className="text-center text-xl font-semibold">Projects</h3>
-          <Link
-            href="/projects"
-            as={NextLink}
-            color="primary"
-            className="cursor-pointer"
-          >
-            View All
-          </Link>
-        </div>
-        <ProjectTable projects={props.projects} creator={props.user} />
-      </div>
-
-      {/* Table Latest Users */}
+      {/*
       <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
         <div className="flex  flex-wrap justify-between">
           <h3 className="text-center text-xl font-semibold">Latest Users</h3>
@@ -343,7 +307,7 @@ export const Content = (props: ContentProps) => {
           </Link>
         </div>
         <TableWrapper />
-      </div>
+        </div>Table Latest Users */}
     </div>
   );
 };
