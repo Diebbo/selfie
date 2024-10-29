@@ -31,165 +31,160 @@ class ProjectCard extends HTMLElement {
 }
 
 .gantt-chart {
-    overflow-x: auto; /* overflow-x-auto */
-    margin-top: 1.25rem; /* mt-5 */
-    background-color: hsl(var(--nextui-gantt-bg-color)); /* bg-[var(--gantt-bg-color)] */
-    border-radius: 0.375rem; /* rounded-md */
-    padding: 0.625rem; /* p-2.5 */
-}
+          background-color: hsl(var(--nextui-gantt-bg-color));
+          padding: 0.625rem; 
+          display: flex;
+          flex-flow: row nowrap;
+      }
 
-.gantt-cell {
-    display: flex;
-    flex: 1;
-    min-width: 40px; /* min-w-[40px] */
-    height: 30px; /* h-[30px] */
-    border-right: 1px solid hsl(var(--nextui-default-400)); /* border-r border-default-400 */
-    text-align: center; /* text-center */
-    font-size: 0.75rem; /* text-xs */
-    color: hsl(var(--nextui-text-color)); /* text-[var(--text-color)] */
-    align-items: center; /* flex items-center */
-    justify-content: center; /* justify-center */
-    padding: 0; /* p-0 */
-    margin: 0 !important; /* margin: 0 !important; */
-}
+      .overlay-gantt {
+        overflow-x: auto;
+      }
 
-.gantt-task-cell:hover {
-    background-color: hsl(var(--nextui-hover-bg-color)); /* bg-[var(--hover-bg-color)] */
-}
+      .fixed-gantt,
+      .overlay-gantt {
+          display: flex;
+          flex-direction: column;
+      }
 
-.title {
-    color: hsl(var(--nextui-title-color)); /* text-[var(--title-color)] */
-}
+      .gantt-header,
+      .gantt-row {
+          display: flex;
+          align-items: center;
+      }
 
-.gantt-header,
-.gantt-row {
-    display: flex; /* flex */
-}
+      .gantt-cell {
+          flex-shrink: 0;
+          border-right: 1px solid hsl(var(--nextui-default-400));
+          text-align: center;
+          padding: 0.5rem; /* Adding some padding */
+          font-size: 0.75rem;
+          color: hsl(var(--nextui-text-color));
+    min-width: 30px; /* min-w-[40px] */
+    height: 20px; /* h-[30px] */
+      }
 
-.gantt-header {
-    font-weight: bold; /* font-bold */
-}
+      .overlay-gantt .gantt-cell:last-child {
+          border-right: none; /* Remove border on last cell */
+      }
 
-.gantt-cell:last-child {
-    border-right: none; /* border-r-0 */
-}
+      .gantt-task-cell.completed {
+          background-color: hsl(var(--nextui-success)); 
+      }
 
-.gantt-task {
-    background-color: #38a169; /* bg-green-600 */
-    height: 20px; /* h-[20px] */
-    border-radius: 0.375rem; /* rounded-md */
-}
+      .gantt-task-cell.partial-completed {
+          background-color: hsl(var(--nextui-warning)); 
+      }
 
-.gantt-task-cell.completed {
-    background-color: hsl(var(--nextui-success)); /* bg-success */
-}
+      .gantt-task-cell.pending {
+          background-color: #2d3748; 
+      }
 
-.gantt-task-cell.partial-completed {
-    background-color: hsl(var(--nextui-warning)); /* bg-warning */
-}
+      .gantt-task-cell.passed {
+          background-color: #ecc94b;
+      }
 
-.gantt-task-cell.pending {
-    background-color: #2d3748; /* bg-primary-800 */
-}
+      .task-title {
+        font-weight: bold;
+      }
 
-.gantt-task-cell.passed {
-    background-color: #ecc94b; /* bg-yellow-500 */
-}
+      .task-info {
+          min-width: 150px;
+          max-width: 150px;
+          padding-right: 0.625rem;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center; /* Center content vertically */
+      }
 
-.gantt-task-cell.child-completed {
-    background-color: hsl(var(--nextui-success)); /* bg-success */
-}
+      .task-info:hover {
+          cursor: pointer; 
+          color: #3182ce; 
+      }
 
-.task-info {
-    min-width: 200px; /* min-w-[200px] */
-    max-width: 200px; /* max-w-[200px] */
-    padding-right: 0.625rem; /* pr-2.5 */
-    justify-content: flex-start; /* justify-start */
-}
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+          
 
-.task-info:hover {
-    cursor: pointer; /* cursor-pointer */
-    color: #3182ce; /* text-blue-600 */
-}
-
+      }
 .subactivity {
-    margin-left: 1.25rem; /* ml-5 */
+    margin-left: 1.25rem; 
 }
 
 .days-column {
-    min-width: 50px; /* min-w-[50px] */
-    max-width: 50px; /* max-w-[50px] */
+    min-width: 50px; 
+    max-width: 50px; 
 }
 
 .start-date-column,
 .end-date-column {
-    min-width: 80px; /* min-w-[80px] */
-    max-width: 80px; /* max-w-[80px] */
+    min-width: 80px;
+    max-width: 80px;
 }
 
 .participants-column {
-    min-width: 150px; /* min-w-[150px] */
-    max-width: 150px; /* max-w-[150px] */
-    overflow: hidden; /* overflow-hidden */
+    min-width: 150px; 
+    max-width: 150px; 
+    overflow: hidden; 
 }
 
 .success {
-    background-color: #38a169; /* bg-green-600 */
+    background-color: #38a169; 
 }
 
 .add-activity-btn {
-    background-color: hsl(var(--nextui-success)); /* bg-success */
-    color: white; /* text-white */
-    padding: 0.5rem; /* p-2 */
-    border: none; /* border-none */
-    cursor: pointer; /* cursor-pointer */
-    margin-top: 0.625rem; /* mt-2.5 */
-    border-radius: 0.375rem; /* rounded-md */
+    background-color: hsl(var(--nextui-success)); 
+    color: white; 
+    padding: 0.5rem; 
+    border: none; 
+    cursor: pointer; 
+    margin-top: 0.625rem; 
+    border-radius: 0.375rem; 
 }
 
 .parent-activity-select {
-    width: 100%; /* w-full */
-    padding: 0.5rem; /* p-2 */
-    margin: 0.5rem 0; /* my-2 */
-    box-sizing: border-box; /* box-border */
+    width: 100%; 
+    padding: 0.5rem; 
+    margin: 0.5rem 0; 
+    box-sizing: border-box; 
 }
 
 .delete {
-    background-color: hsl(var(--nextui-danger)); /* bg-error */
-    color: white; /* text-white */
-    padding: 0.375rem 0.625rem; /* py-1.5 px-2.5 */
-    border: none; /* border-none */
-    cursor: pointer; /* cursor-pointer */
-    border-radius: 0.375rem; /* rounded-md */
-    float: right; /* float-right */
+    background-color: hsl(var(--nextui-danger)); 
+    color: white; 
+    padding: 0.375rem 0.625rem; 
+    border: none; 
+    cursor: pointer; 
+    border-radius: 0.375rem; 
+    float: right; 
 }
 
 #activityForm input,
 #activityForm textarea {
-    width: 100%; /* w-full */
-    padding: 0.5rem; /* p-2 */
-    margin: 0.5rem 0; /* my-2 */
-    box-sizing: border-box; /* box-border */
-    border-radius: 0.5rem; /* rounded-lg */
-    border: 1px solid #e2e8f0; /* border border-gray-200 */
-    outline: none; /* focus:outline-none */
-    transition: ring-2 0.2s ease-in-out; /* focus:ring-2 focus:ring-primary */
+    width: 100%; 
+    padding: 0.5rem; 
+    margin: 0.5rem 0; 
+    box-sizing: border-box; 
+    border-radius: 0.5rem; 
+    border: 1px solid #e2e8f0; 
+    outline: none; 
+    transition: ring-2 0.2s ease-in-out; 
 }
 
 #activityForm button {
-    color: white; /* text-white */
-    padding: 0.625rem 1rem; /* py-2.5 px-4 */
-    border: none; /* border-none */
-    cursor: pointer; /* cursor-pointer */
-    margin-top: 0.625rem; /* mt-2.5 */
-    border-radius: 0.375rem; /* rounded-md */
+    color: white; 
+    padding: 0.625rem 1rem; 
+    border: none; 
+    cursor: pointer; 
+    margin-top: 0.625rem; 
+    border-radius: 0.375rem; 
 }
 
 .header-inline {
-    display: flex; /* flex */
-    align-items: center; /* items-center */
-    justify-content: space-between; /* justify-between */
-}
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+} 
       </style>
     `;
   }
@@ -534,24 +529,53 @@ class ProjectCard extends HTMLElement {
   }
 
   renderGanttChart(activities, days, startDate) {
-    const header = this.renderGanttHeader(days);
-    const rows = activities && activities.length > 0 ? activities.map(activity => this.renderGanttRow(activity, days, startDate)).join('') : '<div>No activities found</div>';
+    const rowsHtml = activities.map(activity => this.renderGanttRow(activity, days, startDate));
+    console.log(rowsHtml);
+    const fixedGanttRows = rowsHtml.map(
+      (row) => {
+        return `<div class="gantt-row">${row.rowHtml.fixedHtml}</div>` +
+        row?.subActivitiesHtml?.map(subActivity => `<div class="gantt-row">${subActivity.rowHtml.fixedHtml}</div>`).join('');
+      }).join('');
+    const overlayGanttRows = rowsHtml.map(
+      (row) => {
+        return `<div class="gantt-row">${row.rowHtml.overlayHtml}</div>` +
+        row?.subActivitiesHtml?.map(subActivity => `<div class="gantt-row">${subActivity.rowHtml.overlayHtml}</div>`).join('');
+      }).join('');
+
     return `
-      <div class="gantt-header">${header}</div>
-      ${rows}
+      <div class="fixed-gantt">
+        <div class="gantt-header">
+          ${this.renderFixedGanttHeader()}
+        </div>
+        ${fixedGanttRows}
+      </div>
+      <div class="overlay-gantt">
+        <div class="gantt-header">
+          ${this.renderOverlayGanttHeader(days)}
+        </div>
+        ${overlayGanttRows}
+      </div>
     `;
   }
 
-  renderGanttHeader(days) {
+  renderFixedGanttHeader() {
     return `
-      <div class="gantt-cell task-info"><h2>Task</h2></div>
-      <div class="gantt-cell days-column">Days</div>
-      <div class="gantt-cell start-date-column">Start Date</div>
-      <div class="gantt-cell end-date-column">End Date</div>
-      <div class="gantt-cell participants-column">Participants</div>
+        <div class="gantt-cell task-info task-title">Task</div>
+        
+      `;
+  }
+
+  renderOverlayGanttHeader(days) {
+    return `
+        <div class="gantt-cell days-column">Days</div>
+        <div class="gantt-cell start-date-column">Start Date</div>
+        <div class="gantt-cell end-date-column">End Date</div>
+        <div class="gantt-cell participants-column">Participants</div>
       ${days.map(day => `<div class="gantt-cell" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
   }
+
+
   isActivityFullyComplete(activity) {
     if (!activity.subActivities || activity.subActivities.length === 0) {
       return activity.completed;
@@ -609,37 +633,38 @@ class ProjectCard extends HTMLElement {
     const duration = this.getDaysBetween(activityStart, activityEnd).length;
     const completionStatus = this.getActivityCompletionStatus(activity, parentActivity);
 
-    const rowHtml = `
-    <div class="gantt-row">
-      <div class="gantt-cell task-info task-name" data-activity-id="${activity._id}">
-        ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.name}
-      </div>
-      <div class="gantt-cell days-column">${duration}</div>
-      <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
-      <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
-      <div class="gantt-cell participants-column">
-        ${activity.participants?.length > 0 ? activity.participants.join(', ') : 'no one'}
-      </div>
-      ${days.map(day => {
-      const dayTimestamp = day.getTime();
-      const activityStartTimestamp = activityStart.getTime();
-      const activityEndTimestamp = activityEnd.getTime();
+    const rowHtml = {
+      fixedHtml: `
+        <div class="gantt-cell task-info task-name" data-activity-id="${activity._id}">
+          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.name}
+        </div>
+              `,
+      overlayHtml: `
+        <div class="gantt-cell days-column">${duration}</div>
+        <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
+        <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
+        <div class="gantt-cell participants-column">
+          ${activity.participants?.length > 0 ? activity.participants.join(', ') : 'no one'}
+        </div>
 
-      if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-        return `<div class="gantt-cell ${completionStatus} gantt-task-cell "></div>`;
-      }
-      return '<div class="gantt-cell"></div>';
-    }).join('')}
-    </div>
-  `;
+        ${days.map(day => {
+        const dayTimestamp = day.getTime();
+        const activityStartTimestamp = activityStart.getTime();
+        const activityEndTimestamp = activityEnd.getTime();
+
+        if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
+          return `<div class="gantt-cell ${completionStatus} gantt-task-cell "></div>`;
+        }
+        return '<div class="gantt-cell"></div>';
+      }).join('')
+        }
+  `};
 
     const subActivitiesHtml = activity.subActivities
-      ? activity.subActivities
-        .map(subActivity => this.renderGanttRow(subActivity, days, startDate, level + 1, activity))
-        .join('')
-      : '';
+        ? activity.subActivities.map(subActivity => this.renderGanttRow(subActivity, days, startDate, level + 1, activity))
+        : [];    
 
-    return rowHtml + subActivitiesHtml;
+    return { rowHtml, subActivitiesHtml };
   }
 
 
