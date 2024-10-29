@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.project-card {
+    /*@apply font-sans p-5 bg-background rounded-lg shadow-lg;*/
+    @apply font-sans p-5 rounded-lg shadow-xl bg-secondary-100;
+    /* change bg-background to default in dark mode */
+}
+
+.project-card .title {
+    @apply mt-0 text-secondary font-semibold text-2xl;
+}
+
+.gantt-chart {
+    @apply overflow-x-auto mt-5 bg-[var(--gantt-bg-color)] rounded-md p-2.5;
+}
+
+.gantt-cell {
+    @apply flex-1 min-w-[40px] h-[30px] border-r text-center text-xs text-[var(--text-color)] flex items-center justify-center p-0 border-r-1 border-default-400;
+    margin: 0 !important;
+}
+
+.gantt-task-cell:hover {
+    @apply bg-[var(--hover-bg-color)];
+}
+
+.title {
+    @apply text-[var(--title-color)];
+}
+
+.gantt-header,
+.gantt-row {
+    @apply flex space-x-2;
+}
+
+.gantt-header {
+    @apply font-bold;
+}
+
+.gantt-cell:last-child {
+    @apply border-r-0;
+}
+
+.gantt-task {
+    @apply bg-green-600 h-[20px] rounded-md;
+}
+
+.gantt-task-cell.completed {
+    @apply bg-success;
+}
+
+.gantt-task-cell.partial-completed {
+    @apply bg-warning;
+}
+
+.gantt-task-cell.pending {
+    @apply bg-primary-800;
+}
+
+.gantt-task-cell.passed {
+    @apply bg-yellow-500;
+}
+
+.gantt-task-cell.child-completed {
+    @apply bg-success;
+}
+
+.task-info {
+    @apply min-w-[200px] max-w-[200px] pr-2.5 justify-start;
+}
+
+.task-info:hover {
+    @apply cursor-pointer text-blue-600;
+}
+
+.subactivity {
+    @apply ml-5;
+}
+
+.days-column {
+    @apply min-w-[50px] max-w-[50px];
+}
+
+.start-date-column,
+.end-date-column {
+    @apply min-w-[80px] max-w-[80px];
+}
+
+.participants-column {
+    @apply min-w-[150px] max-w-[150px] overflow-hidden;
+}
+
+.success {
+    @apply bg-green-600;
+}
+
+.add-activity-btn {
+    @apply bg-success text-white p-2 border-none cursor-pointer mt-2.5 rounded-md;
+}
+
+.parent-activity-select {
+    @apply w-full p-2 my-2 box-border;
+}
+
+.delete {
+    @apply bg-red-600 text-white py-1.5 px-2.5 border-none cursor-pointer rounded-md float-right;
+}
+
+#activityForm input,
+#activityForm textarea {
+    @apply w-full p-2 my-2 box-border rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary;
+}
+
+#activityForm button {
+    @apply text-white py-2.5 px-4 border-none cursor-pointer mt-2.5 rounded-md;
+}
+
+.header-inline {
+    @apply flex items-center justify-between;
+}

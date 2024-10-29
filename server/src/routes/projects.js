@@ -27,8 +27,6 @@ export function createProjectRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    if (!result || result.length == 0) return res.status(404).json({ message: "Nessun progetto trovato" });
-
     return res.status(200).json(result);
   });
 

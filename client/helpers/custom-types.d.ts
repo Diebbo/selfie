@@ -12,7 +12,12 @@ declare global {
       'project-component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         projects?: ProjectModel[];
       };
+      'project-card': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        project: ProjectModel;
+      };
+      'modal-component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
     }
+
   }
 }
 

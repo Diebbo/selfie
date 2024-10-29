@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.modal {
+  @apply fixed inset-0 z-10 bg-black bg-opacity-40 flex items-center justify-center hidden overflow-auto;
+}
+
+.modal-content {
+  @apply bg-default rounded-lg p-5  w-4/5 max-w-lg mx-auto my-20;
+}
+
+.modal-header {
+  @apply text-xl font-semibold mb-4;
+}
+
+.modal .close {
+  @apply text-gray-400 text-2xl font-bold float-right cursor-pointer hover:text-black;
+}
+
+.modal .error-message {
+  @apply text-red-500 text-sm mt-2;
+}
+
+.modal h2 {
+  @apply text-2xl text-center font-semibold;
+}
