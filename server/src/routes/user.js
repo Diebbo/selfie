@@ -63,5 +63,29 @@ export default function createUserRouter(db) {
     }
   });
 
+  router.delete("/inbox/:id", cookieJwtAuth, async (req, res) => {
+    try {
+      const response = await db.deleteInboxById(req.user._id, req.params.id);
+      return res.status(200).json(response);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
+  router.patch("/inbox/link", cookieJwtAuth, async (req, res) => {
+    console.log("Request body:", req.body); // Aggiungi questo
+
+    try {
+      console.log("CAAA");
+      const link = req.body.link;
+
+      const response = await db.deleteInboxByLink(req.user._id, link);
+      return res.status(200).json(response);
+    } catch (error) {
+      console.log("CAAA");
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
   return router;
 }

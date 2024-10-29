@@ -12,10 +12,6 @@ import { messageSchema } from "./models/chat-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
-import {
-  sendEmailNotification,
-  sendNotification,
-} from "./pushNotificationWorker.js";
 
 export async function createDataBase() {
   const uri =
@@ -71,13 +67,12 @@ export async function createDataBase() {
     });*/
 
     const payload = {
-      email: user.email,
       title: "Verify your email",
-      body: `Click here to verify your email: http://localhost:3000/verification?emailToken=${user.emailtoken}`,
+      body: `Click here to verify your email: https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
+      link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
     };
 
-    sendEmailNotification(payload);
-    return res;
+    return { res, payload };
   };
 
   const updateUsername = async (uid, username) => {
@@ -591,6 +586,7 @@ export async function createDataBase() {
 
       // Gestione partecipanti
       if (addedEvent.participants && addedEvent.participants.length > 0) {
+        var notifications = [];
         for (const participant of addedEvent.participants) {
           try {
             // Usa findOneAndUpdate invece di find + save
@@ -601,7 +597,6 @@ export async function createDataBase() {
             );
 
             //costruzione della notifica per i partecipanti
-
             var payload = {
               title: "📆 Sei stato invitato a un evento di gruppo",
               body:
@@ -612,8 +607,7 @@ export async function createDataBase() {
                 "\nClicca qui per accettare l'invito.",
               link: `/calendar/${addedEvent._id}/${participant}`,
             };
-            const result = sendNotification(updated, payload);
-            console.log(result.statusCode);
+            notifications.push({ user: updated, payload });
 
             if (!updated) {
               console.log(`User not found: ${participant}`);
@@ -630,7 +624,7 @@ export async function createDataBase() {
         }
       }
 
-      return addedEvent;
+      return { addedEvent, notifications };
     } catch (error) {
       console.error("Error in createEvent:", error);
       throw error;
@@ -1170,6 +1164,33 @@ export async function createDataBase() {
       await user.save();
     } catch (error) {
       console.error("Error deleting inbox:", error);
+    }
+  };
+
+  const deleteInboxById = async (uid, id) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      user.inbox = user.inbox.filter((notification) => notification._id != id);
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox by ID:", error);
+    }
+  };
+
+  const deleteInboxByLink = async (uid, link) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      console.log(user.inbox);
+      user.inbox = user.inbox.filter(
+        (notification) => notification.link != link,
+      );
+      console.log("deleted");
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox by link:", error);
     }
   };
 
@@ -1850,6 +1871,8 @@ export async function createDataBase() {
     addNotificationToInbox,
     getInbox,
     deleteInbox,
+    deleteInboxById,
+    deleteInboxByLink,
     getNextNotifications,
     getDateTime,
     verifyEmail,

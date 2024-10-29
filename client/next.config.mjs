@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 // next.config.js
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   distDir: "nextbuild",
   async rewrites() {
     return [

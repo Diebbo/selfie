@@ -1,11 +1,13 @@
 // import { addNotification } from './services/notificationService.js';
 
-import { sendNotification } from "./pushNotificationWorker.js";
+let ioInstance = null;
 
-export function createWebSocket(io, database) {
+export function createWebSocket(io, database, sendNotification) {
+  ioInstance = io;
   const activeUsers = new Map(); // Store socket.id -> { userId, username }
   const userSockets = new Map(); // Store userId -> socket.id
   const activeChats = new Map(); // Store userId -> userId
+  const notificationSockets = new Map(); // Store userId -> socket.id
 
   io.on("connection", (socket) => {
     // Handle user joining
@@ -38,6 +40,51 @@ export function createWebSocket(io, database) {
       } catch (error) {
         console.error("Error in join handler:", error);
       }
+    });
+
+    socket.on("join_notification", async (userId) => {
+      try {
+        console.log(`User ${userId} joining notification system`);
+
+        // Aggiungi l'utente alla sua room personale per le notifiche
+        socket.join(userId);
+
+        // Salva il socket ID dell'utente
+        notificationSockets.set(userId, socket.id);
+
+        // Invia una notifica di benvenuto
+        /*socket.emit("new_notification", {
+          title: "🔔 Notifiche attive",
+          body: "Riceverai qui le tue notifiche",
+          timestamp: new Date(),
+        });*/
+
+        console.log(`User ${userId} joined notification system< successfully`);
+      } catch (error) {
+        console.error("Error in notification join handler:", error);
+        socket.emit("notification_error", {
+          message: "Errore nella connessione al sistema di notifiche",
+        });
+      }
+    });
+
+    socket.on("leave_notifications", (userId) => {
+      if (notificationSockets.has(userId)) {
+        notificationSockets.delete(userId);
+        socket.leave(userId);
+        console.log(`User ${userId} left notification system`);
+      }
+    });
+
+    socket.on("join_notification_socket", async ({ userId }) => {
+      notificationSockets.set(userId, socket.id);
+      console.log("Notification socket joined");
+      console.log("user id", userId);
+      socket.emit("new_notification", {
+        title: "🔔 Benvenuto su ChatApp!",
+        body: "Le tue notifiche appariranno qui",
+        link: "/notifications",
+      });
     });
 
     // Handle private messages
@@ -158,6 +205,16 @@ export function createWebSocket(io, database) {
       }
     });
 
+    // Evento per la connessione iniziale alle notifiche
+    socket.on("join_notifications", async ({ userId }) => {
+      try {
+        // Aggiungi l'utente alla stanza delle notifiche
+        socket.join(`notifications:${userId}`);
+      } catch (error) {
+        console.error("Error in join_notifications handler:", error);
+      }
+    });
+
     // Handle disconnection
     socket.on("disconnect", async () => {
       try {
@@ -195,4 +252,26 @@ export function createWebSocket(io, database) {
   });
 
   return io;
+}
+
+export async function emitNotification(userId, notification) {
+  if (!ioInstance) {
+    throw new Error("Socket.io not initialized");
+  }
+
+  try {
+    console.log("Trying to emit notification to user", userId, notification);
+    // Invia la notifica alla room personale dell'utente
+    ioInstance.to(userId).emit("new_notification", notification);
+    console.log(`Notification emitted to user ${userId}`);
+    return true;
+  } catch (error) {
+    database.addNotificationToInbox(userId, notification);
+    console.error(`Error emitting notification to user ${userId}:`, error);
+    return false;
+  }
+}
+
+export function getIO() {
+  return ioInstance;
 }
