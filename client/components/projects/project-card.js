@@ -288,7 +288,6 @@ class ProjectCard extends HTMLElement {
       throw new Error('Error updating activity');
     }).then((data) => {
       this.modifyProject(data.project);
-      console.log(data.message);
     }).catch((error) => {
       console.error(error);
     });
@@ -582,7 +581,6 @@ class ProjectCard extends HTMLElement {
 
   renderGanttChart(activities, days, startDate) {
     const rowsHtml = activities.map(activity => this.renderGanttRow(activity, days, startDate));
-    console.log(rowsHtml);
     const fixedGanttRows = rowsHtml.map(
       (row) => {
         return row.rowHtml.fixedHtml +
@@ -752,7 +750,6 @@ class ProjectCard extends HTMLElement {
         const sideBarOff = window.innerWidth > 768 ? 200 : 0;
         const x = cords.left + window.scrollX - sideBarOff;
         const y = cords.top + window.scrollY;
-        console.log(x, y);
         tooltip.style.left = `${x + 10}px`;
         tooltip.style.top = `${y + 20}px`;
 
