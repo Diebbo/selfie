@@ -91,13 +91,13 @@ const showEvents = (
 
   const handleColor = (event: SelfieEvent): string => {
     if (event.participants.length > 0 && event.allDay)
-      return "bg-yellow-600"
+      return "bg-warning-300 text-warning-800 hover:border-warning-800"
     else if (event.participants.length > 0)
-      return "bg-teal-600"
+      return "bg-deafult-300 text-default-700 hover:border-default"
     else if (event.allDay)
-      return "bg-violet-600";
+      return "bg-success-200 text-success-700 hover:border-success-700";
     else
-      return "bg-slate-700";
+      return "bg-danger-100 text-danger-700 hover:border-danger-700";
   }
 
   return (
@@ -105,7 +105,7 @@ const showEvents = (
       <button
         onClick={() => handleClick(event)}
         key={index}
-        className={`rounded-[100px] p-1 px-2 border-1 border-slate-600 dark:border-black text-left text-white w-full overflow-hidden truncate dark:hover:border-1 dark:hover:border-white ${handleColor(event)}`}
+        className={`rounded-[100px] p-1 px-2 border-1 border-slate-300  text-left w-full overflow-hidden truncate dark:hover:border-1  ${handleColor(event)}`}
       >
         {(!isMobile && !event.allDay) && (
           <>

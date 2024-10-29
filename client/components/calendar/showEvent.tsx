@@ -15,6 +15,7 @@ import {
 import { parseDate } from "@internationalized/date";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
+import { displayName } from "react-wavify";
 
 const EVENTS_API_URL = "/api/events";
 
@@ -324,20 +325,22 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
               />
               <div className="justify-end">
                 <Button
-                  className={`mx-2 ${state.isEditing ? "" : "hidden"}`}
+                  className={`mx-2 mr-4 ${state.isEditing ? "" : "hidden"}`}
                   onClick={handleReset}
                   color="secondary"
                 >
                   Cancel
                 </Button>
-                <Button
-                  className="mx-2 mr-4"
-                  onClick={handleEdit}
-                  isDisabled={state.isEditing}
-                  color="primary"
-                >
-                  Edit
-                </Button>
+                {user._id === displayEvent.uid && !state.isEditing &&
+                  <Button
+                    className="mx-2 mr-4"
+                    onClick={handleEdit}
+                    color="primary"
+                  >
+                    Edit
+                  </Button>
+                }
+
               </div>
             </ModalHeader>
             <ModalBody>

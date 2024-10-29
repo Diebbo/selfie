@@ -747,6 +747,27 @@ export async function createDataBase() {
     return user.invitedEvents;
   };
 
+
+  const getParticipantsUsernames = async (eventId) => {
+    try {
+      const event = await eventModel.findById(eventId);
+      if (!event) throw new Error("Event not found");
+
+      // Trova tutti gli utenti che hanno questo eventId nel loro array events
+      const users = await userModel.find({
+        invitedEvents: eventId  // Cerca l'eventId nell'array events
+      }, 'username'); // Proietta solo il campo username
+
+      // Estrai gli username dal risultato
+      const usernames = users.map(user => user.username);
+
+      return usernames;
+    } catch (error) {
+      throw new Error(`Error getting usernames: ${error.message}`);
+    }
+  };
+
+  // TYPO
   const getUsrernameForActivity = async (activity) => {
     if (!activity.participants || activity.participants.length === 0) {
       return activity;
@@ -1262,11 +1283,11 @@ export async function createDataBase() {
     console.log(`Checking notifications at ${new Date().toISOString()}`);
     const users = await getAllUserEvents();
     const now = getDateTime();
-
+ 
     try {
       for (const user of users) {
         if (!user.subscription) continue;
-
+ 
         for (const event of user.events) {
           if (shouldSendNotification(event, now)) {
             const payload = createNotificationPayload(event);
@@ -1725,10 +1746,10 @@ export async function createDataBase() {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: { ...msg, sender: sender.username },
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: { ...msg, sender: sender.username },
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1779,7 +1800,7 @@ export async function createDataBase() {
     async getAllUsernames() {
       return await userModel.find({}, { username: 1 });
     },
-    async fromsIdsToUsernames(ids) {
+    async fromIdsToUsernames(ids) {
       const users = await userModel.find({ _id: { $in: ids } });
       return users.map((user) => user.username);
     },
@@ -1861,6 +1882,7 @@ export async function createDataBase() {
     dodgeEvent,
     participateEvent,
     rejectEvent,
+    getParticipantsUsernames,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,

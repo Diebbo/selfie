@@ -9,29 +9,47 @@ import {
   ModalFooter,
   Button,
   Card,
+  Input,
+  Switch,
   CardBody,
   Chip,
+  DateRangePicker,
 } from "@nextui-org/react";
 import {
-  Person,
-  SelfieEvent,
-  SelfieNotification,
+  SelfieEvent, SelfieNotification,
 } from "@/helpers/types";
+import NotificationMenu from "@/components/calendar/notificationMenu";
 import { useRouter } from 'next/navigation';
+import { parseDateTime } from "@internationalized/date";
 
 interface ParticipantContentProps {
   eventid: string;
   participantid: string;
 }
 
-const ParticipantContent: React.FC<ParticipantContentProps> = ({
-  eventid,
-  participantid,
-}) => {
+const initialNotification = {
+  title: "",
+  description: "",
+  type: "",
+  repetition: {
+    freq: "",
+    interval: 0,
+  },
+  fromDate: new Date(),
+};
+
+
+const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, participantid }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [event, setEvent] = useState<SelfieEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [owner, setOwner] = useState<string>("");
+  const [participants, setParticipants] = useState<string[]>([""]);
+  const [notificationError, setNotificationError] = useState(false);
+  const [notifications, setNotifications] = useState(false);
+  const [notificationData, setNotificationData] =
+    useState<Partial<SelfieNotification>>(initialNotification);
 
   const EVENTS_API_URL = "/api/events";
 
@@ -40,6 +58,48 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
     router.refresh();
     router.push("/calendar");
   };
+
+
+  const handleInputChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | { target: { name: string; value: any } },
+  ) => {
+    const { name, value } = e.target;
+
+    const [_, notificationField, repetitionField] = name.split(".");
+
+    setNotificationData((prev: any) => {
+      if (notificationField === "repetition") {
+        return {
+          ...prev,
+          notification: {
+            ...prev.notification,
+            repetition: {
+              ...prev.notification.repetition,
+              [repetitionField]: value,
+            },
+          },
+        };
+      }
+      if (notificationField === "fromDate") {
+        return {
+          ...prev,
+          notification: {
+            ...prev.notification,
+            fromDate: new Date(value).toISOString(),
+          },
+        };
+      }
+      return {
+        ...prev,
+        notification: {
+          ...prev.notification,
+          [notificationField]: value,
+        },
+      };
+    });
+  }
 
   useEffect(() => {
     async function fetchEvent() {
@@ -61,6 +121,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
         }
 
         setEvent(await res.json());
+
       } catch (error) {
         console.error("Error fetching event:", error);
       } finally {
@@ -69,9 +130,73 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
     }
 
     fetchEvent();
+
   }, [eventid]);
 
-  const handleResponse = async (response: "accept" | "decline") => {
+  useEffect(() => {
+    async function fetchParticipantsUsername() {
+
+      try {
+        const res = await fetch(`${EVENTS_API_URL}/${eventid}/participants`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          cache: "no-store"
+        });
+
+        if (res.status === 401) {
+          throw new Error("Unauthorized, please login.");
+        } else if (res.status >= 500) {
+          throw new Error(`Server error: ${res.statusText}`);
+        } else if (!res.ok) {
+          throw new Error("Failed to fetch participants' usernames");
+        }
+
+        const usernames = await res.json();
+        setParticipants(usernames);
+      } catch (error) {
+        console.error("Error fetching participants' usernames:", error);
+      }
+    }
+
+    fetchParticipantsUsername();
+    console.log("partecipants: ", participants);
+  }, [event?.participants]);
+
+  useEffect(() => {
+    async function fetchOwner() {
+      if (!event?.uid) return;
+
+      try {
+        console.log("check event owner: ", event.uid);
+        const res = await fetch(`/api/users/${event.uid}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.status === 401) {
+          throw new Error("Unauthorized, please login.");
+        } else if (res.status >= 500) {
+          throw new Error(`Server error: ${res.statusText}`);
+        } else if (!res.ok) {
+          throw new Error("Failed to fetch the event's owner");
+        }
+
+        const ownerData = await res.json();
+        setOwner(ownerData);
+      } catch (error) {
+        console.error("Error fetching event's owner: ", error);
+      }
+    }
+
+    fetchOwner();
+  }, [event?.uid]); // Dependency on event.uid
+
+  //controllare che esista ancora l'evento e lo user 
+  const handleResponse = async (response: 'accept' | 'decline') => {
     console.log("dentro handle response");
     try {
       console.log("faccio la post");
@@ -107,6 +232,26 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
     }
   };
 
+  const getDateRange = (isAllDay: Boolean) => {
+    const today = new Date();
+
+    if (isAllDay) {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return {
+        start: parseDateTime(today.toISOString().split('T')[0]),
+        end: parseDateTime(tomorrow.toISOString().split('T')[0])
+      };
+    } else {
+      const nextHour = new Date(today);
+      nextHour.setHours(today.getHours() + 1);
+      return {
+        start: parseDateTime(today.toISOString().split('T')[0]),
+        end: parseDateTime(nextHour.toISOString().split('T')[0])
+      };
+    }
+  };
+
   if (loading || !event) {
     return <div>Caricamento...</div>;
   }
@@ -115,59 +260,104 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
     <Modal isOpen={isOpen} onClose={handleReturnToCalendar} size="2xl">
       <ModalContent>
         <ModalHeader>
-          <h3 className="text-xl font-semibold">{event.title}</h3>
+          <h2 className="text-xl font-semibold">Sei stato invitato da {owner}</h2>
         </ModalHeader>
         <ModalBody>
           <Card>
             <CardBody>
-              <div className="space-y-4">
-                {event.description && (
-                  <p className="text-gray-600">{event.description}</p>
-                )}
 
-                <div className="flex items-center gap-2">
-                  <span>
-                    {new Date(event.dtstart).toLocaleDateString()} -{" "}
-                    {new Date(event.dtend).toLocaleDateString()}
-                  </span>
-                </div>
+              <Input
+                className="text-gray-600 mb-4"
+                label="Titolo evento"
+                isReadOnly={true}
+                value={event.title as string}
+              />
 
-                <div className="flex items-center gap-2">
-                  <span>
-                    {new Date(event.dtstart).toLocaleTimeString()} -{" "}
-                    {new Date(event.dtend).toLocaleTimeString()}
-                  </span>
-                </div>
+              <DateRangePicker
+                isReadOnly={true}
+                className="mb-4"
+                label="Data dell'evento"
+                visibleMonths={1}
+                granularity={event.allDay ? "day" : "minute"}
+                hideTimeZone
+                defaultValue={getDateRange(event.allDay)}
+                classNames={{
+                  selectorButton: "hidden",  // nasconde completamente il trigger
+                  base: "pointer-events-none" // disabilita le interazioni
+                }}
+              />
 
-                {event.location && (
-                  <div className="flex items-center gap-2">
-                    <span>{event.location}</span>
-                  </div>
-                )}
+              {event.location && event.location.length > 0 && (
+                <Input
+                  className="text-gray-600 mb-4"
+                  isReadOnly={true}
+                  value={event.location as string}
+                />
+              )}
 
-                {event.categories && event.categories.length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {event.categories.map((category, index) => (
-                      <Chip key={index} color="primary" variant="flat">
-                        {category}
-                      </Chip>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {event.description && event.description.length > 0 && (
+                <Input
+                  label="Descrizione"
+                  className="text-gray-600 mb-4"
+                  isReadOnly={true}
+                  value={event.description as string}
+                />
+              )}
+
+              {event.participants && event.participants.length > 0 && (
+                <Input
+                  label="Partecipanti"
+                  className="text-gray-600 mb-4"
+                  isReadOnly={true}
+                  value={owner + ", ".concat(participants.join(', '))}
+                />
+              )}
+
+              {event.URL && event.URL.length > 0 && (
+                <Input
+                  label="Link"
+                  className="text-gray-600 mb-4"
+                  isReadOnly={true}
+                  value={event.URL as string}
+                />
+              )}
+
+              <Switch
+                className="w-fit min-w-[120px] mb-1"
+                isSelected={notifications}
+                onValueChange={setNotifications}
+              >
+                Abilita Notifiche
+              </Switch>
+              <NotificationMenu
+                value={notifications}
+                notification={notificationData as SelfieNotification}
+                onChange={handleInputChange}
+                startEventDate={event.dtstart as Date}
+                notificationError={notificationError}
+                setNotificationError={setNotificationError}
+                isAllDay={event.allDay as boolean}
+              />
+
+
             </CardBody>
           </Card>
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter className="justify-center gap-10">
           <Button
             color="danger"
             variant="light"
-            onPress={() => handleResponse("decline")}
+            className="border-1 border-red-700"
+            onPress={() => handleResponse('decline')}
           >
             Rifiuta
           </Button>
-          <Button color="primary" onPress={() => handleResponse("accept")}>
+          <Button
+            color="success"
+            className="hover:bg-green-600"
+            onPress={() => handleResponse('accept')}
+          >
             Accetta
           </Button>
         </ModalFooter>

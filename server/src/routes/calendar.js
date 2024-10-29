@@ -128,6 +128,19 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
+  // ritorna gli username, forse implementerò un query param per gli ids 
+  router.get('/:id/participants', cookieJwtAuth, async function(req, res) {
+    try {
+      const eventid = req.params.id
+      const result = await db.getParticipantsUsernames(eventid);
+      console.log("username: ", result);
+      res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server error, " + e.message });
+    }
+
+  });
+
   return router;
 }
 
