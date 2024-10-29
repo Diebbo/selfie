@@ -2,8 +2,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import { Person, ProjectModel } from '@/helpers/types';
-import ProjectCard from './project-card.mjs';
-import Modal from './project-modal.mjs';
 import './project-component.js';
 import './project-modal.js';
 import './project-card.js';
