@@ -47,6 +47,16 @@ export default function createUserRouter(db) {
     }
   });
 
+  router.get("/usernames", async (req, res) => {
+    try {
+      const ids = req.body.ids;
+      const usernames = await db.userService.fromIdsToUsernames(ids);
+      return res.status(200).json(usernames);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
   router.get("/gps", cookieJwtAuth, async (req, res) => {
     try {
       const gps = await db.userService.getGps(req.user._id);

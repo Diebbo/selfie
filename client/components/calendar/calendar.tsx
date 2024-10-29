@@ -217,7 +217,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                     ],
                     content: [
                       "py-2 px-4 shadow-xl",
-                      "text-black bg-gradient-to-br from-white to-neutral-400",
+                      "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
                     ],
                   }}>
                   <Chip
