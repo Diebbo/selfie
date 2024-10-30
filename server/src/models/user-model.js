@@ -165,4 +165,7 @@ export const userSchema = new mongoose.Schema({
 
   isOnline: Boolean,
   lasteSeen: Date,
+
+  // url dell'immagine profilo
+  avatar: String,
 });

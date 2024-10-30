@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { MessageModel, StatusEnum } from "@/helpers/types";
+import { MessageModel, StatusEnum, Person } from "@/helpers/types";
 import {
   Modal,
   ModalContent,
@@ -11,44 +11,83 @@ import {
   ModalFooter,
   Avatar,
   Button,
+  Spinner,
 } from "@nextui-org/react";
 import { io } from "socket.io-client";
-import { PreviousIcon } from "../music-player/PreviousIcon";
 
 interface ChatModalProps {
   receiverUsername: string;
-  initialMessages: MessageModel[];
-  currentUsername: string;
-  currentUserId: string;
 }
 
 const ChatModal: React.FC<ChatModalProps> = ({
   receiverUsername,
-  initialMessages,
-  currentUsername,
-  currentUserId,
 }) => {
   const router = useRouter();
-  const [messages, setMessages] = useState<MessageModel[]>(initialMessages);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<MessageModel[]>([]);
+  const [currentUser, setCurrentUser] = useState<Person | null>(null);
+  const [receiver, setReceiver] = useState<Person | null>(null);
   const [message, setMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
   const socketRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isOnline, setIsOnline] = useState(false);
-
-  const scrollToBottom = () => {
+  const messagesEndRef = useRef<HTMLDivElement>(null); const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const getChatByUsername = async (username: string): Promise<MessageModel[]> => {
+    const res = await fetch(`/api/chats/messages/${username}`);
+    if (!res.ok) throw new Error("Failed to fetch chat");
+    return res.json();
+  };
+
+  const getUser = async (): Promise<Person> => {
+    const res = await fetch('/api/users/id');
+    if (!res.ok) throw new Error("Failed to fetch user");
+    return res.json();
+  };
+
+  const getUserByUsername = async (username: string): Promise<Person> => {
+    const res = await fetch(`/api/users/usernames/${username}`);
+    if (!res.ok) throw new Error("Failed to fetch receiver");
+    return res.json();
+  };
+
+  // fetch data
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [user, receiverData, chatMessages] = await Promise.all([
+          getUser(),
+          getUserByUsername(receiverUsername),
+          getChatByUsername(receiverUsername)
+        ]);
+
+        setCurrentUser(user);
+        setReceiver(receiverData);
+        setMessages(chatMessages);
+        setLoading(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [receiverUsername]);
+
+  // start socket connection
+  useEffect(() => {
+    if (!currentUser) return;
     // Initialize socket connection
     socketRef.current = io("https://site232454.tw.cs.unibo.it");
 
     // Join the chat
     socketRef.current.emit("join", {
-      userId: currentUserId,
-      username: currentUsername,
+      userId: currentUser._id,
+      username: currentUser.username,
       receiverUsername,
     });
 
@@ -124,7 +163,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [currentUserId, currentUsername, receiverUsername]);
+  }, [currentUser, receiverUsername]);
 
   useEffect(() => {
     scrollToBottom();
@@ -148,17 +187,19 @@ const ChatModal: React.FC<ChatModalProps> = ({
   };
 
   const handleMessageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!currentUser) return;
+
     setMessage(e.target.value);
 
     // Emit typing start
     if (e.target.value !== "") {
       socketRef.current?.emit("typing_start", {
-        senderUsername: currentUsername,
+        senderUsername: currentUser.username,
         receiverUsername,
       });
     } else {
       socketRef.current?.emit("typing_end", {
-        senderUsername: currentUsername,
+        senderUsername: currentUser.username,
         receiverUsername,
       });
     }
@@ -171,17 +212,18 @@ const ChatModal: React.FC<ChatModalProps> = ({
     // Set new timeout for typing end
     typingTimeoutRef.current = setTimeout(() => {
       socketRef.current?.emit("typing_end", {
-        senderUsername: currentUsername,
+        senderUsername: currentUser.username,
         receiverUsername,
       });
     }, 3000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (!currentUser || !receiverUsername) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       socketRef.current?.emit("typing_end", {
-        senderUsername: currentUsername,
+        senderUsername: currentUser.username,
         receiverUsername,
       });
       handleSendMessage();
@@ -201,6 +243,29 @@ const ChatModal: React.FC<ChatModalProps> = ({
     });
   };
 
+  if (loading) {
+    return (
+      <Modal isOpen={true} onClose={handleClose}>
+        <ModalContent>
+          <ModalBody className="flex items-center justify-center py-8">
+            <Spinner size="lg" />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+
+  if (error || !currentUser || !receiver) {
+    return (
+      <Modal isOpen={true} onClose={handleClose}>
+        <ModalContent>
+          <ModalBody className="flex items-center justify-center py-8">
+            <p className="text-danger">Error loading chat: {error}</p>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
   return (
     <Modal
       backdrop="blur"
@@ -228,29 +293,30 @@ const ChatModal: React.FC<ChatModalProps> = ({
             {messages.map((msg, idx) => (
               <div
                 key={msg._id || idx}
-                className={`flex gap-5 ${
-                  msg.sender === currentUsername
-                    ? "flex-row-reverse"
-                    : "flex-row"
-                }`}
+                className={`flex gap-5 ${msg.sender === currentUser.username
+                  ? "flex-row-reverse"
+                  : "flex-row"
+                  }`}
               >
                 <Avatar
                   isBordered
                   radius="full"
                   size="sm"
-                  src="/api/placeholder/40/40"
+                  src={
+                    msg.sender === currentUser.username
+                      ? currentUser.avatar
+                      : receiver?.avatar
+                  }
                 />
                 <div
-                  className={`flex flex-col gap-1 max-w-[70%] ${
-                    msg.sender === currentUsername ? "items-end" : "items-start"
-                  }`}
+                  className={`flex flex-col gap-1 max-w-[70%] ${msg.sender === currentUser.username ? "items-end" : "items-start"
+                    }`}
                 >
                   <p
-                    className={`px-4 py-2 rounded-lg ${
-                      msg.sender === currentUsername
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 dark:bg-gray-800"
-                    }`}
+                    className={`px-4 py-2 rounded-lg ${msg.sender === currentUser.username
+                      ? "bg-primary text-white"
+                      : "bg-gray-100 dark:bg-gray-800"
+                      }`}
                   >
                     {msg.message}
                   </p>
