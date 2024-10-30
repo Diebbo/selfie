@@ -8,7 +8,7 @@ import {
   Badge,
 } from "@nextui-org/react";
 import React, { useEffect, useState } from "react";
-import { NotificationIcon } from "../icons/navbar/notificationIcon";
+import { NotificationIcon } from "../icons/navbar/notificationicon";
 
 interface Notification {
   title: string;
