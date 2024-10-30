@@ -1609,7 +1609,7 @@ export async function createDataBase() {
               ],
             },
             message: { $first: "$message" },
-            date: { $first: "$createdAt" },
+            createdAt: { $first: "$createdAt" },
             sender: { $first: "$sender" },
           },
         },
