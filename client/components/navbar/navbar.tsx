@@ -36,13 +36,13 @@ export const NavbarWrapper = ({ children }: Props) => {
           <p className="text-lg font-light justify-center">Selfie Calendar</p>
         </NavbarContent>
 
-        <NavbarContent justify="end">
+        <NavbarContent justify="end" className="">
           <Clock />
         </NavbarContent>
 
         <NavbarContent
           justify="end"
-          className="w-fit data-[justify=end]:flex-grow-0"
+          className="w-fit data-[justify=end]:flex-grow-0 flex items-center"
         >
           <NotificationsDropdown />
 

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build-css": "npx tailwindcss -i styles/project.css -o public/styles/project.css --minify; npx tailwind -i styles/modal.css -o public/styles/modal.css; npx tailwind -i styles/gantt.css -o public/styles/gantt.css"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -51,11 +52,11 @@
     "@types/node": "18.7.18",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
-    "autoprefixer": "^10.4.15",
+    "autoprefixer": "^10.4.20",
     "eslint": "8.23.1",
     "eslint-config-next": "13.4.16",
-    "postcss": "^8.4.28",
-    "tailwindcss": "^3.3.3",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
     "typescript": "4.8.3"
   }
 }

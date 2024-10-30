@@ -4,10 +4,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
-import {
-  sendNotification,
-  sendPushNotifications,
-} from "../pushNotificationWorker.js";
 
 const router = express.Router();
 
@@ -376,7 +372,7 @@ export function createAuthRouter(db) {
         link: "https://site232454.tw.cs.unibo.it/",
       };
 
-      await sendNotification(user, payload);
+      //await sendNotification(user, payload);
       res.status(200).json({ message: "Notification sent successfully" });
     } catch (error) {
       console.error("Error in send-test-notification:", error);

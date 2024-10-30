@@ -12,7 +12,6 @@ import { messageSchema } from "./models/chat-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
-import { sendEmailNotification } from "./pushNotificationWorker.js";
 
 export async function createDataBase() {
   const uri =
@@ -68,13 +67,12 @@ export async function createDataBase() {
     });*/
 
     const payload = {
-      email: user.email,
       title: "Verify your email",
-      body: `Click here to verify your email: http://localhost:3000/verification?emailToken=${user.emailtoken}`,
+      body: `Click here to verify your email: https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
+      link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
     };
 
-    sendEmailNotification(payload);
-    return res;
+    return { res, payload };
   };
 
   const updateUsername = async (uid, username) => {
@@ -410,72 +408,6 @@ export async function createDataBase() {
     }
   };
 
-  const getEvents = async (uid) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    // Combina gli ID degli eventi creati e quelli a cui l'utente partecipa
-    const allEventIds = [
-      ...new Set([...user.events, ...user.participatingEvents]),
-    ];
-
-    // Recupera tutti gli eventi in una sola query
-    const events = await eventModel.find({ _id: { $in: allEventIds } });
-
-    return events;
-  };
-
-  const getEvent = async (uid, eventid) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    const event = await eventModel.findById(eventid);
-    if (!event) throw new Error("Event not found");
-
-    return event;
-  };
-
-  const createEvent = async (uid, event) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not foun");
-
-    // Validate event object
-    if (!event.title) {
-      throw new Error("Event must have a title");
-    }
-
-    if (!event.dtstart || !event.dtend) {
-      throw new Error("Event must have a date");
-    }
-    // add event to the user's events
-    var addedEvent = await eventModel.create({ ...event, uid: uid });
-    user.events.push(addedEvent._id);
-    await user.save();
-
-    // invite all users in the event
-    /*
-    var err = "Invited users not found: ";
-    if (event.invitedUsers) {
-      event.invitedUsers.forEach(async (invitedUser) => {
-        const invitedUserDoc = await userModel.findOne({
-          username: invitedUser,
-        });
-        if (!invitedUserDoc) err += invitedUser + ", ";
-        else {
-          invitedUserDoc.invitedEvents.push(addedEvent._id);
-          await invitedUserDoc.save();
-        }
-      });
-    }
-    if (err !== "Invited users not found: ") throw new Error(err);
-    */
-
-    // generate notifications for all the invited users
-    //await generateNotificationsForEvent(addedEvent, [user]);
-
-    return addedEvent;
-  };
-
   const addNotification = async (user, notification) => {
     if (!user.inobxNotifications) user.inboxNotifications = [];
     user.inboxNotifications.push(notification);
@@ -605,6 +537,100 @@ export async function createDataBase() {
     );
   }
 
+  const getEvents = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // Combina gli ID degli eventi creati e quelli a cui l'utente partecipa
+    const allEventIds = [
+      ...new Set([...user.events, ...user.participatingEvents]),
+    ];
+
+    // Recupera tutti gli eventi in una sola query
+    const events = await eventModel.find({ _id: { $in: allEventIds } });
+
+    return events;
+  };
+
+  const getEvent = async (uid, eventid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventid);
+    if (!event) throw new Error("Event not found");
+
+    return event;
+  };
+
+  const createEvent = async (uid, event) => {
+    // Validazione iniziale dell'utente
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // Validazione evento
+    if (!event.title) throw new Error("Event must have a title");
+    if (!event.dtstart || !event.dtend)
+      throw new Error("Event must have a date");
+
+    try {
+      // Creazione evento
+      const addedEvent = await eventModel.create({ ...event, uid: uid });
+      if (!addedEvent) throw new Error("Failed to create event");
+
+      // Aggiungi l'evento all'utente creatore
+      await userModel.findByIdAndUpdate(
+        uid,
+        { $push: { events: addedEvent._id } },
+        { new: true },
+      );
+
+      // Gestione partecipanti
+      if (addedEvent.participants && addedEvent.participants.length > 0) {
+        var notifications = [];
+        for (const participant of addedEvent.participants) {
+          try {
+            // Usa findOneAndUpdate invece di find + save
+            const updated = await userModel.findByIdAndUpdate(
+              participant,
+              { $push: { invitedEvents: addedEvent._id } },
+              { new: true },
+            );
+
+            //costruzione della notifica per i partecipanti
+            var payload = {
+              title: "📆 Sei stato invitato a un evento di gruppo",
+              body:
+                "L'utente " +
+                user.username +
+                " ti ha invitato all'evento " +
+                addedEvent.title +
+                "\nClicca qui per accettare l'invito.",
+              link: `/calendar/${addedEvent._id}/${participant}`,
+            };
+            notifications.push({ user: updated, payload });
+
+            if (!updated) {
+              console.log(`User not found: ${participant}`);
+            } else {
+              console.log(`Event added to user: ${participant}`);
+              console.log(
+                "Updated participating events:",
+                updated.participatingEvents,
+              );
+            }
+          } catch (err) {
+            console.error(`Error updating participant ${participant}:`, err);
+          }
+        }
+      }
+
+      return { addedEvent, notifications };
+    } catch (error) {
+      console.error("Error in createEvent:", error);
+      throw error;
+    }
+  };
+
   const deleteEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -654,19 +680,32 @@ export async function createDataBase() {
         throw new Error("Event replace failed");
       }
 
-      // Aggiorno le notifiche di ogni partecipante
-      const updatedUsers = await userModel.updateMany(
-        { $or: [{ invitedEvents: eventId }, { participatingEvents: eventId }] },
-        { $set: { inboxNotifications: { fromEvent: eventId } } },
-      );
-
-      return { replacedEvent, updatedUsers };
+      return { replacedEvent };
     } catch (e) {
       throw new Error("Event did not get changed: " + e.message);
     }
   };
 
-  const partecipateEvent = async (uid, eventId) => {
+  // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
+  const dodgeEvent = async (uid, eventId) => {
+    console.log("guma is gliding");
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+
+    // togliere l'evento dalla lista degli eventi dello user
+    const res = await userModel.findByIdAndUpdate(uid, {
+      $pull: { participatingEvents: eventId },
+    });
+
+    return res;
+  };
+
+  // accetto la proposta dell'evento [componente participateevent]
+  const participateEvent = async (uid, eventId) => {
+    console.log("prova");
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -682,8 +721,28 @@ export async function createDataBase() {
     );
     await user.save();
 
-    // add notifications for the event
-    await generateNotificationsForEvent(event, [user]);
+    //devo fare altro per mandare le notifiche dell'evento?
+    //non credo tanto l'evento c'è già nello user
+
+    return user.invitedEvents;
+  };
+
+  // rifiuto la proposta dell'evento [componente participateevent]
+  const rejectEvent = async (uid, eventId) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const event = await eventModel.findById(eventId);
+    if (!event) throw new Error("Event not found");
+
+    // Check if user is already participating
+    if (user.participatingEvents.includes(eventId))
+      throw new Error("User is already participating in this event");
+    //tolgo l'evento dai pending events
+    user.invitedEvents = user.invitedEvents.filter(
+      (e) => e.toString() !== eventId.toString(),
+    );
+    await user.save();
 
     return user.invitedEvents;
   };
@@ -1093,6 +1152,45 @@ export async function createDataBase() {
     } catch (error) {
       console.error("Error getting inbox:", error);
       throw error;
+    }
+  };
+
+  const deleteInbox = async (uid) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      user.inbox = [];
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox:", error);
+    }
+  };
+
+  const deleteInboxById = async (uid, id) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      user.inbox = user.inbox.filter((notification) => notification._id != id);
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox by ID:", error);
+    }
+  };
+
+  const deleteInboxByLink = async (uid, link) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+      console.log(user.inbox);
+      user.inbox = user.inbox.filter(
+        (notification) => notification.link != link,
+      );
+      console.log("deleted");
+      await user.save();
+    } catch (error) {
+      console.error("Error deleting inbox by link:", error);
     }
   };
 
@@ -1751,16 +1849,18 @@ export async function createDataBase() {
     updateEmail,
     updatePassword,
     changeDateTime,
-    createEvent,
     postNote,
     getNotes,
     getNoteById,
     removeNoteById,
-    getEvents,
+    createEvent,
     getEvent,
+    getEvents,
     deleteEvent,
-    partecipateEvent,
     modifyEvent,
+    dodgeEvent,
+    participateEvent,
+    rejectEvent,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,
@@ -1770,6 +1870,9 @@ export async function createDataBase() {
     addSong,
     addNotificationToInbox,
     getInbox,
+    deleteInbox,
+    deleteInboxById,
+    deleteInboxByLink,
     getNextNotifications,
     getDateTime,
     verifyEmail,
