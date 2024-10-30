@@ -36,7 +36,7 @@ export async function createDataBase() {
     chatModel,
   };
 
-  await mongoose.connect(uri);
+  await mongoose.connect(uri, { dbName: "test" });
 
   const login = async (user) => {
     var res;
@@ -1725,10 +1725,11 @@ export async function createDataBase() {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: { ...msg, sender: sender.username },
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: { ...msg, sender: sender.username },
+              avatar: otherUser.avatar,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1795,6 +1796,11 @@ export async function createDataBase() {
     async fromIdtoUsername(id) {
       const user = await getUserById(id);
       return user.username;
+    },
+    async getByUsername(username) {
+      const user = await userModel.findOne({ username });
+      if (!user) throw new Error("User not found");
+      return user;
     },
     async getById(id) {
       const user = await userModel
