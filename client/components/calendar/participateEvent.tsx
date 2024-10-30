@@ -24,7 +24,7 @@ import { parseDateTime } from "@internationalized/date";
 
 interface ParticipantContentProps {
   eventid: string;
-  participantid: string;
+  participant: string;
 }
 
 const initialNotification = {
@@ -39,7 +39,7 @@ const initialNotification = {
 };
 
 
-const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, participantid }) => {
+const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, participant }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [event, setEvent] = useState<SelfieEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,7 +195,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
     fetchOwner();
   }, [event?.uid]); // Dependency on event.uid
 
-  //controllare che esista ancora l'evento e lo user 
+  // TODO: controllare che esista ancora l'evento e lo user 
   const handleResponse = async (response: 'accept' | 'decline') => {
     console.log("dentro handle response");
     try {
@@ -207,12 +207,12 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          participantId: participantid,
+          participantId: participant,
           response: response,
         }),
       });
 
-      const link = `/calendar/${eventid}/${participantid}`;
+      const link = `/calendar/${eventid}/${participant}`;
 
       const del = await fetch(`/api/users/inbox/link`, {
         method: "PATCH",

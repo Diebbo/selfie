@@ -87,7 +87,6 @@ const showEvents = (
 ): JSX.Element[] | null => {
   const todayEvents = getEventsByDay(events, date);
   const eventsToShow = todayEvents.slice(0, 2);
-  console.log(todayEvents.map((event) => { console.log(event.title, event.participants.length > 1) }));
 
   const handleColor = (event: SelfieEvent): string => {
     if (event.participants.length > 0 && event.allDay)
