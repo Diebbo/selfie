@@ -18,6 +18,7 @@ export const CardChats = ({ chats }: PropContent) => {
       console.error(error);
     }
   };
+  console.log(chats);
   return (
     <Card className="bg-default-50 rounded-xl shadow-md px-4 py-0 w-full">
       <CardBody className="py-5 gap-4">
@@ -29,14 +30,14 @@ export const CardChats = ({ chats }: PropContent) => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-6 ">
+        <div className="flex flex-row gap-6 overflow-x-auto p-3">
           {chats && chats.length > 0 ? (
             chats.map((item, index) => (
               <Button
                 key={index}
                 color="default"
                 variant="ghost"
-                className="flex flex-nowrap flex-row gap-5 justify-start w-full py-4 h-20"
+                className="flex flex-nowrap flex-row gap-5 justify-between w-full py-4 h-20 min-w-[100%]"
                 onClick={() => handleClick(item)}
               >
                 <div>
@@ -51,15 +52,15 @@ export const CardChats = ({ chats }: PropContent) => {
                   {item.username}
                 </span>
 
-                <div className="max-w-[8rem] overflow-hidden text-ellipsis whitespace-nowrap">
+                <div className="max-w-[9rem] overflow-hidden text-ellipsis whitespace-nowrap">
                   <span className="text-success text-xs">
                     {item.lastMessage.message}
                   </span>
                 </div>
 
-                <div className="max-w-[4rem] ml-auto">
+                <div className="justify-self-end">
                   <span className="text-default-500 text-xs">
-                    {new Date(item.date).toLocaleTimeString()}
+                    {new Date(item.lastMessage.createdAt).toTimeString().split(" ")[0]}
                   </span>
                 </div>
               </Button>
