@@ -17,14 +17,12 @@ import getProjects from "@/actions/projects";
 
 export default async function Home() {
   try {
-    const [user, chats, notes, pomodoro, projects]: [
-      Person,
+    const [chats, notes, pomodoro, projects]: [
       ChatModel[],
       NoteModel[],
       PomodoroStats,
       ProjectModel[],
     ] = await Promise.all([
-      getUser(),
       getChats(),
       getNotes(),
       getStats(),
@@ -35,11 +33,8 @@ export default async function Home() {
     return (
       <>
         <Content
-          events={user.events}
           chats={chats}
-          friends={user.friends}
           notes={notes}
-          user={user}
           projects={projects}
           pomodoro={pomodoro}
         />
