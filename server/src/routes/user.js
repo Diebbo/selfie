@@ -37,6 +37,9 @@ export default function createUserRouter(db) {
     }
   });
 
+  /*
+   * NON HA UN CAZZO DI SENSO, SE METTO STA FUNZIONE SI ROMPONO LE NOTIFICHE
+   * la funzione serve per prendere 1 username sapendo l'uid
   router.get("/:id", async (req, res) => {
     try {
       const uid = req.params.id;
@@ -46,6 +49,7 @@ export default function createUserRouter(db) {
       return res.status(404).json({ message: error.message });
     }
   });
+  */
 
   router.get("/usernames", async (req, res) => {
     try {
