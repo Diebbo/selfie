@@ -37,7 +37,14 @@ export const SidebarWrapper = () => {
         })}
       >
         <div className={Sidebar.Header()}>
-          <CompaniesDropdown />
+          <div className="flex items-center justify-between p-2">
+            <Avatar
+              src="https://i.imgur.com/2LFuJor.jpeg"
+              size="md"
+              className="mr-2"
+            />
+            <h1 className="text-xl font-bold">Selfie App</h1>
+          </div>
         </div>
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>
@@ -93,11 +100,7 @@ export const SidebarWrapper = () => {
                 icon={<DevIcon />}
                 href="maps"
               />
-              <SidebarItem
-                isActive={pathname === "/view"}
-                title="View Test Data"
-                icon={<ViewIcon />}
-              />
+
               <SidebarItem
                 isActive={pathname === "/settings"}
                 title="Settings"
@@ -106,31 +109,6 @@ export const SidebarWrapper = () => {
               />
             </SidebarMenu>
 
-            <SidebarMenu title="Updates">
-              <SidebarItem
-                isActive={pathname === "/changelog"}
-                title="Changelog"
-                icon={<ChangeLogIcon />}
-              />
-            </SidebarMenu>
-          </div>
-          <div className={Sidebar.Footer()}>
-            <Tooltip content={"Settings"} color="primary">
-              <div className="max-w-fit">
-                <SettingsIcon />
-              </div>
-            </Tooltip>
-            <Tooltip content={"Adjustments"} color="primary">
-              <div className="max-w-fit">
-                <FilterIcon />
-              </div>
-            </Tooltip>
-            <Tooltip content={"Profile"} color="primary">
-              <Avatar
-                src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
-                size="sm"
-              />
-            </Tooltip>
           </div>
         </div>
       </div>
