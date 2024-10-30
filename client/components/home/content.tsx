@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
-import { Link, Button, Spinner } from "@nextui-org/react";
+import { Link, Button, Spinner, Modal, ModalBody, ModalHeader } from "@nextui-org/react";
 import NextLink from "next/link";
 
 import {
@@ -21,39 +21,35 @@ import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
 
-const Chart = dynamic(
-  () => import("../charts/steam").then((mod) => mod.Steam),
-  {
-    ssr: false,
-  },
-);
+interface UserEvents {
+  created: SelfieEvent[];
+  participating: SelfieEvent[];
+}
 
 interface ContentProps {
-  events: {
-    created: SelfieEvent[];
-    participating: SelfieEvent[];
-  };
   chats: any[];
-  friends: People;
   notes: any[];
   pomodoro: PomodoroStats;
   projects: ProjectModel[];
 }
 
 export const Content = (props: ContentProps) => {
-  const [friends, setFriends] = useState<People>(props.friends);
   const [eventType, setEventType] = useState<"your" | "group">("your");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("all");
-  const { position, error } = useGeolocation();
+  //const { position, error } = useGeolocation();
   const [user, setUser] = useState<Person | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [events, setEvents] = useState<UserEvents | null>(null);
+  const [friends, setFriends] = useState<People | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    // !error because if user denied GPS we set default position to Bologna, but we also report error
-    if (position && !error) {
-      sendPositionToServer(position);
-    }
-  }, [position]);
+
+  // useEffect(() => {
+  //   // !error because if user denied GPS we set default position to Bologna, but we also report error
+  //   if (position && !error) {
+  //     sendPositionToServer(position);
+  //   }
+  // }, [position]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -65,9 +61,16 @@ export const Content = (props: ContentProps) => {
 
         const user = await response.json();
         setUser(user);
+        const allEvents:UserEvents = {
+          created: user.events,
+          participating: user.eventsParticipating,
+        };
+        setEvents(allEvents);
+        setFriends(user.friends);
         setIsLoaded(true);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+      } catch (error: any) {
+        setError(error.message);
+        setIsLoaded(true);
       }
     };
 
@@ -146,7 +149,26 @@ export const Content = (props: ContentProps) => {
     });
   };
 
-  if (!isLoaded) return <Spinner className="top-50" />;
+  const renderSpinner = () => {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!isLoaded) return; // renderSpinner();
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-full">
+          <p className="text-danger">Failed to fetch user data</p>
+      </div>
+    );
+  }
+
+  if (!events || !friends || !user) return renderSpinner();
+  
 
   return (
     <div className="h-full lg:px-6">
@@ -197,19 +219,19 @@ export const Content = (props: ContentProps) => {
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   {Array.isArray(
                     eventType === "your"
-                      ? props.events.created
-                      : props.events.participating,
+                      ? events.created
+                      : events.participating,
                   ) &&
                     filterEvents(
                       eventType === "your"
-                        ? props.events.created
-                        : props.events.participating,
+                        ? events.created
+                        : events.participating,
                       timeFilter,
                     ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
-                        ? props.events.created
-                        : props.events.participating,
+                        ? events.created
+                        : events.participating,
                       timeFilter,
                     ).map((event: SelfieEvent, index: number) => (
                       <EventCard data={event} theme={index} key={index} />
@@ -283,7 +305,8 @@ export const Content = (props: ContentProps) => {
 
         {/* Left Section */}
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
-          <WeatherCard position={position} />
+          { //<WeatherCard position={position} />
+          }
           <div className="grid grid-cols-1 mt-1 max-w-[500px]">
             <PomodoroStatistics stats={props.pomodoro} />
           </div>
@@ -300,13 +323,13 @@ export const Content = (props: ContentProps) => {
         </div>
       </div>
 
-      {position && (
-        <div className="mt-4 p-4 bg-default-100 rounded-lg">
-          <h3 className="text-xl font-semibold mb-2">Current Location</h3>
-          <p>Latitude: {position.latitude}</p>
-          <p>Longitude: {position.longitude}</p>
-        </div>
-      )}
+      { /* position && (
+         <div className="mt-4 p-4 bg-default-100 rounded-lg">
+           <h3 className="text-xl font-semibold mb-2">Current Location</h3>
+           <p>Latitude: {position.latitude}</p>
+           <p>Longitude: {position.longitude}</p>
+         </div>
+       ) */}
 
       {/*
       <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
