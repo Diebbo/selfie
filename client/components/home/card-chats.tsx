@@ -18,7 +18,6 @@ export const CardChats = ({ chats }: PropContent) => {
       console.error(error);
     }
   };
-  console.log(chats);
   return (
     <Card className="bg-default-50 rounded-xl shadow-md px-4 py-0 w-full">
       <CardBody className="py-5 gap-4">
@@ -44,7 +43,7 @@ export const CardChats = ({ chats }: PropContent) => {
                   <Avatar
                     isBordered
                     color="secondary"
-                    src="https://i.pravatar.cc/150?u=a042581f4e29026024d"
+                    src={item.avatar}
                   />
                 </div>
 
