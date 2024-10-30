@@ -64,7 +64,7 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
           name={creator?.username}
           description={creator?.email}
           avatarProps={{
-            src:creator?.avatar
+            src: creator?.avatar
           }}
         />
       );
@@ -106,7 +106,7 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
 
     case "progress":
       const completedTasks = project.activities.filter(task => task.completed).length;
-      const progress = Math.round((completedTasks / project.activities.length) * 100);
+      const progress = project.activities.length > 0 ? Math.round((completedTasks / project.activities.length) * 100) : 0;
       return (
         <Chip
           className="capitalize"
