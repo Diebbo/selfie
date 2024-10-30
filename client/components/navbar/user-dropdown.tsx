@@ -7,45 +7,61 @@ import {
   Navbar,
   NavbarItem,
 } from "@nextui-org/react";
-import React, { useCallback, useEffect, useState } from "react";
-import { DarkModeSwitch } from "./darkmodeswitch";
 import { useRouter } from "next/navigation";
-import { deleteAuthCookie, getEmail } from "@/actions/auth.action";
+import { useCallback, useEffect, useState } from "react";
+import { DarkModeSwitch } from "./darkmodeswitch";
+import { deleteAuthCookie } from "@/actions/auth.action";
+import { Person } from "@/helpers/types";
 
 export const UserDropdown = () => {
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
+  const [user, setUser] = useState<Person | null>(null);
+
+  const fetchUser = useCallback(async () => {
+    try {
+      const res = await fetch("/api/users/id");
+      if (!res.ok) {
+        throw new Error("Failed to fetch user");
+      }
+      const dbUser = await res.json();
+      setUser(dbUser);
+    } catch (error) {
+      console.error("Failed to fetch user:", error);
+    }
+  }, []);
 
   const handleLogout = useCallback(async () => {
     await deleteAuthCookie();
     router.replace("/login");
   }, [router]);
 
+  const handleEmailUpdate = useCallback((event: CustomEvent<string>) => {
+    setUser(prevUser => prevUser ? { ...prevUser, email: event.detail } : null);
+  }, []);
+
   useEffect(() => {
-    const fetchEmail = async () => {
-      try {
-        const response = await getEmail();
-        setEmail(response.email);
-      } catch (error) {
-        console.error("Failed to fetch email:", error);
-      }
-    };
-
-    fetchEmail();
-
-    const handleEmailUpdate = (event: CustomEvent<string>) => {
-      setEmail(event.detail);
-    };
+    fetchUser();
 
     window.addEventListener("emailUpdated", handleEmailUpdate as EventListener);
-
     return () => {
-      window.removeEventListener(
-        "emailUpdated",
-        handleEmailUpdate as EventListener,
-      );
+      window.removeEventListener("emailUpdated", handleEmailUpdate as EventListener);
     };
-  }, []);
+  }, []); // Remove user dependency
+
+  const handleDropdownAction = (actionKey: string) => {
+    switch (actionKey) {
+      case "logout":
+        handleLogout();
+        break;
+      case "settings":
+        router.push("/settings");
+        break;
+      // Add other cases as needed
+      default:
+        console.log({ actionKey });
+    }
+  };
+
   return (
     <Dropdown>
       <NavbarItem>
@@ -54,24 +70,22 @@ export const UserDropdown = () => {
             as="button"
             color="secondary"
             size="md"
-            src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
+            src={user?.avatar || ""}
           />
         </DropdownTrigger>
       </NavbarItem>
       <DropdownMenu
         aria-label="User menu actions"
-        onAction={(actionKey) => console.log({ actionKey })}
+        onAction={handleDropdownAction}
       >
         <DropdownItem
           key="profile"
           className="flex flex-col justify-start w-full items-start"
         >
           <p>Signed in as</p>
-          <p>{email || "Loading..."}</p>
+          <p>{user?.email || "Loading..."}</p>
         </DropdownItem>
-        <DropdownItem key="settings" href="settings">
-          My Settings
-        </DropdownItem>
+        <DropdownItem key="settings">My Settings</DropdownItem>
         <DropdownItem key="team_settings">Team Settings</DropdownItem>
         <DropdownItem key="analytics">Analytics</DropdownItem>
         <DropdownItem key="system">System</DropdownItem>
@@ -81,7 +95,6 @@ export const UserDropdown = () => {
           key="logout"
           color="danger"
           className="text-danger"
-          onPress={handleLogout}
         >
           Log Out
         </DropdownItem>
