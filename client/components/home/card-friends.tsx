@@ -58,14 +58,6 @@ const fetchDeleteFriend = async (id: string) => {
   }
 };
 
-const pictureUsers = [
-  "https://i.pravatar.cc/150?u=a042581f4e29026024d",
-  "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-  "https://i.pravatar.cc/150?u=a04258114e29026702d",
-  "https://i.pravatar.cc/150?u=a048581f4e29026701d",
-  "https://i.pravatar.cc/150?u=a092581d4ef9026700d",
-];
-
 interface CardFriendsProps {
   friends: People;
   setFriends: React.Dispatch<React.SetStateAction<People>>;
@@ -154,7 +146,7 @@ export const CardFriends = ({
               >
                 <PopoverTrigger>
                   <Avatar
-                    src={pictureUsers[index % pictureUsers.length]}
+                    src={item.avatar}
                     className="min-w-[40px]"
                   />
                 </PopoverTrigger>

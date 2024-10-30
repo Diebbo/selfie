@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
-import { Link, Button } from "@nextui-org/react";
+import { Link, Button, Spinner } from "@nextui-org/react";
 import NextLink from "next/link";
 
 import {
@@ -38,7 +38,6 @@ interface ContentProps {
   notes: any[];
   pomodoro: PomodoroStats;
   projects: ProjectModel[];
-  user: Person;
 }
 
 export const Content = (props: ContentProps) => {
@@ -46,6 +45,8 @@ export const Content = (props: ContentProps) => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("all");
   const { position, error } = useGeolocation();
+  const [user, setUser] = useState<Person | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     // !error because if user denied GPS we set default position to Bologna, but we also report error
@@ -53,6 +54,26 @@ export const Content = (props: ContentProps) => {
       sendPositionToServer(position);
     }
   }, [position]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/users/id");
+        if (!response.ok) {
+          throw new Error("Failed to fetch user data");
+        }
+
+        const user = await response.json();
+        setUser(user);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
 
   const sendPositionToServer = async (position: {
     latitude: number;
@@ -125,6 +146,8 @@ export const Content = (props: ContentProps) => {
     });
   };
 
+  if (!isLoaded) return <Spinner className="top-50" />;
+
   return (
     <div className="h-full lg:px-6">
       <div className="flex justify-center gap-5 pt-4 px-4 xl:px-3 2xl:px-5 flex-wrap xl:flex-nowrap max-w-[100rem] mx-auto w-full">
@@ -177,12 +200,12 @@ export const Content = (props: ContentProps) => {
                       ? props.events.created
                       : props.events.participating,
                   ) &&
-                  filterEvents(
-                    eventType === "your"
-                      ? props.events.created
-                      : props.events.participating,
-                    timeFilter,
-                  ).length > 0 ? (
+                    filterEvents(
+                      eventType === "your"
+                        ? props.events.created
+                        : props.events.participating,
+                      timeFilter,
+                    ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
                         ? props.events.created
@@ -222,8 +245,8 @@ export const Content = (props: ContentProps) => {
                         <NoteCard
                           key={note._id}
                           note={note}
-                          onClick={() => {}}
-                          onDelete={() => {}}
+                          onClick={() => { }}
+                          onDelete={() => { }}
                         />
                       ))}
                     </div>
@@ -246,7 +269,7 @@ export const Content = (props: ContentProps) => {
                 View All
               </Link>
             </div>
-            <ProjectTable projects={props.projects} creator={props.user} />
+            <ProjectTable projects={props.projects} creator={user} />
           </div>
 
           {/* <div className="h-full flex flex-col gap-2">
@@ -270,7 +293,7 @@ export const Content = (props: ContentProps) => {
             <CardFriends
               friends={friends}
               setFriends={setFriends}
-              currentUserId={props.user._id}
+              currentUserId={user._id}
             />
             <CardChats chats={props.chats} />
           </div>
