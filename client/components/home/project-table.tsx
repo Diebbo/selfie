@@ -64,7 +64,7 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
           name={creator?.username}
           description={creator?.email}
           avatarProps={{
-            src: "https://i.pravatar.cc/150?img=4" // You can replace this with actual avatar
+            src:creator?.avatar
           }}
         />
       );
@@ -129,6 +129,7 @@ interface ProjectComponentProps {
 }
 
 export const ProjectTable: React.FC<ProjectComponentProps> = ({ projects, creator }) => {
+  console.log(creator?.avatar);
   return (
     <div className="w-full flex flex-col gap-4">
       <Table aria-label="Project table with custom cells">
