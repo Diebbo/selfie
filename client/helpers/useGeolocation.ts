@@ -1,4 +1,12 @@
-import { useState, useEffect } from "react";
+// Type: Custom Hook
+
+export const useGeolocation = () => {
+  // Type: Position
+  return {};
+}
+
+/*
+  import { useState, useEffect } from "react";
 
 interface Position {
   latitude: number;
@@ -23,3 +31,4 @@ export const useGeolocation = () => {
       },
   );
 };
+*/

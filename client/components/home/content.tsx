@@ -15,11 +15,12 @@ import {
 } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
-import { useGeolocation } from "@/helpers/useGeolocation";
+// import { useGeolocation } from "@/helpers/useGeolocation";
 import { PomodoroStatistics } from "./pomodoro-stats";
 import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
+import { ReactJSXElement } from "@emotion/react/types/jsx-namespace";
 
 interface UserEvents {
   created: SelfieEvent[];
@@ -33,7 +34,7 @@ interface ContentProps {
   projects: ProjectModel[];
 }
 
-export const Content = (props: ContentProps) => {
+export const Content = (props: ContentProps): ReactJSXElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("all");
   //const { position, error } = useGeolocation();
@@ -157,7 +158,7 @@ export const Content = (props: ContentProps) => {
     );
   }
 
-  if (!isLoaded) return; // renderSpinner();
+  if (!isLoaded) return renderSpinner();
 
   if (error) {
     return (
