@@ -60,7 +60,7 @@ const fetchDeleteFriend = async (id: string) => {
 
 interface CardFriendsProps {
   friends: People;
-  setFriends: React.Dispatch<React.SetStateAction<People>>;
+  setFriends: React.Dispatch<React.SetStateAction<People | null>>;
   currentUserId: string;
 }
 

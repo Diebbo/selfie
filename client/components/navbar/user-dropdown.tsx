@@ -76,7 +76,7 @@ export const UserDropdown = () => {
       </NavbarItem>
       <DropdownMenu
         aria-label="User menu actions"
-        onAction={handleDropdownAction}
+        onAction={handleDropdownAction as any}
       >
         <DropdownItem
           key="profile"
