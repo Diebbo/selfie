@@ -87,7 +87,7 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
                         <Card key={index} className="min-w-[300px]">
                             <CardHeader className="justify-between">
                                 <div className="flex gap-5">
-                                    <Avatar isBordered radius="full" size="md" src="https://nextui.org/avatars/avatar-1.png" />
+                                    <Avatar isBordered radius="full" size="md" src={chat.avatar} />
                                     <div className="flex flex-col gap-1 items-start justify-center">
                                         <h4 className="text-small font-semibold leading-none text-default-600">{chat.username}</h4>
                                     </div>

@@ -3,6 +3,7 @@ export interface ChatModel {
   uid: string;
   username: string;
   lastMessage: MessageModel;
+  avatar: string
 }
 
 export interface MessageModel {

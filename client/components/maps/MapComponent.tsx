@@ -20,6 +20,7 @@ import FriendsIcon from "../icons/FriendsIcon";
 import { useRouter } from "next/navigation";
 import CalendarIcon from "../icons/CalendarIcon";
 import EventIcon from "../icons/EventIcon";
+import { Avatar } from "@nextui-org/react";
 
 interface MapComponentProps {
   filter: "all" | "events" | "friends";
@@ -222,8 +223,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             <Popup className="custom-popup">
               <div className="flex flex-col items-center p-2 min-w-[200px]">
                 <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-2">
-                  {/* TODO: Show Friends Avatar Icon */}
-                  <FriendsIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <Avatar src={friend.avatar} />
                 </div>
                 <h3 className="font-bold text-lg text-blue-900 dark:text-blue-100">
                   {friend.name}
