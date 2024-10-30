@@ -3,17 +3,20 @@ import { Chip, Button, Tooltip } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent, People } from "@/helpers/types";
+import { SelfieEvent, Person, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./contextStore";
 
 interface CalendarPageProps {
-  initialEvents: SelfieEvent[];
+  createdEvents: SelfieEvent[];
+  participatingEvents: SelfieEvent[];
   dbdate: Date;
   friends: People;
+  user: Person;
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
-  const [events, setEvents] = useState<SelfieEvent[]>(props.initialEvents);
+  //concat of 2 events arraies
+  const [events, setEvents] = useState<SelfieEvent[]>(props.createdEvents.concat(props.participatingEvents));
   const [today, setToday] = useState(props.dbdate);
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(props.dbdate);
@@ -81,7 +84,7 @@ const CalendarPage = (props: CalendarPageProps) => {
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
-      //setCurrentTime();
+      setCurrentTime();
       setAllEvents();
       setReloadEvents(false);
     }
@@ -132,7 +135,7 @@ const CalendarPage = (props: CalendarPageProps) => {
         week.push(
           <td
             key={`cell-${i}-${j}`}
-            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-zinc-800"} border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-gray-300 dark:bg-zinc-600"} border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
           >
             {isValidDay ? (
               <CalendarCell
@@ -219,7 +222,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                   }}>
                   <Chip
                     variant="solid"
-                    className="text-base rounded-xl py-5 bg-default"
+                    className="text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default"
                   >
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                   </Chip>

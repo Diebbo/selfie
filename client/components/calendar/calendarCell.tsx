@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
 import { SelfieEvent } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 
@@ -36,19 +36,16 @@ const getEventsByDay = (
       true : false;
   });
 
-  // Sort events by AM/PM first, then by time
   return filteredEvents.sort((a, b) => {
     const dateA = new Date(a.dtstart);
     const dateB = new Date(b.dtstart);
 
-    // Compare AM/PM first
     const aIsAM = isAM(dateA);
     const bIsAM = isAM(dateB);
 
     if (aIsAM && !bIsAM) return -1;
     if (!aIsAM && bIsAM) return 1;
 
-    // If both are AM or both are PM, sort by time
     return dateA.getTime() - dateB.getTime();
   });
 };
@@ -68,7 +65,7 @@ const useIsMobile = () => {
 
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768); // 768px is typical mobile breakpoint
+      setIsMobile(window.innerWidth < 768);
     };
 
     checkIsMobile();
@@ -106,7 +103,6 @@ const showEvents = (
             {" - "}
           </>
         )}
-
         {event.title}
       </button>
     )) : null
@@ -148,7 +144,9 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   const todayEvents = getEventsByDay(safeEvents, cellDate);
   const hasMoreEvents = todayEvents.length > 2;
   const router = useRouter();
-
+  const hasEvents = todayEvents.length > 0;
+  // const hasProjects = todayProjets.length > 0;
+  // const hasTasks = todayTask.lenght > 0;
 
   const handleClick = (e: SelfieEvent) => {
     router.push(`/calendar/${e._id}`);
@@ -161,28 +159,44 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   };
 
   return (
-    <Card>
-      <CardBody className={`${!isMobile ? "p-0 dark:bg-black" : ""}`}
-      >
-        <Button
-          onClick={() => setIsAllEventsOpen(true)}
-          className={`justify-start w-full rounded-[100px] text-sm font-bold 
+    <div className={isMobile ? "w-[calc(87vw/7)] h-[calc(87vw/7)] flex flex-col items-center" : "w-full"}>
+      {!isMobile && (
+        <div className="w-full">
+          <Button
+            onClick={() => setIsAllEventsOpen(true)}
+            className={`justify-start w-full rounded-[100px] text-sm font-bold 
             ${isToday ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300" : "bg-slate-800 text-white dark:text-white"}`}
-        >
-          {day}
-        </Button>
-        <div className="mt-1 space-y-1 text-xs overflow-hidden">
-          {showEvents(safeEvents, cellDate, handleClick, isMobile)}
-          {hasMoreEvents && (
-            <Button
-              className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
-              onClick={() => setIsAllEventsOpen(true)}
-            >
-              ...
-            </Button>
+          >
+            {day}
+          </Button>
+          <div className="mt-1 space-y-1 text-xs overflow-hidden">
+            {showEvents(safeEvents, cellDate, handleClick, isMobile)}
+            {hasMoreEvents && (
+              <Button
+                className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
+                onClick={() => setIsAllEventsOpen(true)}
+              >
+                ...
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isMobile && (
+        <div className="flex flex-col items-center">
+          <Button
+            className={`w-10 h-10 min-w-0 rounded-full p-0 ${isToday ? "bg-[#9353d3] text-slate-200 border-2 border-slate-300" : "bg-slate-600 text-white"
+              }`}
+            onClick={() => setIsAllEventsOpen(true)}
+          >
+            {day}
+          </Button>
+          {hasEvents && (
+            <div className="mt-[0.5rem] w-3 h-3 rounded-full bg-sky-300 mt-1" />
           )}
         </div>
-      </CardBody>
+      )}
 
       <Modal
         isOpen={isAllEventsOpen}
@@ -206,11 +220,12 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                     <span className="text-primary">
                       {!event.allDay && formatEventTime(event)}
                     </span>
-                    {" - "}
-                    {event.title.toString()}
+                    {!event.allDay && " - "}
+                    {<b>{event.title.toString()}</b>}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {formatDate(new Date(event.dtstart))}
+                    {!event.allDay && formatDate(new Date(event.dtstart))}
+                    {event.allDay && "Tutto il giorno"}
                   </p>
                 </div>
               ))}
@@ -218,7 +233,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           </ModalBody>
         </ModalContent>
       </Modal>
-    </Card>
+    </div>
   );
 };
 
