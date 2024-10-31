@@ -145,7 +145,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           },
           cache: "no-store"
         });
-        console.log("yt premium");
 
         if (res.status === 401) {
           throw new Error("Unauthorized, please login.");

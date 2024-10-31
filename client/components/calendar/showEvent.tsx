@@ -10,6 +10,7 @@ import {
   Button,
   Input,
   DateRangePicker,
+  DatePicker,
   Spinner
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
@@ -99,6 +100,32 @@ function eventReducer(state: State, action: Action): State {
   }
 }
 
+
+async function fetchParticipants(eventid: string) {
+  try {
+    const res = await fetch(`${EVENTS_API_URL}/${eventid}/participants`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store"
+    });
+
+    if (res.status === 401) {
+      throw new Error("Unauthorized, please login.");
+    } else if (res.status >= 500) {
+      throw new Error(`Server error: ${res.statusText}`);
+    } else if (!res.ok) {
+      throw new Error("Failed to fetch participants' usernames");
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error: unknown) {
+    console.error("Error fetching participants' usernames:", error);
+  }
+}
+
 async function fetchEvent(eventid: string) {
   try {
     const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
@@ -127,9 +154,10 @@ async function fetchEvent(eventid: string) {
 interface ShowEventProps {
   eventid: string;
   user: Person;
+  friends: Person[]
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user, friends }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
@@ -142,10 +170,55 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
   const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<Person[] | null>(null);
+  const [owner, setOwner] = useState<string>("");
   const isOwner = user.events.created?.some(event => event._id === eventid) || false;
+
+
+  useEffect(() => {
+    async function fetchOwner() {
+      if (!selectedEvent?.uid) return;
+
+      try {
+        //quella che non posso chiamare per il bug strano
+        const res = await fetch(`/api/users/${selectedEvent.uid}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.status === 401) {
+          throw new Error("Unauthorized, please login.");
+        } else if (res.status >= 500) {
+          throw new Error(`Server error: ${res.statusText}`);
+        } else if (!res.ok) {
+          throw new Error("Failed to fetch the event's owner");
+        }
+
+        const ownerData = await res.json();
+        setOwner(ownerData);
+      } catch (error) {
+        console.error("Error fetching event's owner: ", error);
+      }
+    }
+
+    fetchOwner();
+  }, [selectedEvent?.uid]); // Dependency on selectedEvent.uid
 
   useEffect(() => {
     let isMounted = true;
+
+    const getParticipants = async () => {
+      try {
+        const result = await fetchParticipants(eventid);
+        if (result) {
+          setParticipants(result.usernames);
+        }
+      } catch (e: unknown) {
+        console.log("Error fetching participants", e)
+      }
+    }
 
     const getEvent = async () => {
       try {
@@ -180,6 +253,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
 
     if (eventid) {
       getEvent();
+      getParticipants();
     }
 
     return () => {
@@ -293,6 +367,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
 
   if (!isOpen) return null;
+  console.log("owner", owner, "participants", participants);
 
   return (
     <Modal
@@ -310,7 +385,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
           <div className="p-8 text-center text-red-500">
             <p>Error: {error}</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Close
+              Chiudi
             </Button>
           </div>
         ) : displayEvent ? (
@@ -328,7 +403,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                   onClick={handleReset}
                   color="secondary"
                 >
-                  Cancel
+                  Annulla
                 </Button>
                 {user._id === displayEvent.uid && !state.isEditing &&
                   <Button
@@ -336,7 +411,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                     onClick={handleEdit}
                     color="primary"
                   >
-                    Edit
+                    Modifica
                   </Button>
                 }
 
@@ -373,6 +448,17 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 className="mb-4"
               />
+
+              {participants && participants.length > 0 &&
+                <Input
+                  isReadOnly={!state.isEditing}
+                  label="Participants"
+                  value={[owner, ...participants.map(p => p.toString())].join(", ")}
+
+                  onChange={(e) => handleInputChange('URL', e.target.value)}
+                  className="mb-4"
+                />
+              }
               <Input
                 isReadOnly={!state.isEditing}
                 label="URL"
@@ -396,18 +482,16 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                     onChange={(e) => handleNotificationChange('title', e.target.value)}
                     className="mb-4"
                   />
-                  <Input
+                  <DatePicker
                     isReadOnly={!state.isEditing}
                     label="Notification Start Date"
-                    value={displayEvent.notification.fromDate.toString().split('T')[0]}
-                    onChange={(e) => handleNotificationChange('fromDate', new Date(e.target.value))}
-                    type="date"
+                    onChange={(date) => handleNotificationChange('fromDate', date)}
                     className="mb-4"
                   />
                 </>
               )}
             </ModalBody>
-            <ModalFooter className="justify-center">
+            <ModalFooter className="justify-end">
 
               {isOwner && (
                 <div>
@@ -417,14 +501,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                     className="border-1 border-danger mx-2"
                     onPress={deleteEvent}
                   >
-                    Delete Event
+                    Cancella Evento
                   </Button>
                   <Button
-                    color="primary"
+                    color={`${!state.isEditing ? "primary" : "success"}`}
                     className="mx-2"
                     onPress={state.isEditing ? modifyEvent : handleClose}
                   >
-                    {state.isEditing ? "Save" : "Close"}
+                    {state.isEditing ? "Salva" : "Chiudi"}
                   </Button>
                 </div>
               )}

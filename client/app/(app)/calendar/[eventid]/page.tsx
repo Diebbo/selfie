@@ -9,6 +9,7 @@ const EventPage = async ({ params }: { params: { eventid: string } }) => {
     <ShowEvent
       eventid={eventid}
       user={user}
+      friends={user.friends}
     />
   );
 };
