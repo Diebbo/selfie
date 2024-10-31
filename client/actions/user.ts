@@ -29,7 +29,13 @@ async function getUser(): Promise<Person> {
 
   const userData = await response.json();
 
-  const person: Person = userData;
+  const person: Person = {
+    ...userData,
+    events: {
+      created: userData.events,
+      participating: userData.participatingEvents,
+    },
+  };
 
   return person;
 }

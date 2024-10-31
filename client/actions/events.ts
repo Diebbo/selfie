@@ -19,8 +19,7 @@ export async function getEvents() {
   });
 
   const data = await res.json();
-  console.log(data.created);
-
+  
   if (res.status === 401) {
     throw new AuthenticationError('Unauthorized, please login.');
   } else if (res.status >= 500) {
