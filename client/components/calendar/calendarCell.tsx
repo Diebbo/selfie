@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
 import { SelfieEvent } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
+import { WeekViewGrid } from './weekViewGrid';
 
 const areSameDay = (date1: Date, date2: Date): boolean => {
   return (
@@ -83,10 +84,11 @@ const showEvents = (
   events: SelfieEvent[] | undefined,
   date: Date,
   handleClick: (event: SelfieEvent) => void,
-  isMobile: boolean
+  isMobile: boolean,
+  isMonthView: boolean,
 ): JSX.Element[] | null => {
   const todayEvents = getEventsByDay(events, date);
-  const eventsToShow = todayEvents.slice(0, 2);
+  const eventsToShow = isMonthView ? todayEvents.slice(0, 2) : todayEvents.slice(0, 15);
 
   const handleColor = (event: SelfieEvent): string => {
     if (event.participants.length > 0 && event.allDay)
@@ -136,6 +138,7 @@ const monthNames = [
 ];
 
 interface CalendarCellProps {
+  isMonthView: boolean;
   day: number;
   date: Date;
   isToday: boolean;
@@ -143,6 +146,7 @@ interface CalendarCellProps {
 }
 
 const CalendarCell: React.FC<CalendarCellProps> = ({
+  isMonthView,
   day,
   date,
   isToday,
@@ -169,6 +173,25 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     return `${timeString}`;
   };
 
+  if (!isMonthView) {
+    return (
+      <div className={`h-full rounded-[20px] ${isToday ? 'bg-blue-50 dark:bg-slate-900' : ''}`}>
+        <Button
+          onClick={() => setIsAllEventsOpen(true)}
+          className={`justify-center w-full rounded-[100px] text-sm font-bold 
+            ${isToday ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300" : "bg-slate-800 text-white dark:text-white"}`}
+        >
+          {day}
+        </Button>
+        <WeekViewGrid
+          date={date}
+          events={events}
+          isMobile={isMobile}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={isMobile ? "w-[calc(87vw/7)] h-[calc(87vw/7)] flex flex-col items-center" : "w-full"}>
       {!isMobile && (
@@ -181,8 +204,8 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
             {day}
           </Button>
           <div className="mt-1 space-y-1 text-xs overflow-hidden">
-            {showEvents(safeEvents, cellDate, handleClick, isMobile)}
-            {hasMoreEvents && (
+            {showEvents(safeEvents, cellDate, handleClick, isMobile, isMonthView)}
+            {hasMoreEvents && isMonthView && (
               <Button
                 className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
                 onClick={() => setIsAllEventsOpen(true)}
