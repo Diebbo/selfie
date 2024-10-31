@@ -1,6 +1,6 @@
 "use client";
 
-import { Chip, Button, Tooltip } from "@nextui-org/react";
+import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
@@ -15,6 +15,7 @@ const CalendarPage = () => {
   const [today, setToday] = useState<Date | null>(null);
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<SelfieEvent[] | undefined>(undefined);
+  const [isMonthView, setIsMonthView] = useState(true);
 
 
   async function fetchWithErrorHandling(url: string) {
@@ -176,6 +177,10 @@ const CalendarPage = () => {
     setCurrentDate(today);
   };
 
+  const handleToggle = () => {
+    setIsMonthView(!isMonthView);
+  };
+
   const changeMonth = (increment: number) => {
     setCurrentDate(
       new Date(
@@ -200,17 +205,35 @@ const CalendarPage = () => {
           <div className="flex-grow">
             <div className="bg-white dark:bg-black h-screen flex flex-col">
               <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
+
+                <EventAdder
+                  friends={friends as People}
+                  isMobile={isMobile}
+                  aria-label="Event Adder Button"
+                />
+
                 <button
                   onClick={() => changeMonth(-1)}
                   className="text-white hover:text-yellow-300 text-xl md:text-2xl"
                 >
                   &lt;
                 </button>
-                <EventAdder
-                  friends={friends as People}
-                  isMobile={isMobile}
-                  aria-label="Event Adder Button"
-                />
+
+                <div className="flex items-center gap-4">
+                  <span className={`text-sm ${!isMonthView ? 'text-gray-500' : 'text-primary font-medium'}`}>
+                    Mese
+                  </span>
+                  <Switch
+                    checked={isMonthView}
+                    onValueChange={handleToggle}
+                    className="data-[state=checked]:bg-primary"
+                    aria-label="Cambia visualizzazione"
+                  />
+                  <span className={`text-sm ${isMonthView ? 'text-gray-500' : 'text-primary font-medium'}`}>
+                    Settimana
+                  </span>
+                </div>
+
                 <Tooltip
                   content={today?.toISOString().split('T')[0]}
                   showArrow
@@ -248,27 +271,33 @@ const CalendarPage = () => {
                   &gt;
                 </button>
               </div>
-              <div className="flex-grow overflow-auto">
-                <table className="w-full h-full table-fixed">
-                  <thead>
-                    <tr>
-                      {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
-                        (day) => (
-                          <th
-                            key={day}
-                            className="h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
-                          >
-                            {day}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
-                    {renderCalendar()}
-                  </tbody>
-                </table>
-              </div>
+              {isMonthView &&
+                <div className="flex-grow overflow-auto">
+                  <table className="w-full h-full table-fixed">
+                    <thead>
+                      <tr>
+                        {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
+                          (day) => (
+                            <th
+                              key={day}
+                              className="h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
+                            >
+                              {day}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendar()}
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+              {!isMonthView &&
+                <span> Settimana </span>
+              }
             </div>
           </div>
         </div>
