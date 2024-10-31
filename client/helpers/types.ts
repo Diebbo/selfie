@@ -64,6 +64,12 @@ export interface Person extends RegisterType {
     created: SelfieEvent[];
     participating: SelfieEvent[];
   };
+  notes: NoteModel[];
+  projects: ProjectModel[];
+  pomodoro: {
+    totalStudyTime: number;
+    totalBreakTime: number;
+  }
 }
 
 export type People = Person[];

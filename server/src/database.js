@@ -22,7 +22,7 @@ export async function createDataBase() {
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
   const songModel = mongoose.model("Song", songSchema);
-  const projectModel = mongoose.model("Projects", projectSchema);
+  const projectModel = mongoose.model("Project", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
 
@@ -1725,11 +1725,11 @@ export async function createDataBase() {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },
-              avatar: otherUser.avatar,
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: { ...msg, sender: sender.username },
+                avatar: otherUser.avatar,
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1806,8 +1806,17 @@ export async function createDataBase() {
       const user = await userModel
         .findById(id)
         .populate("participatingEvents")
-        .populate("events"); // convert  id to event object
+        .populate("events") // convert  id to event object
+        .populate("projects")
+        .populate({
+          path: "friends",
+          model: "Users",
+          // select mail e username
+          select: "email username avatar",
+        })
+        .lean(); // return plain js object instead of mongoose object (faster)
       if (!user) throw new Error("User not found");
+
       return user;
     },
     async updateGps(id, gps) {
