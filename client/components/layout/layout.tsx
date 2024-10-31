@@ -8,9 +8,10 @@ import { SidebarContext } from "./layout-context";
 
 interface Props {
   children: React.ReactNode;
+  currentTime: Date;
 }
 
-export const Layout = ({ children }: Props) => {
+export const Layout = ({ children, currentTime }: Props) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [_, setLocked] = useLockedBody(false);
   const handleToggleSidebar = () => {
@@ -26,7 +27,7 @@ export const Layout = ({ children }: Props) => {
       }}>
       <section className='flex'>
         <SidebarWrapper />
-        <NavbarWrapper>{children}</NavbarWrapper>
+        <NavbarWrapper currentTime={currentTime}>{children}</NavbarWrapper>
       </section>
     </SidebarContext.Provider>
   );
