@@ -15,7 +15,6 @@ import {
 import { parseDate } from "@internationalized/date";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
-import { displayName } from "react-wavify";
 
 const EVENTS_API_URL = "/api/events";
 
@@ -408,19 +407,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                 </>
               )}
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="justify-center">
 
               {isOwner && (
                 <div>
                   <Button
                     color="danger"
                     variant="light"
+                    className="border-1 border-danger mx-2"
                     onPress={deleteEvent}
                   >
                     Delete Event
                   </Button>
                   <Button
                     color="primary"
+                    className="mx-2"
                     onPress={state.isEditing ? modifyEvent : handleClose}
                   >
                     {state.isEditing ? "Save" : "Close"}
@@ -435,13 +436,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                     variant="light"
                     onPress={dodgeEvent}
                   >
-                    Dodge Event
+                    Non Partecipare
                   </Button>
                   <Button
                     color="primary"
                     onPress={handleClose}
                   >
-                    {"Close"}
+                    Chiudi
                   </Button>
                 </div>
               )}
@@ -452,7 +453,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
           <div className="p-8 text-center">
             <p>No event data found</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Close
+              Chiudi
             </Button>
           </div>
         )}

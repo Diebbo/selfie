@@ -5,7 +5,7 @@ import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 function createCalendarRouter(db, sendNotification) {
   const router = express.Router();
 
-  router.put("/", cookieJwtAuth, async function (req, res) {
+  router.put("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const event = req.body.event;
     if (!event) return res.status(400).json({ message: "Evento non fornito" });
@@ -27,7 +27,7 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
-  router.get("/", cookieJwtAuth, async function (req, res) {
+  router.get("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     console.log(uid);
     try {
@@ -43,7 +43,7 @@ function createCalendarRouter(db, sendNotification) {
     return res.status(200).json(result);
   });
 
-  router.get("/:id", cookieJwtAuth, async function (req, res) {
+  router.get("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventid = req.params.id;
     console.log(uid);
@@ -60,7 +60,7 @@ function createCalendarRouter(db, sendNotification) {
     return res.status(200).json(result);
   });
 
-  router.delete("/:id", cookieJwtAuth, async function (req, res) {
+  router.delete("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     try {
@@ -74,7 +74,7 @@ function createCalendarRouter(db, sendNotification) {
       .json({ message: "evento eliminato correttamente", eventId });
   });
 
-  router.post("/participate/:id", cookieJwtAuth, async function (req, res) {
+  router.post("/participate/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     const response = req.body.response === "accept" ? true : false;
@@ -97,7 +97,7 @@ function createCalendarRouter(db, sendNotification) {
   // per togliere il partecipante dall'evento faccio una query parametrica dove
   // metto l'id del partecipante
   // /api/events/:id/?fields=[true/false]
-  router.patch("/:id", cookieJwtAuth, async function (req, res) {
+  router.patch("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     //user to remove
@@ -132,9 +132,9 @@ function createCalendarRouter(db, sendNotification) {
   router.get('/:id/participants', cookieJwtAuth, async function(req, res) {
     try {
       const eventid = req.params.id
-      const result = await db.getParticipantsUsernames(eventid);
-      console.log("username: ", result);
-      res.status(200).json(result);
+      const usernames = await db.getParticipantsUsernames(eventid);
+      const uids = await db.userService.fromUsernamesToIds(usernames);
+      res.status(200).json({ usernames: usernames, uids: uids });
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }

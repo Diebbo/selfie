@@ -339,6 +339,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
     setIsOpen(false);
     setIsError(false);
     setNotificationError(false);
+    setReloadEvents(true);
     setEventData(initialEvent);
   };
 

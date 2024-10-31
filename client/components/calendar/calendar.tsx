@@ -1,4 +1,5 @@
 "use client";
+
 import { Chip, Button, Tooltip } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
@@ -6,26 +7,19 @@ import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, Person, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./contextStore";
 
-interface CalendarPageProps {
-  createdEvents: SelfieEvent[];
-  participatingEvents: SelfieEvent[];
-  dbdate: Date;
-  friends: People;
-  user: Person;
-}
-
-const CalendarPage = (props: CalendarPageProps) => {
-  //concat of 2 events arraies
-  const [events, setEvents] = useState<SelfieEvent[]>(props.createdEvents.concat(props.participatingEvents));
-  const [today, setToday] = useState(props.dbdate);
+const CalendarPage = () => {
   const [isMobile, setIsMobile] = useState(false);
-  const [currentDate, setCurrentDate] = useState(props.dbdate);
   const [reloadEvents, setReloadEvents] = useState(false);
-  const EVENTS_API_URL = "/api/events";
+  const [friends, setFriends] = useState<Person[] | null>(null);
+  const [user, setUser] = useState<Person | null>(null);
+  const [today, setToday] = useState<Date | null>(null);
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [events, setEvents] = useState<SelfieEvent[] | undefined>(undefined);
 
-  async function fetchEvents() {
+
+  async function fetchWithErrorHandling(url: string) {
     try {
-      var res = await fetch(`${EVENTS_API_URL}`, {
+      const res = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -37,54 +31,61 @@ const CalendarPage = (props: CalendarPageProps) => {
       } else if (res.status >= 500) {
         throw new Error(`Server error: ${res.statusText}`);
       } else if (!res.ok) {
-        throw new Error("Failed to fetch all the events");
+        throw new Error(`Failed to fetch from ${url}`);
       }
+
+      return await res.json();
     } catch (e: unknown) {
-      throw new Error(`Error during fetch events: ${(e as Error).message}`);
+      console.error(`Error fetching from ${url}:`, (e as Error).message);
+      return null;
     }
-
-    return await res.json();
   }
-
-  async function fetchCurrentTime() {
-    try {
-      var res = await fetch("/api/config/time", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (res.status === 401) {
-        throw new Error("Unauthorized, please login.");
-      } else if (res.status >= 500) {
-        throw new Error(`Server error: ${res.statusText}`);
-      } else if (!res.ok) {
-        throw new Error("Failed to get date time");
-      }
-    } catch (e) {
-      throw new Error("Error during fetching date time, ");
-    }
-
-    return await res.json();
-  }
-
-  const setCurrentTime = async () => {
-    const date = await fetchCurrentTime();
-    setToday(new Date(date));
-    setCurrentDate(new Date(date));
-  };
 
   const setAllEvents = async () => {
-    const events = await fetchEvents();
-    setEvents(events);
-  };
+    try {
+      // Fetch date first since we need it for other operations
+      const dateData = await fetchWithErrorHandling('/api/config/time');
+      if (dateData) {
+        setCurrentDate(new Date(dateData));
+        setToday(new Date(dateData));
+      }
 
+      // Fetch user data
+      const userData = await fetchWithErrorHandling('/api/users/id');
+      if (userData) {
+        const person: Person = {
+          _id: userData._id as string,
+          avatar: "",
+          friends: userData.friends as Person[],
+          events: {
+            created: userData.events as SelfieEvent[],
+            participating: userData.participatingEvents as SelfieEvent[],
+          },
+          username: userData.username as string,
+          password: userData.password as string,
+          name: userData.name as string,
+          surname: userData.surname as string,
+          email: userData.email as string,
+          birthDate: new Date(userData.birthDate as string),
+          address: userData.address as string,
+          city: userData.city as string,
+          state: userData.state as string,
+          zip: userData.zip as string,
+          country: userData.country as string,
+        };
+        setUser(person);
+        setEvents(person.events.created.concat(person.events.participating));
+        setFriends(person.friends as Person[]);
+      }
+
+    } catch (error) {
+      console.error('Error in setAllEvents:', error);
+    }
+  };
 
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
-      setCurrentTime();
       setAllEvents();
       setReloadEvents(false);
     }
@@ -94,7 +95,9 @@ const CalendarPage = (props: CalendarPageProps) => {
   useEffect(() => {
     console.log("primo fetch degli eventi gli eventi");
     setAllEvents();
+    console.log("fine fetch degli eventi");
   }, []);
+  console.log("ahaha", user);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -114,8 +117,8 @@ const CalendarPage = (props: CalendarPageProps) => {
   };
 
   const renderCalendar = () => {
-    const totalDays = daysInMonth(currentDate);
-    const startingDay = firstDayOfMonth(currentDate);
+    const totalDays = daysInMonth(currentDate as Date);
+    const startingDay = firstDayOfMonth(currentDate as Date);
     const rows = 6; // Fissiamo il numero di righe a 6 per coprire tutti i possibili casi
 
     let days = [];
@@ -128,9 +131,9 @@ const CalendarPage = (props: CalendarPageProps) => {
 
         const isToday =
           isValidDay &&
-          dayIndex === today.getDate() &&
-          currentDate.getMonth() === today.getMonth() &&
-          currentDate.getFullYear() === today.getFullYear();
+          dayIndex === today?.getDate() &&
+          currentDate?.getMonth() === today.getMonth() &&
+          currentDate?.getFullYear() === today.getFullYear();
 
         week.push(
           <td
@@ -140,7 +143,7 @@ const CalendarPage = (props: CalendarPageProps) => {
             {isValidDay ? (
               <CalendarCell
                 day={dayIndex}
-                date={currentDate}
+                date={currentDate as Date}
                 isToday={isToday}
                 events={events}
               />
@@ -170,19 +173,23 @@ const CalendarPage = (props: CalendarPageProps) => {
   ];
 
   const handleToday = () => {
-    setCurrentTime();
+    setCurrentDate(today);
   };
 
   const changeMonth = (increment: number) => {
     setCurrentDate(
       new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + increment,
+        currentDate?.getFullYear() as number,
+        currentDate?.getMonth() as number + increment,
         1,
       ),
     );
   };
 
+  if (!currentDate || !today || friends === null || user === null || events === undefined) {
+    console.log("dio bello", currentDate, today, friends, user, events);
+    return (<span> Caricamento... </span>);
+  }
   return (
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
       <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
@@ -200,12 +207,12 @@ const CalendarPage = (props: CalendarPageProps) => {
                   &lt;
                 </button>
                 <EventAdder
-                  friends={props.friends}
+                  friends={friends as People}
                   isMobile={isMobile}
                   aria-label="Event Adder Button"
                 />
                 <Tooltip
-                  content={today.toISOString().split('T')[0]}
+                  content={today?.toISOString().split('T')[0]}
                   showArrow
                   key="tooltip day"
                   delay={0}
@@ -224,7 +231,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                     variant="solid"
                     className="text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default"
                   >
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    {monthNames[currentDate?.getMonth() as number]} {currentDate?.getFullYear()}
                   </Chip>
                 </Tooltip>
                 <Button
