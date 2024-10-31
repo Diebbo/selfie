@@ -715,6 +715,8 @@ export async function createDataBase() {
     // Check if user is already participating
     if (user.participatingEvents.includes(eventId))
       throw new Error("User is already participating in this event");
+    else if (!user.invitedUser.includes(eventId))
+      throw new Error("User is not invited to the event");
     user.participatingEvents.push(eventId);
     user.invitedEvents = user.invitedEvents.filter(
       (e) => e.toString() !== eventId.toString(),

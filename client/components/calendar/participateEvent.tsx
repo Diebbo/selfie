@@ -12,7 +12,7 @@ import {
   Input,
   Switch,
   CardBody,
-  Chip,
+  Skeleton,
   DateRangePicker,
 } from "@nextui-org/react";
 import {
@@ -50,6 +50,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
   const [notifications, setNotifications] = useState(false);
   const [notificationData, setNotificationData] =
     useState<Partial<SelfieNotification>>(initialNotification);
+  const [trueParticipant, setTrueParticipant] = useState(false);
 
   const EVENTS_API_URL = "/api/events";
 
@@ -144,6 +145,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           },
           cache: "no-store"
         });
+        console.log("yt premium");
 
         if (res.status === 401) {
           throw new Error("Unauthorized, please login.");
@@ -153,8 +155,16 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
           throw new Error("Failed to fetch participants' usernames");
         }
 
-        const usernames = await res.json();
-        setParticipants(usernames);
+        const participants = await res.json();
+        console.log("usernames: ", participants.usernames);
+        console.log("uids: ", participants.uids);
+        // if you are not a participant you are redirected to calendar page
+        if (!participants.uids.includes(participant)) {
+          router.refresh()
+          router.push("/calendar");
+        }
+        setTrueParticipant(true);
+        setParticipants(participants.usernames);
       } catch (error) {
         console.error("Error fetching participants' usernames:", error);
       }
@@ -252,10 +262,78 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
     }
   };
 
-  if (loading || !event) {
-    return <div>Caricamento...</div>;
-  }
+  //Skeleton di caricamento
+  if (loading || !trueParticipant) {
+    return (
+      <Modal isOpen={true} className="w-[60%] h-[70%] space-y-5 p-4" radius="lg">
+        <ModalContent>
+          <Skeleton className="w-2/5 rounded-lg">
+            <div className="h-4 w-2/5 rounded-lg bg-default-300"></div>
+          </Skeleton>
+          <ModalHeader>
+            <Skeleton className="w-2/5 rounded-lg">
+              <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+            </Skeleton>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-3">
+              <Skeleton className="w-3/5 rounded-lg">
+                <div className="h-3 w-3/5 rounded-lg bg-default-200"></div>
+              </Skeleton>
+              <Skeleton className="w-4/5 rounded-lg">
+                <div className="h-3 w-4/5 rounded-lg bg-default-200"></div>
+              </Skeleton>
+              <Skeleton className="w-2/5 rounded-lg">
+                <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+              </Skeleton>
+              <Skeleton className="w-5/5 rounded-lg">
+                <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+              </Skeleton>
+            </div>
 
+            <div className="space-y-3">
+              <Skeleton className="w-3/5 rounded-lg">
+                <div className="h-3 w-3/5 rounded-lg bg-default-200"></div>
+              </Skeleton>
+              <Skeleton className="w-4/5 rounded-lg">
+                <div className="h-3 w-4/5 rounded-lg bg-default-200"></div>
+              </Skeleton>
+              <Skeleton className="w-2/5 rounded-lg">
+                <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+              </Skeleton>
+              <Skeleton className="w-5/5 rounded-lg">
+                <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+              </Skeleton>
+            </div>
+
+            <div className="space-y-3">
+              <Skeleton className="w-3/5 rounded-lg">
+                <div className="h-3 w-3/5 rounded-lg bg-default-200"></div>
+              </Skeleton>
+              <Skeleton className="w-4/5 rounded-lg">
+                <div className="h-3 w-4/5 rounded-lg bg-default-200"></div>
+              </Skeleton>
+              <Skeleton className="w-2/5 rounded-lg">
+                <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+              </Skeleton>
+              <Skeleton className="w-5/5 rounded-lg">
+                <div className="h-3 w-2/5 rounded-lg bg-default-300"></div>
+              </Skeleton>
+            </div>
+          </ModalBody>
+          <ModalFooter className="justify-center gap-10">
+            <Skeleton className="w-2/5 rounded-lg">
+              <Button />
+            </Skeleton>
+            <Skeleton className="w-2/5 rounded-lg">
+              <Button />
+            </Skeleton>
+
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    )
+  }
   return (
     <Modal isOpen={isOpen} onClose={handleReturnToCalendar} size="2xl">
       <ModalContent>
@@ -270,7 +348,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
                 className="text-gray-600 mb-4"
                 label="Titolo evento"
                 isReadOnly={true}
-                value={event.title as string}
+                value={event?.title as string}
               />
 
               <DateRangePicker
@@ -278,16 +356,16 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
                 className="mb-4"
                 label="Data dell'evento"
                 visibleMonths={1}
-                granularity={event.allDay ? "day" : "minute"}
+                granularity={event?.allDay ? "day" : "minute"}
                 hideTimeZone
-                defaultValue={getDateRange(event.allDay)}
+                defaultValue={getDateRange(event?.allDay as boolean)}
                 classNames={{
                   selectorButton: "hidden",  // nasconde completamente il trigger
                   base: "pointer-events-none" // disabilita le interazioni
                 }}
               />
 
-              {event.location && event.location.length > 0 && (
+              {event?.location && event?.location.length > 0 && (
                 <Input
                   className="text-gray-600 mb-4"
                   isReadOnly={true}
@@ -295,16 +373,16 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
                 />
               )}
 
-              {event.description && event.description.length > 0 && (
+              {event?.description && event?.description.length > 0 && (
                 <Input
                   label="Descrizione"
                   className="text-gray-600 mb-4"
                   isReadOnly={true}
-                  value={event.description as string}
+                  value={event?.description as string}
                 />
               )}
 
-              {event.participants && event.participants.length > 0 && (
+              {event?.participants && event?.participants.length > 0 && (
                 <Input
                   label="Partecipanti"
                   className="text-gray-600 mb-4"
@@ -313,12 +391,12 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
                 />
               )}
 
-              {event.URL && event.URL.length > 0 && (
+              {event?.URL && event?.URL.length > 0 && (
                 <Input
                   label="Link"
                   className="text-gray-600 mb-4"
                   isReadOnly={true}
-                  value={event.URL as string}
+                  value={event?.URL as string}
                 />
               )}
 
@@ -333,10 +411,10 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
                 value={notifications}
                 notification={notificationData as SelfieNotification}
                 onChange={handleInputChange}
-                startEventDate={event.dtstart as Date}
+                startEventDate={event?.dtstart as Date}
                 notificationError={notificationError}
                 setNotificationError={setNotificationError}
-                isAllDay={event.allDay as boolean}
+                isAllDay={event?.allDay as boolean}
               />
 
 
