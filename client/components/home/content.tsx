@@ -40,14 +40,14 @@ interface ContentProps {
 
 export const Content = (props: ContentProps): ReactJSXElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("all");
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("today");
   //const { position, error } = useGeolocation();
   const [user, setUser] = useState<Person | null>(props.user);
   const [isLoaded, setIsLoaded] = useState(true);
   const [events, setEvents] = useState<UserEvents | null>(props.user.events);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
   const [error, setError] = useState<Error | null>(null);
-
+ 
 
   // useEffect(() => {
   //   // !error because if user denied GPS we set default position to Bologna, but we also report error
@@ -225,19 +225,19 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   {Array.isArray(
                     eventType === "your"
-                      ? events
-                      : events,
+                      ? user.events.created
+                      : user.events.participating,
                   ) &&
                     filterEvents(
                       eventType === "your"
-                        ? events.created
-                        : events.participating,
+                        ? user.events.created
+                        : user.events.participating,
                       timeFilter,
                     ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
-                        ? events.created
-                        : events.participating,
+                        ? user.events.created
+                        : user.events.participating,
                       timeFilter,
                     ).map((event: SelfieEvent, index: number) => (
                       <EventCard data={event} theme={index} key={index} />
@@ -320,7 +320,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardFriends
-              friends={user.friends}
+              friends={friends}
               setFriends={setFriends}
               currentUserId={user._id}
             />

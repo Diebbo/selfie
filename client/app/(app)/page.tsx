@@ -20,19 +20,13 @@ import { getEvents } from "@/actions/events";
 
 export default async function Home() {
   try {
-    const [chats, notes, pomodoro, projects, events, user]: [
+    const [chats,  user]: [
       ChatModel[],
-      NoteModel[],
-      PomodoroStats,
-      ProjectModel[],
-      SelfieEvent[], 
+      
       Person
     ] = await Promise.all([
       getChats(),
-      getNotes(),
-      getStats(),
-      getProjects(),
-      getEvents(),
+      
       getUser(),
     ]);
 
