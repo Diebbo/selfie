@@ -21,6 +21,7 @@ import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
 import { ReactJSXElement } from "@emotion/react/types/jsx-namespace";
+import { useRouter } from "next/navigation";
 
 interface UserEvents {
   created: SelfieEvent[];
@@ -32,6 +33,7 @@ interface ContentProps {
   notes: any[];
   pomodoro: PomodoroStats;
   projects: ProjectModel[];
+  events: SelfieEvent[];
 }
 
 export const Content = (props: ContentProps): ReactJSXElement => {
@@ -40,7 +42,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   //const { position, error } = useGeolocation();
   const [user, setUser] = useState<Person | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [events, setEvents] = useState<UserEvents | null>(null);
+  const [events, setEvents] = useState<SelfieEvent[] | null>(props.events);
   const [friends, setFriends] = useState<People | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
@@ -65,8 +67,8 @@ export const Content = (props: ContentProps): ReactJSXElement => {
         const allEvents:UserEvents = {
           created: user.events,
           participating: user.eventsParticipating,
-        };
-        setEvents(allEvents);
+        };/*
+        setEvents(allEvents);*/
         setFriends(user.friends);
         setIsLoaded(true);
       } catch (error: any) {
@@ -77,6 +79,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
 
     fetchUser();
   }, []);
+
 
 
   const sendPositionToServer = async (position: {
@@ -220,19 +223,19 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   {Array.isArray(
                     eventType === "your"
-                      ? events.created
-                      : events.participating,
+                      ? events
+                      : events,
                   ) &&
                     filterEvents(
                       eventType === "your"
-                        ? events.created
-                        : events.participating,
+                        ? events
+                        : events,
                       timeFilter,
                     ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
-                        ? events.created
-                        : events.participating,
+                        ? events
+                        : events,
                       timeFilter,
                     ).map((event: SelfieEvent, index: number) => (
                       <EventCard data={event} theme={index} key={index} />
