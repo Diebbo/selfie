@@ -20,18 +20,20 @@ import { getEvents } from "@/actions/events";
 
 export default async function Home() {
   try {
-    const [chats, notes, pomodoro, projects, events]: [
+    const [chats, notes, pomodoro, projects, events, user]: [
       ChatModel[],
       NoteModel[],
       PomodoroStats,
       ProjectModel[],
-      SelfieEvent[]
+      SelfieEvent[], 
+      Person
     ] = await Promise.all([
       getChats(),
       getNotes(),
       getStats(),
       getProjects(),
       getEvents(),
+      getUser(),
     ]);
 
     // Pass the fetched data to the client-side component
@@ -39,10 +41,11 @@ export default async function Home() {
       <>
         <Content
           chats={chats}
-          notes={notes}
-          projects={projects}
-          pomodoro={pomodoro}
-          events={events}
+          notes={user.notes}
+          projects={user.projects}
+          pomodoro={user.pomodoro}
+          events={user.events}
+          user = {user}
         />
       </>
     );

@@ -29,26 +29,7 @@ async function getUser(): Promise<Person> {
 
   const userData = await response.json();
 
-  const person: Person = {
-    _id: userData._id as string,
-    avatar: "",
-    friends: userData.friends as Person[],
-    events: {
-      created: userData.events as SelfieEvent[],
-      participating: userData.participatingEvents as SelfieEvent[],
-    },
-    username: userData.username as string,
-    password: userData.password as string,
-    name: userData.name as string,
-    surname: userData.surname as string,
-    email: userData.email as string,
-    birthDate: new Date(userData.birthDate as string),
-    address: userData.address as string,
-    city: userData.city as string,
-    state: userData.state as string,
-    zip: userData.zip as string,
-    country: userData.country as string,
-  };
+  const person: Person = userData;
 
   return person;
 }
