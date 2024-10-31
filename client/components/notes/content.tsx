@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { NoteModel } from "@/helpers/types";
 import NoteCard from "@/components/notes/NoteCard";
 import Markdown from "react-markdown";
+import { getNoteById, getNotes } from "@/actions/notes";
+import { get } from "http";
 
 interface NotePageProps {
   notes: NoteModel[];
@@ -26,7 +28,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   const [showNoteForm, setShowNoteForm] = useState(false); // State for showing the note form
   const [showMarkdown, setShowMarkdown] = useState(false);
 
-  const fetchNotes = async () => {
+  /*const fetchNotes = async () => {
     const res = await fetch(
       `/api/notes/list?fields=_id,title,date,tags,content`,
       {
@@ -43,17 +45,19 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       (a: NoteModel, b: NoteModel) =>
         new Date(b.date!).getTime() - new Date(a.date!).getTime(),
     );
-  };
+  };*/
 
   const fetchNoteById = async (id: string) => {
-    const res = await fetch(`/api/notes/${id}`, {
+
+    // TODO: Decide whether to use fetch or server actions
+    /*const res = await fetch(`/api/notes/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
       cache: "no-store", // This ensures fresh data on every request
-    });
-    const note = await res.json();
+    });*/
+    const note = await getNoteById(id);
     return note;
   };
 
@@ -83,13 +87,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     setSearchQuery(e.target.value);
   };
 
-  useEffect(() => {
-    const fetchAllNotes = async () => {
-      const notes = await fetchNotes();
-      setNotes(notes);
-    };
-    fetchAllNotes();
-  }, []);
+  
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -147,7 +145,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       setContent("");
       setTags("");
       setSelectedNote(null);
-      const notes = await fetchNotes();
+      const notes = await getNotes();
       setNotes(notes);
       setShowNotification(true); // Show notification
       setTimeout(() => setShowNotification(false), 3000); // Hide notification after 3 seconds
