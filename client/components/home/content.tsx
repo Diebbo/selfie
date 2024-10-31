@@ -12,6 +12,7 @@ import {
   SelfieEvent,
   Person,
   ProjectModel,
+  NoteModel,
 } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
@@ -268,8 +269,8 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-thin">
-                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {props.user.notes?.map((note) => (
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {user.notes?.sort((a: NoteModel, b: NoteModel) => new Date(b.date!).getTime() - new Date(a.date!).getTime()).map((note) => (
                         <NoteCard
                           key={note._id}
                           note={note}
