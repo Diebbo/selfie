@@ -5,6 +5,8 @@ import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, Person, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./contextStore";
+import { getEvents } from "@/actions/events";
+import { getUser } from "@/actions/user";
 
 interface CalendarPageProps {
   createdEvents: SelfieEvent[];
@@ -84,17 +86,18 @@ const CalendarPage = (props: CalendarPageProps) => {
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
-      setCurrentTime();
-      setAllEvents();
+      const u = getUser();
+      // update the events calling getUser server Action
+      // TODO: we should use getEvents instead of getUser to have faster response from server db
+      u.then((user) => {
+        setEvents(user.events.created.concat(user.events.participating));
+      });
       setReloadEvents(false);
     }
   }, [reloadEvents]);
 
 
-  useEffect(() => {
-    console.log("primo fetch degli eventi gli eventi");
-    setAllEvents();
-  }, []);
+  
 
   useEffect(() => {
     const checkMobile = () => {
