@@ -22,6 +22,7 @@ import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
 import { ReactJSXElement } from "@emotion/react/types/jsx-namespace";
 import { useRouter } from "next/navigation";
+import { TurtleIcon } from "lucide-react";
 
 interface UserEvents {
   created: SelfieEvent[];
@@ -33,17 +34,18 @@ interface ContentProps {
   notes: any[];
   pomodoro: PomodoroStats;
   projects: ProjectModel[];
-  events: SelfieEvent[];
+  events: UserEvents;
+  user: Person;
 }
 
 export const Content = (props: ContentProps): ReactJSXElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("all");
   //const { position, error } = useGeolocation();
-  const [user, setUser] = useState<Person | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [events, setEvents] = useState<SelfieEvent[] | null>(props.events);
-  const [friends, setFriends] = useState<People | null>(null);
+  const [user, setUser] = useState<Person | null>(props.user);
+  const [isLoaded, setIsLoaded] = useState(true);
+  const [events, setEvents] = useState<UserEvents | null>(props.user.events);
+  const [friends, setFriends] = useState<People | null>(props.user.friends);
   const [error, setError] = useState<Error | null>(null);
 
 
@@ -54,7 +56,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   //   }
   // }, [position]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchUser = async () => {
       try {
         const response = await fetch("/api/users/id");
@@ -67,8 +69,8 @@ export const Content = (props: ContentProps): ReactJSXElement => {
         const allEvents:UserEvents = {
           created: user.events,
           participating: user.eventsParticipating,
-        };/*
-        setEvents(allEvents);*/
+        };
+        setEvents(allEvents);
         setFriends(user.friends);
         setIsLoaded(true);
       } catch (error: any) {
@@ -79,7 +81,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
 
     fetchUser();
   }, []);
-
+  */
 
 
   const sendPositionToServer = async (position: {
@@ -228,14 +230,14 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   ) &&
                     filterEvents(
                       eventType === "your"
-                        ? events
-                        : events,
+                        ? events.created
+                        : events.participating,
                       timeFilter,
                     ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
-                        ? events
-                        : events,
+                        ? events.created
+                        : events.participating,
                       timeFilter,
                     ).map((event: SelfieEvent, index: number) => (
                       <EventCard data={event} theme={index} key={index} />
@@ -267,7 +269,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-thin">
                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {props.notes?.map((note) => (
+                      {props.user.notes?.map((note) => (
                         <NoteCard
                           key={note._id}
                           note={note}
@@ -295,7 +297,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 View All
               </Link>
             </div>
-            <ProjectTable projects={props.projects} creator={user} />
+            <ProjectTable projects={user.projects} creator={user} />
           </div>
 
           {/* <div className="h-full flex flex-col gap-2">
@@ -312,13 +314,13 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           { //<WeatherCard position={position} />
           }
           <div className="grid grid-cols-1 mt-1 max-w-[500px]">
-            <PomodoroStatistics stats={props.pomodoro} />
+            <PomodoroStatistics stats={user.pomodoro} />
           </div>
 
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardFriends
-              friends={friends}
+              friends={user.friends}
               setFriends={setFriends}
               currentUserId={user._id}
             />
