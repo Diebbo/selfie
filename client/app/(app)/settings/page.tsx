@@ -1,31 +1,32 @@
 "use server";
 import Content from "@/components/settings/content";
 import {
-  getEmail,
   getNotificationStatus,
-  getUsername,
 } from "@/actions/auth.action";
-import { revalidatePath } from "next/cache";
+import { getUser } from "@/actions/user";
 
 const Page = async () => {
   try {
-    const [user, email, notifications] = await Promise.all([
-      getUsername(),
-      getEmail(),
+    const [user,notifications]  = await Promise.all([
+      getUser(),
       getNotificationStatus(),
     ]);
+
+    console.log("miao", user);
 
     return (
       <Content
         username={user.username}
-        email={email.email}
+        email={user.email}
         pushNotifications={notifications?.pushOn}
         emailNotifications={notifications?.emailOn}
+        avatr={user.avatar}
       />
     );
   } catch (error) {
     return (
       <Content
+        avatar=""
         username=""
         email=""
         pushNotifications={false}
