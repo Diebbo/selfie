@@ -16,7 +16,7 @@ interface TimeModifierClientProps {
     formData: FormData,
   ) => Promise<{ success: boolean; error?: string }>;
   onReset: () => Promise<{ success: boolean; error?: string }>;
-  onGetCurrentTime: () => Promise<{ currentTime: string; error?: string }>;
+
   onClose?: () => void; // Aggiungiamo questa prop per gestire la chiusura del modal
   initialTime: Date;
 }
@@ -24,7 +24,7 @@ interface TimeModifierClientProps {
 const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
   onSubmit,
   onReset,
-  onGetCurrentTime,
+
   onClose,
   initialTime,
 }) => {

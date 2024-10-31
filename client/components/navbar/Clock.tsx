@@ -4,42 +4,18 @@ import TimeModifierClient from "@/components/timemachine/content";
 import {
   changeCurrentTime,
   resetTime,
-  getCurrentTime,
 } from "@/actions/setTime";
 
-export const Clock = () => {
-  const [time, setTime] = useState<Date | null>(null);
+interface ClockProps {
+  currentTime: Date;
+}
+
+export const Clock = ({ currentTime }: ClockProps) => {
+  const [time, setTime] = useState<Date | null>(new Date(currentTime));
   const [isOpen, setIsOpen] = useState(false);
-
-  // Fetch the current time from the server (db)
-  async function fetchCurrentTime() {
-    try {
-      const res = await fetch("/api/config/time", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (res.status === 401) {
-        throw new Error("Unauthorized, please login.");
-      } else if (res.status >= 500) {
-        throw new Error(`Server error: ${res.statusText}`);
-      } else if (!res.ok) {
-        throw new Error("Failed to get date time");
-      }
-
-      const serverTime = new Date(await res.json());
-      setTime(serverTime);
-    } catch (e) {
-      console.error("Error during fetching date time: ", e);
-    }
-  }
 
   // Update the timer every second
   useEffect(() => {
-    fetchCurrentTime();
-
     const timer = setInterval(() => {
       setTime((prevTime) => {
         if (prevTime) {
@@ -60,7 +36,7 @@ export const Clock = () => {
     const time = formData.get("time") as string;
     try {
       await changeCurrentTime(new Date(time));
-      await fetchCurrentTime();
+      setTime(new Date(time));
       return { success: true };
     } catch (error: any) {
       console.log(error);
@@ -71,27 +47,13 @@ export const Clock = () => {
   const handleTimeReset = async () => {
     try {
       await resetTime();
-      await fetchCurrentTime();
+      setTime(new Date());
       return { success: true };
     } catch (error: any) {
       console.log(error);
       return { success: false, error: error.message };
     }
   };
-
-  const handleGetCurrentTime = async () => {
-    try {
-      const result = await getCurrentTime();
-      return { currentTime: result.currentTime };
-    } catch (error: any) {
-      console.log(error);
-      return { currentTime: "", error: error.message };
-    }
-  };
-
-  if (!time) {
-    return <div>Loading...</div>;
-  }
 
   const formatDate = (date: Date) => {
     const day = date.getDate().toString().padStart(2, "0");
@@ -126,7 +88,6 @@ export const Clock = () => {
                 <TimeModifierClient
                   onSubmit={handleTimeChange}
                   onReset={handleTimeReset}
-                  onGetCurrentTime={handleGetCurrentTime}
                   onClose={() => setIsOpen(false)}
                   initialTime={time}
                 />
