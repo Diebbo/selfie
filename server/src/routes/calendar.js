@@ -15,10 +15,13 @@ function createCalendarRouter(db, sendNotification) {
       var result = await db.createEvent(uid, event);
       const notifications = result.notifications;
       const addedEvent = result.addedEvent;
-      for (let i = 0; i < notifications.length; i++) {
-        console.log("AAAAAAAAAAAAAAAAAAAAAAAAAA");
-        sendNotification(notifications[i].user, notifications[i].payload);
+  
+      if (notifications) {
+        for (let i = 0; i < notifications.length; i++) {
+          sendNotification(notifications[i].user, notifications[i].payload);
+        }
       }
+      
       res
         .status(200)
         .json({ message: "evento aggiunto correttamente", result: addedEvent });
