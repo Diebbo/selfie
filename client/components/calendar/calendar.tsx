@@ -117,7 +117,47 @@ const CalendarPage = () => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const renderCalendar = () => {
+
+  const renderCalendarWeek = () => {
+
+    if (!currentDate) return <span>  testo </span>;
+
+    const daysOfWeek = [];
+    const currentWeekStart = new Date(currentDate);
+
+    // Adjust to the start of the week (Sunday)
+    currentWeekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(currentWeekStart);
+      dayDate.setDate(currentWeekStart.getDate() + i);
+
+      const isToday =
+        dayDate.getDate() === today?.getDate() &&
+        dayDate.getMonth() === today.getMonth() &&
+        dayDate.getFullYear() === today.getFullYear();
+
+      daysOfWeek.push(
+        <td
+          key={`week-cell-${i}`}
+          className={`border bg-white dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+        >
+          <CalendarCell
+            isMonthView={isMonthView}
+            day={dayDate.getDate()}
+            date={dayDate}
+            isToday={isToday}
+            events={events}
+          />
+        </td>
+      );
+    }
+
+    return <tr>{daysOfWeek}</tr>;
+  };
+
+
+  const renderCalendarMonth = () => {
     const totalDays = daysInMonth(currentDate as Date);
     const startingDay = firstDayOfMonth(currentDate as Date);
     const rows = 6; // Fissiamo il numero di righe a 6 per coprire tutti i possibili casi
@@ -143,6 +183,7 @@ const CalendarPage = () => {
           >
             {isValidDay ? (
               <CalendarCell
+                isMonthView={isMonthView}
                 day={dayIndex}
                 date={currentDate as Date}
                 isToday={isToday}
@@ -191,6 +232,14 @@ const CalendarPage = () => {
     );
   };
 
+  const changeWeek = (increment: number) => {
+    if (currentDate) {
+      const newDate = new Date(currentDate);
+      newDate.setDate(currentDate.getDate() + (increment));
+      setCurrentDate(newDate);
+    }
+  };
+
   if (!currentDate || !today || friends === null || user === null || events === undefined) {
     console.log("dio bello", currentDate, today, friends, user, events);
     return (<span> Caricamento... </span>);
@@ -213,25 +262,22 @@ const CalendarPage = () => {
                 />
 
                 <button
-                  onClick={() => changeMonth(-1)}
+                  onClick={() => { isMonthView ? changeMonth(-1) : changeWeek(-7) }}
                   className="text-white hover:text-yellow-300 text-xl md:text-2xl"
                 >
                   &lt;
                 </button>
 
                 <div className="flex items-center gap-4">
-                  <span className={`text-sm ${!isMonthView ? 'text-gray-500' : 'text-primary font-medium'}`}>
-                    Mese
-                  </span>
                   <Switch
-                    checked={isMonthView}
+                    defaultSelected={true}
                     onValueChange={handleToggle}
+                    color="primary"
+                    startContent={<span> M </span>}
+                    endContent={<span> W </span>}
                     className="data-[state=checked]:bg-primary"
                     aria-label="Cambia visualizzazione"
                   />
-                  <span className={`text-sm ${isMonthView ? 'text-gray-500' : 'text-primary font-medium'}`}>
-                    Settimana
-                  </span>
                 </div>
 
                 <Tooltip
@@ -252,7 +298,7 @@ const CalendarPage = () => {
                   }}>
                   <Chip
                     variant="solid"
-                    className="text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default"
+                    className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
                   >
                     {monthNames[currentDate?.getMonth() as number]} {currentDate?.getFullYear()}
                   </Chip>
@@ -265,39 +311,43 @@ const CalendarPage = () => {
                   Oggi
                 </Button>
                 <button
-                  onClick={() => changeMonth(1)}
+                  onClick={() => { isMonthView ? changeMonth(1) : changeWeek(7) }}
                   className="text-white hover:text-yellow-300 text-xl md:text-2xl"
                 >
                   &gt;
                 </button>
               </div>
-              {isMonthView &&
-                <div className="flex-grow overflow-auto">
-                  <table className="w-full h-full table-fixed">
-                    <thead>
-                      <tr>
-                        {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
-                          (day) => (
-                            <th
-                              key={day}
-                              className="h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
-                            >
-                              {day}
-                            </th>
-                          ),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
-                      {renderCalendar()}
+              <div className="flex-grow overflow-auto">
+                <table className="w-full h-full table-fixed">
+                  <thead>
+                    <tr className="h-2">
+                      {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
+                        (day) => (
+                          <th
+                            key={day}
+                            aria-label="day line"
+                            className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
+                          >
+                            {day}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  {
+                    isMonthView &&
+                    <tbody className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendarMonth()}
                     </tbody>
-                  </table>
-                </div>
-              }
+                  }
 
-              {!isMonthView &&
-                <span> Settimana </span>
-              }
+                  {!isMonthView &&
+                    <tbody className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendarWeek()}
+                    </tbody>
+                  }
+                </table>
+              </div>
             </div>
           </div>
         </div>
