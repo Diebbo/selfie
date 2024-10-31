@@ -222,7 +222,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                 </div>
               </div>
-              <div className="overflow-y-hidden hover:overflow-y-auto h-full pr-2 border-t scrollbar-thin">
+              <div className="overflow-y-hidden hover:overflow-y-auto h-full pr-2 border-t scrollbar-hide">
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   {Array.isArray(
                     eventType === "your"
@@ -268,7 +268,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Link>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-thin">
+                  <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-hide">
                   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {user.notes?.sort((a: NoteModel, b: NoteModel) => new Date(b.date!).getTime() - new Date(a.date!).getTime()).map((note) => (
                         <NoteCard
