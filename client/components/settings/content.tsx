@@ -119,10 +119,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       setStatusPasswordChange("Password cambiata con successo");
     } else if (type === "email") {
       setEmailEdit(false);
-      const event = new CustomEvent("emailUpdated", { detail: email });
+      const event = new CustomEvent("emailUpdated", { detail: { updatedEmail: email }});
       window.dispatchEvent(event);
     } else if (type === "avatar") {
-      const event = new CustomEvent("avatarUpdated", { detail: avatar });
+      const event = new CustomEvent("avatarUpdated", { detail: { updatedAvatar: avatar }});
       window.dispatchEvent(event);
     }
   };
