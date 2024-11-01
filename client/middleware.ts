@@ -12,11 +12,11 @@ export default async function middleware(req: NextRequest) {
   const isPublicRoute = publicRoutes.includes(path);
   const isProtectedRoute = !isPublicRoute;
 
-  let cookie;
   // 3. Decrypt the session from the cookie
   try {
-    cookie = cookies().get("token")?.value;
-    if (cookie) {
+    const cookieStore = await cookies();
+	  const token = cookieStore.get('token')?.value;
+    if (token) {
       try {
         const res = await isVerified();
         switch (res) {

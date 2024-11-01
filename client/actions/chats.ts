@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import getBaseUrl from '@/config/proxy';
 
 async function getChats() {
-	const cookieStore = cookies();
+	const cookieStore = await cookies();
 	const token = cookieStore.get('token')?.value;
 
 	if (!token) {
@@ -26,7 +26,7 @@ async function getChats() {
 }
 
 async function getChatByUsername(username: string) {
-	const cookieStore = cookies();
+	const cookieStore = await cookies();
 	const token = cookieStore.get('token')?.value;
 
 	if (!token) {

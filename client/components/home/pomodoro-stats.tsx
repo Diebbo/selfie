@@ -3,6 +3,7 @@ import { PomodoroStats } from "@/helpers/types";
 import { Card, CardBody } from "@nextui-org/react";
 import { useEffect, useState } from "react";
 import { FcAlarmClock, FcReading } from "react-icons/fc";
+import { useRouter } from "next/navigation";
 
 interface PomodoroStatisticsProps {
   stats: PomodoroStats;
@@ -10,14 +11,14 @@ interface PomodoroStatisticsProps {
 
 export const PomodoroStatistics = (props: PomodoroStatisticsProps) => {
   const [stats, setStats] = useState<PomodoroStats>(props.stats);
+  const router = useRouter();
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchStats = async () => {
       try {
         const response = await fetch("/api/pomodoro/stats");
         if (!response.ok) throw new Error("Failed to fetch stats");
         const data = await response.json();
-        props.stats = data;
         setStats(data);
       } catch (error) {
         console.error("Error fetching pomodoro stats:", error);
@@ -25,7 +26,11 @@ export const PomodoroStatistics = (props: PomodoroStatisticsProps) => {
     };
 
     fetchStats();
-  }, []);
+  }, []);*/
+
+  /*useEffect(() => {
+    router.refresh();
+  });*/
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);

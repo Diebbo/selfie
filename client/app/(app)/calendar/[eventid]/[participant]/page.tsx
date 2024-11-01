@@ -3,13 +3,14 @@ import ParticipantContent from "@/components/calendar/participateEvent";
 const ParticipantPage = async ({
   params,
 }: {
-  params: { eventid: string; participant: string };
+  params: Promise<{ eventid: string; participant: string }>;
 }) => {
-  console.log("parametri nella participantPage: ", params);
+  const eventid = (await params).eventid;
+  const participantid = (await params).participant;
   return (
     <ParticipantContent
-      eventid={params.eventid}
-      participantid={params.participant}
+      eventid={eventid}
+      participantid={participantid}
     />
   );
 };

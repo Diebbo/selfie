@@ -3,7 +3,7 @@ import getBaseUrl from '@/config/proxy';
 import { AuthenticationError, ServerError } from '@/helpers/errors';
 
 export async function getEvents() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
 
   if (!token) {
@@ -18,6 +18,8 @@ export async function getEvents() {
     cache: 'no-store' // This ensures fresh data on every request
   });
 
+  const data = await res.json();
+  
   if (res.status === 401) {
     throw new AuthenticationError('Unauthorized, please login.');
   } else if (res.status >= 500) {
@@ -26,5 +28,5 @@ export async function getEvents() {
     throw new Error('Failed to fetch events');
   }
 
-  return await res.json();
+  return data; 
 }
