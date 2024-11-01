@@ -23,7 +23,7 @@ export type MapFriend = {
 };
 
 export async function getEvents(): Promise<MapEvent[]> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -69,7 +69,7 @@ export async function getEvents(): Promise<MapEvent[]> {
 }
 
 export async function getFriends(): Promise<MapFriend[]> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {

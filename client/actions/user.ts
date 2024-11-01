@@ -5,7 +5,7 @@ import getBaseUrl from "@/config/proxy";
 import { Person, SelfieEvent } from "@/helpers/types";
 
 async function getUser(): Promise<Person> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -40,4 +40,31 @@ async function getUser(): Promise<Person> {
   return person;
 }
 
-export { getUser };
+
+
+async function getEmail(): Promise<string> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${getBaseUrl()}/api/auth/email`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Verification failed");
+  }
+
+  return await response.json();
+}
+
+export { getUser, getEmail };

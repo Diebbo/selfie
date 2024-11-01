@@ -41,7 +41,9 @@ function Pomodoro(props: PomodoroProps) {
 
   const [focusTimeInput, setFocusTimeInput] = useState(focusTime);
   const [breakTimeInput, setBreakTimeInput] = useState(breakTime);
-  const [longBreakTimeInput, setLongBreakTimeInput] = useState(900); // Default 15 minuti
+  const [longBreakTimeInput, setLongBreakTimeInput] = useState(
+    props.settings.longBreakDuration,
+  ); // Default 15 minuti
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -71,7 +73,7 @@ function Pomodoro(props: PomodoroProps) {
     );
   }, [timeLeft, isFocusTime, focusTime, breakTime]);
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchSettings = async () => {
       const response = await fetch("/api/pomodoro/settings");
       const data = await response.json();
@@ -84,7 +86,7 @@ function Pomodoro(props: PomodoroProps) {
     };
 
     fetchSettings();
-  }, []);
+    }, []);*/
 
   useEffect(() => {
     const animateHeight = () => {

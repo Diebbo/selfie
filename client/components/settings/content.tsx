@@ -134,10 +134,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     let body = {};
     if (type === "push") {
       body = { enable: !pushNotifications };
-      props.pushNotifications = !pushNotifications;
+      
     } else if (type === "email") {
       body = { enable: !emailNotifications };
-      props.emailNotifications = !emailNotifications;
+      
     } else {
       console.error("Tipo non supportato:", type);
       return;

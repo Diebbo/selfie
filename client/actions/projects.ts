@@ -1,7 +1,7 @@
 import getBaseUrl from "@/config/proxy";
 import { cookies } from "next/headers";
 async function getProjects() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
   if (!token) {
     throw new Error("Unauthorized");

@@ -22,11 +22,9 @@ export default async function Home() {
   try {
     const [chats,  user]: [
       ChatModel[],
-      
       Person
     ] = await Promise.all([
       getChats(),
-      
       getUser(),
     ]);
 

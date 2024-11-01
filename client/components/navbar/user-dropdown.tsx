@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DarkModeSwitch } from "./darkmodeswitch";
 import { deleteAuthCookie } from "@/actions/auth.action";
 import { Person } from "@/helpers/types";
+import { getUser } from "@/actions/user";
 
 export const UserDropdown = () => {
   const router = useRouter();
@@ -19,11 +20,11 @@ export const UserDropdown = () => {
 
   const fetchUser = useCallback(async () => {
     try {
-      const res = await fetch("/api/users/id");
+      /*const res = await fetch("/api/users/id");
       if (!res.ok) {
         throw new Error("Failed to fetch user");
-      }
-      const dbUser = await res.json();
+      }*/
+      const dbUser = await getUser();
       setUser(dbUser);
     } catch (error) {
       console.error("Failed to fetch user:", error);
