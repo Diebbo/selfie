@@ -62,6 +62,7 @@ class ProjectCard extends HTMLElement {
           font-size: 0.75rem;
           color: hsl(var(--nextui-text-color));
           min-width: 30px; 
+            max-width: 30px;
           height: 20px; 
           transition: background-color 0.3s ease; 
       }
@@ -101,6 +102,7 @@ class ProjectCard extends HTMLElement {
           display: flex;
           align-items: center; /* Center content vertically */
           overflow-y: hidden;
+            overflow-x: hidden;
       }
 
       .task-info:hover, .task-info:active {
@@ -374,7 +376,7 @@ class ProjectCard extends HTMLElement {
             });
         });
 
-        const infoCells = this.shadowRoot.querySelectorAll('.task-info');
+        const infoCells = this.shadowRoot.querySelectorAll('.task-name');
         infoCells.forEach(cell => {
             cell.addEventListener('click', (e) => {
                 const activityId = cell.parentElement.dataset.activityId;
@@ -587,7 +589,7 @@ class ProjectCard extends HTMLElement {
             dueDate: new Date(form.querySelector('#activityDueDate').value),
             participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()).filter(p => p !== ''),
             description: form.querySelector('#activityDescription').value,
-            completed: false,
+            completed: oldActivity ? oldActivity.completed : false,
             subActivities: subActivities,
             _id: oldActivity ? oldActivity._id : null
         };
