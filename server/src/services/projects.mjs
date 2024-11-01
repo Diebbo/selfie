@@ -3,43 +3,45 @@ export default function createProjectService(models, lib) {
 
   async function populateMembers(project) {
     await project.populate('members');
+    await project.populate('activities.assignees');
     let populatedProject = project.toObject();
 
-    populatedProject.activities = populatedProject.activities.map(a => {
-      a.participants = a.participants.map(p => project.members.find(m => m._id.equals(p)).username);
-      a.subActivities = a.subActivities.map(sa => {
-        sa.participants = sa.participants.map(p => project.members.find(m => m._id.equals(p)).username);
-        return sa;
+    populatedProject.creator = populatedProject.members.find(m => m._id.equals(populatedProject.creator)).username;
+
+    populatedProject.activities = populatedProject.activities.map(activity => {
+      activity.assignees = activity.assignees.map(assignee => project.members.find(m => m._id.equals(assignee._id)).username);
+      activity.creator = project.members.find(m => m._id.equals(activity.creator)).username;
+      activity.comments = activity.comments.map(comment => {
+        comment.creator = project.members.find(m => m._id.equals(comment.creator)).username;
+        return comment;
       });
-      return a;
+      return activity;
     });
 
-    // Map usernames for members
     populatedProject.members = populatedProject.members.map(m => m.username);
 
     return populatedProject;
   }
 
   async function populateDbMembers(project) {
-    // the members are stored as ObjectIds in the db but passed as usernames
     const members = await models.userModel.find({ username: { $in: project.members } });
     project.members = members.map(m => m._id);
+    console.log(project.members);
 
     project.activities.forEach(activity => {
-      activity.participants = activity.participants.map(p => {
-        const member = members.find(m => m.username === p)
-        if (!member) throw new Error(`Member ${p} not found`);
-        return member._id
+      activity.creator = members.find(m => m.username === activity.creator)._id;
+      activity.assignees = activity.assignees.map(assigneeUsername => {
+        const member = members.find(m => m.username === assigneeUsername);
+        if (!member) throw new Error(`Member ${assigneeUsername} not found for activity assignee`);
+        return member._id;
       });
-      activity.subActivities.forEach(subActivity => {
-        subActivity.participants = subActivity.participants.map(p => {
-          const member = members.find(m => m.username === p)
-          if (!member) throw new Error(`Member ${p} not found`);
-          return member._id
-        });
+      activity.comments.forEach(comment => {
+        comment.creator = members.find(m => m.username === comment.creator)._id;
+        if (!comment.creator) throw new Error(`Member ${comment.creator} not found for comment creator`);
       });
     });
-    return project;
+
+       return project;
   }
 
   return {
@@ -49,12 +51,12 @@ export default function createProjectService(models, lib) {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      // validate activities
+      // Validate activities
       for (const activity of project.activities) {
         lib.checkActivityFitInProject(project, activity);
       }
 
-      // populate members
+      // Populate members
       project.members = project.members || [];
       project.members.push(user.username);
       await populateDbMembers(project);
@@ -64,7 +66,7 @@ export default function createProjectService(models, lib) {
 
       result = await populateMembers(result);
 
-      return lib.addDatesToProjectActivities(result);
+      return result;
     },
 
     async delete(uid, projectId) {
@@ -125,7 +127,7 @@ export default function createProjectService(models, lib) {
         throw new Error("Invalid activities: " + errors.join(", "));
       }
 
-      // populate members
+      // Populate members
       project = await populateDbMembers(project);
 
       // Add today's date to the project
@@ -163,14 +165,7 @@ export default function createProjectService(models, lib) {
       const activity = project.activities.id(activityId);
 
       if (activity) {
-        activity.completed = !activity.completed;
-      } else {
-        project.activities.forEach(a => {
-          const subActivity = a.subActivities.id(activityId);
-          if (subActivity) {
-            subActivity.completed = !subActivity.completed;
-          }
-        });
+        activity.status = activity.status === 'completed' ? 'in-progress' : 'completed';
       }
       await project.save();
 
