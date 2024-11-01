@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 import { Person, SelfieEvent } from "@/helpers/types";
 
-async function getUser(): Promise<Person> {
+export  async function getUser(): Promise<Person> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -42,7 +42,7 @@ async function getUser(): Promise<Person> {
 
 
 
-async function getEmail(): Promise<string> {
+export async function getEmail(): Promise<string> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
