@@ -229,20 +229,68 @@ class ProjectCard extends HTMLElement {
     }
 
     connectedCallback() {
+        // Initial render
         this.render();
     }
 
+    // Observe these attributes for changes
+    static get observedAttributes() {
+        return ['project', 'user'];
+    }
+
+    // Handle attribute changes
+    attributeChangedCallback(name, oldValue, newValue) {
+        if ((name === 'project' || name === 'user') && oldValue !== newValue) {
+            // Reset the stored data to force re-parsing
+            if (name === 'project') {
+                this.project = undefined;
+            }
+            if (name === 'user') {
+                this.user = undefined;
+            }
+            this.render();
+        }
+    }
+
+    updateData() {
+        try {
+            // Always parse fresh from attributes
+            this.project = JSON.parse(this.getAttribute('project') || '{}');
+            this.user = JSON.parse(this.getAttribute('user') || '{}');
+        } catch (error) {
+            console.error("Error parsing 'project' or 'user' attributes:", error);
+            return false;
+        }
+        return true;
+    }
     render() {
         const wrapper = this.shadowRoot.querySelector('.project-card');
-        this.project = JSON.parse(this.getAttribute('project'));
-        this.user = JSON.parse(this.getAttribute('user'));
+        try {
+            this.updateData();
+        } catch (error) {
+            console.error("Errore nel parsing dei dati 'project' o 'user':", error);
+            return;
+        }
 
-        if (wrapper && this.project) {
-            const startDate = new Date(this.project.startDate);
-            const endDate = new Date(this.project.deadline);
-            const days = this.getDaysBetween(startDate, endDate);
+        if (!wrapper || !this.project || !this.project.startDate || !this.project.deadline) {
+            console.warn("Project o dati mancanti. Impossibile aggiornare il contenuto.", this.project);
+            if (wrapper) {
+                wrapper.innerHTML = '<p>Project data not found</p>';
+            }
+            if (!this.project.startDate) {
+                console.warn("Data di inizio progetto non trovata");
+            }
+            if (!this.project.deadline) {
+                console.warn("Data di scadenza progetto non trovata");
+            }
+            return;
+        }
 
-            wrapper.innerHTML = `
+        const startDate = new Date(this.project.startDate);
+        const endDate = new Date(this.project.deadline);
+        const days = this.getDaysBetween(startDate, endDate);
+
+        wrapper.innerHTML = `
         <div class="headers-inline">
           <h2 class="title" style="display:inline;">${this.project.title}</h2>
           <button class="delete" id="delete-proj">delete</button>
@@ -268,11 +316,11 @@ class ProjectCard extends HTMLElement {
         </modal-component>
       `;
 
-            this._modal = this.shadowRoot.querySelector('modal-component');
+        this._modal = this.shadowRoot.querySelector('modal-component');
 
-            // Event listeners per apertura modale
-            this.addEventListeners(this.project);
-        }
+        // Event listeners per apertura modale
+        this.addEventListeners(this.project);
+
     }
 
     toggleActivityCompletion(activityId, project) {
