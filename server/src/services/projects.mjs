@@ -8,25 +8,31 @@ export default function createProjectService(models, lib) {
 
     populatedProject.creator = populatedProject.members.find(m => m._id.equals(populatedProject.creator)).username;
 
-    populatedProject.activities = populatedProject.activities.map(activity => {
-      activity.assignees = activity.assignees.map(assignee => project.members.find(m => m._id.equals(assignee._id)).username);
-      activity.comments = activity.comments.map(comment => {
-        comment.creator = project.members.find(m => m._id.equals(comment.creator)).username;
+    function mapAssignees(assignees, members) {
+      return assignees.map(assignee => members.find(m => m._id.equals(assignee._id)).username);
+    }
+
+    function mapComments(comments, members) {
+      return comments.map(comment => {
+        comment.creator = members.find(m => m._id.equals(comment.creator)).username;
         return comment;
       });
+    }
 
-      // up one level
-      activity.subActivities = activity.subActivities.map(subActivity => {
-        subActivity.assignees = subActivity.assignees.map(assignee => project.members.find(m => m._id.equals(assignee._id)).username);
-        subActivity.comments = subActivity.comments.map(comment => {
-          comment.creator = project.members.find(m => m._id.equals(comment.creator)).username;
-          return comment;
-        });
+    function mapSubActivities(subActivities, members) {
+      return subActivities.map(subActivity => {
+        subActivity.assignees = mapAssignees(subActivity.assignees, members);
+        subActivity.comments = mapComments(subActivity.comments, members);
         return subActivity;
       });
+    }
+
+    populatedProject.activities = populatedProject.activities.map(activity => {
+      activity.assignees = mapAssignees(activity.assignees, project.members);
+      activity.comments = mapComments(activity.comments, project.members);
+      activity.subActivities = mapSubActivities(activity.subActivities, project.members);
       return activity;
     });
-
     populatedProject.members = populatedProject.members.map(m => m.username);
 
     return populatedProject;
@@ -36,29 +42,32 @@ export default function createProjectService(models, lib) {
     const members = await models.userModel.find({ username: { $in: project.members } });
     project.members = members.map(m => m._id);
 
-    project.activities.forEach(activity => {
-      activity.assignees = activity.assignees.map(assigneeUsername => {
+    function mapAssigneesToIds(assignees, members) {
+      return assignees.map(assigneeUsername => {
         const member = members.find(m => m.username === assigneeUsername);
-        if (!member) throw new Error(`Member ${assigneeUsername} not found for activity assignee`);
+        if (!member) throw new Error(`Member ${assigneeUsername} not found for assignee`);
         return member._id;
       });
-      activity.comments.forEach(comment => {
+    }
+
+    function mapCommentsToIds(comments, members) {
+      comments.forEach(comment => {
         comment.creator = members.find(m => m.username === comment.creator)._id;
         if (!comment.creator) throw new Error(`Member ${comment.creator} not found for comment creator`);
       });
+    }
 
-      // up one level
-      activity.subActivities.forEach(subActivity => {
-        subActivity.assignees = subActivity.assignees.map(assigneeUsername => {
-          const member = members.find(m => m.username === assigneeUsername);
-          if (!member) throw new Error(`Member ${assigneeUsername} not found for subactivity assignee`);
-          return member._id;
-        });
-        subActivity.comments.forEach(comment => {
-          comment.creator = members.find(m => m.username === comment.creator)._id;
-          if (!comment.creator) throw new Error(`Member ${comment.creator} not found for subactivity comment creator`);
-        });
+    function mapSubActivitiesToIds(subActivities, members) {
+      subActivities.forEach(subActivity => {
+        subActivity.assignees = mapAssigneesToIds(subActivity.assignees, members);
+        mapCommentsToIds(subActivity.comments, members);
       });
+    }
+
+    project.activities.forEach(activity => {
+      activity.assignees = mapAssigneesToIds(activity.assignees, members);
+      mapCommentsToIds(activity.comments, members);
+      mapSubActivitiesToIds(activity.subActivities, members);
     });
 
     return project;

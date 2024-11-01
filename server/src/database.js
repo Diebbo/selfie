@@ -873,7 +873,7 @@ export async function createDataBase() {
       throw new Error("Activity assignees must be an array if provided");
     }
 
-    activity.subActivities.forEach((subActivity) => {
+    activity.subActivities?.forEach((subActivity) => {
       checkActivityFit({ startDate:activity.startDate, deadline:activity.dueDate }, subActivity);
     });
   };
