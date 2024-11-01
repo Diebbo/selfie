@@ -5,7 +5,7 @@ const nextConfig = {
   distDir: "nextbuild",
   experimental: {
     staleTimes: {
-      dynamic: 0,
+      dynamic: 1,
     },
   },
   async rewrites() {

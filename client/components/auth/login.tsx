@@ -26,11 +26,14 @@ export const Login = () => {
     async (values: LoginFormType) => {
       try {
         const response = await login(values);
-
+        // We need this to show the error message in the login page from the server action
+        if (response?.success === false) {
+          setError(response.message);
+          return;
+        }
         await createAuthCookie(response.token);
         router.replace("/");
       } catch (err: any) {
-        console.error(error);
         setError(
           err.message ? err.message.toString() : "An unknown error occurred",
         );
