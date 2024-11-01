@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { Person, ProjectModel } from '@/helpers/types';
-import router from 'next/router';
+import { useRouter } from 'next/navigation';
 import './project-card';
 import './project-modal';
 import { Button } from '@nextui-org/react';
@@ -17,15 +17,18 @@ export default function Content({ projects, user, id }: ContentProps) {
   const [project, setProject] = useState<ProjectModel | undefined>(
     projects.find((p) => p._id === id)
   );
+  const router = useRouter();
   
   // Change the ref type to HTMLElement
   const projectCardRef = useRef<HTMLElement | null>(null);
 
   // Gestore eliminazione progetto
-  const handleDeleteProject = () => {
-    router.push('/');
+  const goBack = () => {
+    router.push('/projects');
   };
-
+  const handleDeleteProject = () => {
+    goBack();
+  }
   // Aggiornamento dello stato del progetto
   const handleUpdateProject = (updatedProject: ProjectModel) => {
     setProject(updatedProject);
@@ -45,12 +48,12 @@ export default function Content({ projects, user, id }: ContentProps) {
         handleUpdateProject(updateEvent.detail.project);
       };
 
-      // Uncomment and update if you want to add event listeners
       projectCardRef.current.addEventListener('delete-project', deleteHandler);
       projectCardRef.current.addEventListener('update-project', updateHandler as EventListener);
 
-      // Cleanup: rimuove i listener al dismount del componente
       return () => {
+        // Rimuove i listener al momento dello smontaggio
+        if (!projectCardRef.current) return;
         projectCardRef.current.removeEventListener('delete-project', deleteHandler);
         projectCardRef.current.removeEventListener('update-project', updateHandler as EventListener);
       };
@@ -64,7 +67,7 @@ export default function Content({ projects, user, id }: ContentProps) {
 
   return (
     <div className="m-3">
-      <Button variant='flat' color='primary' className='mb-3' onClick={() => router.push('/')}>Go back</Button>
+      <Button variant='flat' color='primary' className='mb-3' onClick={() => goBack()}>Go back</Button>
       <project-card ref={projectCardRef}></project-card>
     </div>
   );
