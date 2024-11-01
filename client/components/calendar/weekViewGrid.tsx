@@ -43,7 +43,7 @@ export const WeekViewGrid: React.FC<{
   };
 
   return (
-    <div className="">
+    <div className="overflow-y-auto scrollbar-hide max-h-[calc(85vh)]">
       {hours.map((hour, index) => {
         // Check if there's an event during this hour
         const eventsForHour = dayEvents.filter(event => {
@@ -59,7 +59,7 @@ export const WeekViewGrid: React.FC<{
             className="border-b border-gray-200 dark:border-gray-700 h-10 relative flex items-center justify-between"
           >
             {isMonday && (
-              <div className="left-2 w-16 text-xs text-gray-500 pr-2 text-left">
+              <div className="left-2 w-2 text-xs text-gray-500 pr-2 text-left">
                 {hour}
               </div>
             )}
@@ -70,7 +70,7 @@ export const WeekViewGrid: React.FC<{
                 className="mx-auto sm:w-full md:w-16 flex justify-center"
                 onPress={() => handleOpenEventModal(index)}
               >
-                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                EventIcon
               </Button>
             )}
           </div>
@@ -89,7 +89,11 @@ export const WeekViewGrid: React.FC<{
               <ModalBody>
                 {selectedHourEvents.length > 0 ? (
                   selectedHourEvents.map((event, index) => (
-                    <Button key={index} className="mb-2 border-1 border-default hover:border-secondary">
+                    <Button
+                      key={index}
+                      className="mb-2 border-1 border-default hover:border-secondary"
+                      onClick={() => console.log("buttone")}
+                    >
                       <p className="font-semibold">{event.title}</p>
                       <p className="text-small text-default-500">
                         {new Date(event.dtstart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
