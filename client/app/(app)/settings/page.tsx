@@ -20,7 +20,7 @@ const Page = async () => {
         email={user.email}
         pushNotifications={notifications?.pushOn}
         emailNotifications={notifications?.emailOn}
-        avatr={user.avatar}
+        avatar={user.avatar}
       />
     );
   } catch (error) {

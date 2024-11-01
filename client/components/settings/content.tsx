@@ -28,13 +28,13 @@ interface SettingsPageProps {
   email: string;
   pushNotifications: boolean;
   emailNotifications: boolean;
-  avatr: string;
+  avatar: string;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const router = useRouter();
-  console.log("avatar", props.avatr);
-  const [avatar, setAvatar] = useState(props.avatr);
+  console.log("avatar", props.avatar);
+  const [avatar, setAvatar] = useState(props.avatar);
   const [username, setUsername] = useState(props.username);
   const [usernameEdit, setUsernameEdit] = useState(false);
   const [email, setEmail] = useState(props.email);
