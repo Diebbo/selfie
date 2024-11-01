@@ -96,9 +96,7 @@ const CalendarPage = () => {
   useEffect(() => {
     console.log("primo fetch degli eventi gli eventi");
     setAllEvents();
-    console.log("fine fetch degli eventi");
   }, []);
-  console.log("ahaha", user);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -140,7 +138,7 @@ const CalendarPage = () => {
       daysOfWeek.push(
         <td
           key={`week-cell-${i}`}
-          className={`border bg-white dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
         >
           <CalendarCell
             isMonthView={isMonthView}
@@ -153,7 +151,11 @@ const CalendarPage = () => {
       );
     }
 
-    return <tr>{daysOfWeek}</tr>;
+    return (
+      <tr>
+        {daysOfWeek}
+      </tr>);
+
   };
 
 
@@ -179,7 +181,7 @@ const CalendarPage = () => {
         week.push(
           <td
             key={`cell-${i}-${j}`}
-            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-gray-300 dark:bg-zinc-600"} border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-gray-300 dark:bg-zinc-600"} border-gray-400 p-1 md:p-2 align-top h-[calc(87vh/6)]`}
           >
             {isValidDay ? (
               <CalendarCell
@@ -193,7 +195,10 @@ const CalendarPage = () => {
           </td>,
         );
       }
-      days.push(<tr key={`row-${i}`}>{week}</tr>);
+      days.push(<tr
+        key={`row-${i}`}
+        className="overflow-y-auto scrollbar max-h-[calc(85vh)]"
+      >{week}</tr>);
     }
 
     return days;
@@ -336,13 +341,14 @@ const CalendarPage = () => {
                   </thead>
                   {
                     isMonthView &&
-                    <tbody className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
                       {renderCalendarMonth()}
                     </tbody>
                   }
 
                   {!isMonthView &&
-                    <tbody className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    <tbody
+                      className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
                       {renderCalendarWeek()}
                     </tbody>
                   }
