@@ -828,7 +828,7 @@ export async function createDataBase() {
     return projects;
   };
 
-  const checkActivityFitInProject = (project, activity) => {
+  const checkActivityFit = ({ startDate, deadline }, activity) => {
     if (!activity) {
       throw new Error("Activity must be provided");
     }
@@ -841,23 +841,23 @@ export async function createDataBase() {
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
     if (
-      project.startDate &&
-      new Date(activity.dueDate) < new Date(project.startDate)
+      startDate &&
+      new Date(activity.dueDate) < new Date(startDate)
     ) {
       throw new Error(
-        `Activity due date must be after the project start date: ${project.startDate}`
+        `Activity due date must be after the project start date: ${startDate}`
       );
     }
 
-    if (new Date(activity.dueDate) > new Date(project.deadline)) {
+    if (new Date(activity.dueDate) > new Date(deadline)) {
       throw new Error(
-        `Activity due date must be on or before the project deadline: ${project.deadline}`
+        `Activity due date must be on or before the project deadline: ${deadline}`
       );
     }
 
-    if (new Date(activity.startDate) < new Date(project.startDate)) {
+    if (new Date(activity.startDate) < new Date(startDate)) {
       throw new Error(
-        `Activity start date must be after the project start date: ${project.startDate}`
+        `Activity start date must be after the project start date: ${startDate}`
       );
     }
 
@@ -872,6 +872,10 @@ export async function createDataBase() {
     if (activity.assignees && !Array.isArray(activity.assignees)) {
       throw new Error("Activity assignees must be an array if provided");
     }
+
+    activity.subActivities.forEach((subActivity) => {
+      checkActivityFit({ startDate:activity.startDate, deadline:activity.dueDate }, subActivity);
+    });
   };
 
   const convertUsernameToId = async (username) => {
@@ -906,7 +910,7 @@ export async function createDataBase() {
   };
 
   const addActivityToProject = async (project, activity) => {
-    checkActivityFitInProject(project, activity);
+    checkActivityFit(project, activity);
     activity = await processActivityParticipants(activity, project.members);
 
     if (!project.activities) project.activities = [];
@@ -1844,7 +1848,7 @@ export async function createDataBase() {
   };
 
   const projectService = createProjectService(models, {
-    checkActivityFitInProject,
+    checkActivityFit,
     userService,
     addDatesToProjectActivities,
     addActivityToProject,
