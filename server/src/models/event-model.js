@@ -15,6 +15,7 @@ const subActivitySchema = new mongoose.Schema({
   name: String,
   startDate: Date,
   dueDate: Date,
+  description: String,
   completed: {
     type: Boolean,
     default: false,
@@ -56,6 +57,7 @@ const activitySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users",
   },
+  description: String,
 });
 
 const eventSchema = new mongoose.Schema({
