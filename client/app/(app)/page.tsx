@@ -10,23 +10,22 @@ import {
   Person,
   PomodoroStats,
   ProjectModel,
+  SelfieEvent,
 } from "@/helpers/types";
 import { getNotes } from "@/actions/notes";
 import { getStats } from "@/actions/pomodoro";
 import getProjects from "@/actions/projects";
+import { getEvents } from "@/actions/events";
+
 
 export default async function Home() {
   try {
-    const [chats, notes, pomodoro, projects]: [
+    const [chats,  user]: [
       ChatModel[],
-      NoteModel[],
-      PomodoroStats,
-      ProjectModel[],
+      Person
     ] = await Promise.all([
       getChats(),
-      getNotes(),
-      getStats(),
-      getProjects(),
+      getUser(),
     ]);
 
     // Pass the fetched data to the client-side component
@@ -34,9 +33,11 @@ export default async function Home() {
       <>
         <Content
           chats={chats}
-          notes={notes}
-          projects={projects}
-          pomodoro={pomodoro}
+          notes={user.notes}
+          projects={user.projects}
+          pomodoro={user.pomodoro}
+          events={user.events}
+          user = {user}
         />
       </>
     );

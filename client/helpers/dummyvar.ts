@@ -1,7 +1,7 @@
 import { People, SelfieEvent } from "./types";
 
 const dummyPeople: People = [
-  {
+  /*{
     _id: "1",
     events: {
       created: [],
@@ -84,7 +84,7 @@ const dummyPeople: People = [
     state: "IL",
     zip: "62271",
     country: "USA",
-  },
+  },*/
 ];
 
 // Set up friend relationships

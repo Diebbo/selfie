@@ -129,7 +129,7 @@ interface ProjectComponentProps {
 }
 
 export const ProjectTable: React.FC<ProjectComponentProps> = ({ projects, creator }) => {
-  console.log(creator?.avatar);
+  
   return (
     <div className="w-full flex flex-col gap-4">
       <Table aria-label="Project table with custom cells">

@@ -15,13 +15,8 @@ export default function createUserRouter(db) {
 
   router.get("/id", cookieJwtAuth, async (req, res) => {
     try {
-      const dbuser = (await db.userService.getById(req.user._id)).toObject();
-      // const events = await db.getEvents(req.user._id);
-      const friends = await db.friendService.get(req.user._id);
-
-      const user = { ...dbuser, friends };
-
-      return res.status(200).json(user);
+      const dbuser = await db.userService.getById(req.user._id);
+      return res.status(200).json(dbuser);
     } catch (error) {
       return res.status(404).json({ message: error.message });
     }
@@ -36,7 +31,7 @@ export default function createUserRouter(db) {
     }
   });
 
-  router.get("/usernames/:username", cookieJwtAuth ,async (req, res) => {
+  router.get("/usernames/:username", cookieJwtAuth, async (req, res) => {
     try {
       const user = await db.userService.getByUsername(req.params.username);
       return res.status(200).json(user);
@@ -86,7 +81,6 @@ export default function createUserRouter(db) {
 
     try {
       const link = req.body.link;
-
       const response = await db.deleteInboxByLink(req.user._id, link);
       return res.status(200).json(response);
     } catch (error) {

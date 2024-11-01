@@ -6,7 +6,7 @@ import { AuthenticationError, ServerError } from "@/helpers/errors";
 import { NoteModel } from "@/helpers/types";
 
 export async function getNotes() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -40,9 +40,23 @@ export async function getNotes() {
   );
 }
 
-export const fetchNoteById = async (id: string): Promise<NoteModel | null> => {
+export const getNoteById = async (id: string): Promise<NoteModel | null> => {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
   try {
-    const response = await fetch(`${NOTES_API_URL}/${id}`);
+    const response = await fetch(`${getBaseUrl()}/api/notes/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: `token=${token.toString()}`,
+      },
+      cache: "no-store", // This ensures fresh data on every request
+    });
     if (response.ok) {
       return await response.json();
     } else {

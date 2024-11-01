@@ -5,6 +5,9 @@ import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, Person, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./contextStore";
+import { getEvents } from "@/actions/events";
+import { getUser } from "@/actions/user";
+import { getCurrentTime } from "@/actions/setTime";
 
 interface CalendarPageProps {
   createdEvents: SelfieEvent[];
@@ -21,80 +24,28 @@ const CalendarPage = (props: CalendarPageProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(props.dbdate);
   const [reloadEvents, setReloadEvents] = useState(false);
-  const EVENTS_API_URL = "/api/events";
-
-  async function fetchEvents() {
-    try {
-      var res = await fetch(`${EVENTS_API_URL}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (res.status === 401) {
-        throw new Error("Unauthorized, please login.");
-      } else if (res.status >= 500) {
-        throw new Error(`Server error: ${res.statusText}`);
-      } else if (!res.ok) {
-        throw new Error("Failed to fetch all the events");
-      }
-    } catch (e: unknown) {
-      throw new Error(`Error during fetch events: ${(e as Error).message}`);
-    }
-
-    return await res.json();
-  }
-
-  async function fetchCurrentTime() {
-    try {
-      var res = await fetch("/api/config/time", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (res.status === 401) {
-        throw new Error("Unauthorized, please login.");
-      } else if (res.status >= 500) {
-        throw new Error(`Server error: ${res.statusText}`);
-      } else if (!res.ok) {
-        throw new Error("Failed to get date time");
-      }
-    } catch (e) {
-      throw new Error("Error during fetching date time, ");
-    }
-
-    return await res.json();
-  }
 
   const setCurrentTime = async () => {
-    const date = await fetchCurrentTime();
+    const date = await getCurrentTime();
+    console.log("date", date);
     setToday(new Date(date));
     setCurrentDate(new Date(date));
   };
 
-  const setAllEvents = async () => {
-    const events = await fetchEvents();
-    setEvents(events);
-  };
-
-
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
+      const u = getUser();
+      // update the events calling getUser server Action
+      // TODO: we should use getEvents instead of getUser to have faster response from server db
+      u.then((user) => {
+        setEvents(user.events.created.concat(user.events.participating));
+      });
       setCurrentTime();
-      setAllEvents();
       setReloadEvents(false);
     }
   }, [reloadEvents]);
 
-
-  useEffect(() => {
-    console.log("primo fetch degli eventi gli eventi");
-    setAllEvents();
-  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
