@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 
 export const createAuthCookie = async (token: string) => {
-  cookies().set("token", token, {
+  const cookieStore = await cookies();
+  cookieStore.set("token", token, {
     httpOnly: true,
     secure: false,
     sameSite: "lax",
@@ -14,7 +15,8 @@ export const createAuthCookie = async (token: string) => {
 };
 
 export const deleteAuthCookie = async () => {
-  cookies().delete("token");
+  const cookieStore = await cookies();
+  cookieStore.delete("token");
 };
 
 // Purpose: Handles the login process.
@@ -30,6 +32,15 @@ export async function login(user: LoginFormType) {
 
   if (!response.ok) {
     const error = await response.json();
+    // WE need this to show the error message in the login page
+    // Doesn't work with throw new Error in production 
+    if (response.status === 401) {
+      const err = {
+        message: error.message,
+        success: false,
+      }
+      return err;
+    }
     throw new Error(error.message || "Login failed");
   }
 
@@ -73,7 +84,7 @@ export async function verification(emailToken: string) {
 }
 
 export async function isVerified() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -93,7 +104,7 @@ export async function isVerified() {
 }
 
 export async function getEmail() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -119,7 +130,7 @@ export async function getEmail() {
 
 // Funzione che mi ritorna username dell'utente
 export async function getUsername() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -144,7 +155,7 @@ export async function getUsername() {
 }
 
 export async function getNotificationStatus() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {

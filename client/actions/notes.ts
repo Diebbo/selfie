@@ -6,7 +6,7 @@ import { AuthenticationError, ServerError } from "@/helpers/errors";
 import { NoteModel } from "@/helpers/types";
 
 export async function getNotes() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -41,7 +41,7 @@ export async function getNotes() {
 }
 
 export const getNoteById = async (id: string): Promise<NoteModel | null> => {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {

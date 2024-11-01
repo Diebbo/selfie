@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 async function getFriends() {
 
-	const cookieStore = cookies();
+	const cookieStore = await cookies();
 	const token = cookieStore.get('token')?.value;
 	if (!token) {
 		throw new Error("Not authenticated");

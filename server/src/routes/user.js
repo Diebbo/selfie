@@ -88,5 +88,17 @@ export default function createUserRouter(db) {
     }
   });
 
+  router.patch("/avatar", cookieJwtAuth, async (req, res) => {
+    try {
+      const response = await db.userService.changeAvatar(req.user._id, req.body.avatar);
+      if (!response) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      return res.status(200).json(response);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
   return router;
 }

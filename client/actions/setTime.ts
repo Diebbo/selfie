@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 
 export async function changeCurrentTime(time: Date) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -32,7 +32,7 @@ export async function changeCurrentTime(time: Date) {
 }
 
 export async function resetTime() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -58,7 +58,7 @@ export async function resetTime() {
 
 // NOW for testing purposes
 export async function getCurrentTime() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
