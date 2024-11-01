@@ -1,4 +1,3 @@
-// project-component.js
 class ProjectComponent extends HTMLElement {
   constructor() {
     super();
