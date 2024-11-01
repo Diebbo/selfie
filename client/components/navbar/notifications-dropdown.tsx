@@ -12,6 +12,7 @@ import { NotificationIcon } from "../icons/navbar/notificationIcon";
 import { io } from "socket.io-client";
 import { ToastNotification } from "./toast-notification";
 import { CloseIcon } from "../icons/close-icon";
+import { getUser } from "@/actions/user";
 
 interface Notification {
   _id: string;
@@ -54,16 +55,16 @@ export const NotificationsDropdown = () => {
 
   const fetchID = async () => {
     try {
-      const response = await fetch("/api/users/id", {
+      /*const response = await fetch("/api/users/id", {
         method: "GET",
         credentials: "include",
       });
 
       if (!response.ok) {
         throw new Error("Failed to fetch user ID");
-      }
+      }*/
 
-      const user = await response.json();
+      const user = await getUser();
       return user; // Ritorna l'utente
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error fetching user ID");

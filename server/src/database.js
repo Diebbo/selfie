@@ -1777,6 +1777,9 @@ export async function createDataBase() {
   };
 
   const userService = {
+    async changeAvatar(uid, avatar) {
+      return await userModel.findByIdAndUpdate(uid, { avatar: avatar }, { new: true });
+    },
     async getAllUsernames() {
       return await userModel.find({}, { username: 1 });
     },
