@@ -10,10 +10,19 @@ export default function createProjectService(models, lib) {
 
     populatedProject.activities = populatedProject.activities.map(activity => {
       activity.assignees = activity.assignees.map(assignee => project.members.find(m => m._id.equals(assignee._id)).username);
-      activity.creator = project.members.find(m => m._id.equals(activity.creator)).username;
       activity.comments = activity.comments.map(comment => {
         comment.creator = project.members.find(m => m._id.equals(comment.creator)).username;
         return comment;
+      });
+
+      // up one level
+      activity.subActivities = activity.subActivities.map(subActivity => {
+        subActivity.assignees = subActivity.assignees.map(assignee => project.members.find(m => m._id.equals(assignee._id)).username);
+        subActivity.comments = subActivity.comments.map(comment => {
+          comment.creator = project.members.find(m => m._id.equals(comment.creator)).username;
+          return comment;
+        });
+        return subActivity;
       });
       return activity;
     });
@@ -26,10 +35,8 @@ export default function createProjectService(models, lib) {
   async function populateDbMembers(project) {
     const members = await models.userModel.find({ username: { $in: project.members } });
     project.members = members.map(m => m._id);
-    console.log(project.members);
 
     project.activities.forEach(activity => {
-      activity.creator = members.find(m => m.username === activity.creator)._id;
       activity.assignees = activity.assignees.map(assigneeUsername => {
         const member = members.find(m => m.username === assigneeUsername);
         if (!member) throw new Error(`Member ${assigneeUsername} not found for activity assignee`);
@@ -39,9 +46,22 @@ export default function createProjectService(models, lib) {
         comment.creator = members.find(m => m.username === comment.creator)._id;
         if (!comment.creator) throw new Error(`Member ${comment.creator} not found for comment creator`);
       });
+
+      // up one level
+      activity.subActivities.forEach(subActivity => {
+        subActivity.assignees = subActivity.assignees.map(assigneeUsername => {
+          const member = members.find(m => m.username === assigneeUsername);
+          if (!member) throw new Error(`Member ${assigneeUsername} not found for subactivity assignee`);
+          return member._id;
+        });
+        subActivity.comments.forEach(comment => {
+          comment.creator = members.find(m => m.username === comment.creator)._id;
+          if (!comment.creator) throw new Error(`Member ${comment.creator} not found for subactivity comment creator`);
+        });
+      });
     });
 
-       return project;
+    return project;
   }
 
   return {
@@ -53,7 +73,7 @@ export default function createProjectService(models, lib) {
 
       // Validate activities
       for (const activity of project.activities) {
-        lib.checkActivityFitInProject(project, activity);
+        lib.checkActivityFit(project, activity);
       }
 
       // Populate members
