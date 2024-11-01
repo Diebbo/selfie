@@ -1,28 +1,35 @@
-import { ProjectModel } from '@/helpers/types';
-export {};
+import { ProjectModel, Person } from '@/helpers/types';
+import React from 'react';
+
+export { };
 
 declare global {
-  interface HTMLElementTagNameMap {
-    'project-component': ProjectComponentElement;
+  interface HTMLProjectComponentElement extends HTMLElement {
+    projects: ProjectModel[];
+    _user?: Person;
   }
 
-  // Aggiungi supporto JSX per il custom element
+  // Update the tag name map
+  interface HTMLElementTagNameMap {
+    'project-component': HTMLProjectComponentElement;
+    'project-card': HTMLElement;
+  }
+
+  // Provide JSX support for custom elements
   namespace JSX {
     interface IntrinsicElements {
-      'project-component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        projects?: ProjectModel[];
-      };
-      'project-card': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        project: ProjectModel;
-      };
-      'modal-component': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'project-component': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLProjectComponentElement>,
+        HTMLProjectComponentElement
+      >;
+      'project-card': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLProjectCardElement>,
+        HTMLProjectCardElement
+      >;
+      'modal-component': React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      >;
     }
-
   }
 }
-
-// Definisci l'interfaccia del custom element
-interface ProjectComponentElement extends HTMLElement {
-  projects: ProjectModel[];
-}
-

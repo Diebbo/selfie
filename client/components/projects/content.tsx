@@ -12,7 +12,7 @@ interface ContentProps {
 }
 
 export default function Content({ projects, user }: ContentProps) {
-  const projectComponentRef = useRef<ProjectComponent | null>(null);
+  const projectComponentRef = useRef<HTMLProjectComponentElement | null>(null);
 
   useEffect(() => {
     // Passa i progetti al custom element quando disponibile
