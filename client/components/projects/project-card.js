@@ -14,8 +14,9 @@ class ProjectCard extends HTMLElement {
     }
 
     setupStyle() {
-        this.shadowRoot.innerHTML = `
-      <style>
+        const style = document.createElement('style');
+        this.shadowRoot.appendChild(style);
+        const existingStyles = `
       .project-card {
         min-width: 300px;
         padding: 1.25rem; 
@@ -192,7 +193,8 @@ class ProjectCard extends HTMLElement {
 }
 
 #activityForm input,
-#activityForm textarea {
+#activityForm textarea,
+#activityForm select{
     width: 100%; 
     padding: 0.5rem; 
     margin: 0.5rem 0; 
@@ -203,6 +205,12 @@ class ProjectCard extends HTMLElement {
     transition: ring-2 0.2s ease-in-out; 
 }
 
+#activityForm ul {
+    width: 100%; 
+    padding: 0.5rem; 
+    margin: 0.5rem 0; 
+    outline: none;
+}
 #activityForm button {
     color: white; 
     padding: 0.625rem 1rem; 
@@ -226,8 +234,35 @@ class ProjectCard extends HTMLElement {
         border-radius: 0.375rem; 
         margin-right: 5px;
       }
-      </style>
     `;
+        const newStyles = `
+            .status-pending {
+                background-color: hsl(var(--nextui-warning-200));
+            }
+            .status-in-progress {
+                background-color: hsl(var(--nextui-primary-200));
+            }
+            .status-completed {
+                background-color: hsl(var(--nextui-success-200));
+            }
+            .status-blocked {
+                background-color: hsl(var(--nextui-danger-200));
+            }
+            
+            .activity-meta {
+                font-size: 0.75rem;
+                color: hsl(var(--nextui-foreground-400));
+                margin-top: 0.25rem;
+            }
+            
+            .comment-count {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+                margin-left: 0.5rem;
+            }
+        `;
+        style.textContent = existingStyles + newStyles;
     }
 
     connectedCallback() {
@@ -304,11 +339,22 @@ class ProjectCard extends HTMLElement {
         </div>
         <modal-component id="activityModal">
           <form id="activityForm">
-            <input type="text" id="activityName" placeholder="Activity Name" required>
+            <input type="text" id="activityTitle" placeholder="Activity Title" required>
             <input type="date" id="activityStartDate" placeholder="Start Date" required>
             <input type="date" id="activityDueDate" placeholder="Due Date" required>
-            <input type="text" id="activityParticipants" placeholder="Participants (comma-separated)">
-            <textarea id="activityDescription" placeholder="Description"></textarea>
+            <label for="activityAssignees">Participants</label>
+            <select id="activityAssignees" multiple>
+            </select>
+            <label for="activityStatus">Status</label>
+            <select id="activityStatus">
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+            <input type="text" id="activityInputs" placeholder="Input1, input2,... (comma-separated)">
+            <input type="text" id="activityOutputs" placeholder="Output1, output2,... (comma-separated)">
+            <ul id="previousComments"></ul>
+            <textarea id="comments" placeholder="comments"></textarea>
             <select id="parentActivitySelect" class="parent-activity-select">
               <option value="">No Parent (Top-level Activity)</option>
             </select>
@@ -322,7 +368,6 @@ class ProjectCard extends HTMLElement {
 
         // Event listeners per apertura modale
         this.addEventListeners(this.project);
-
     }
 
     toggleActivityCompletion(activityId, project) {
@@ -412,6 +457,25 @@ class ProjectCard extends HTMLElement {
 
 
         form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
+
+        form.querySelector('#comments').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const commentsInput = form.querySelector('#comments');
+                const commentsList = form.querySelector('#previousComments');
+                const comment = commentsInput.value.trim();
+                if (comment) {
+                    // remove default message
+                    if (commentsList.querySelector('li')?.textContent === 'No comments') {
+                        commentsList.innerHTML = '';
+                    }
+                    const li = document.createElement('li');
+                    li.textContent = project.creator + ': ' + comment;
+                    commentsList.appendChild(li);
+                    commentsInput.value = '';
+                }
+            }
+        });
 
         this.setupTooltips();
     }
@@ -511,35 +575,69 @@ class ProjectCard extends HTMLElement {
         });
     }
 
+    populateAssigneeSelect(select, assignees, currentAssignees = []) {
+        select.innerHTML = '';
+        if (!assignees || assignees.length === 0) {
+            select.innerHTML = '<option value="">No assignees</option>';
+        }
+        assignees?.forEach(assignee => {
+            let option = document.createElement('option');
+            option.value = assignee;
+            option.textContent = assignee;
+            if (currentAssignees.includes(assignee)) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
+    populateActivityComments(ul, comments) {
+        ul.innerHTML = '';
+        if (!comments || comments.length === 0) {
+            ul.innerHTML = '<li>No comments</li>';
+        }
+        comments?.forEach(comment => {
+            let li = document.createElement('li');
+            li.textContent = `${comment.creator}: ${comment.comment}`;
+            ul.appendChild(li);
+        });
+    }
+
+
     openModal(taskId, project, isNewActivity) {
         const form = this.shadowRoot.querySelector('#activityForm');
         this._modal.setTitle(isNewActivity ? 'Add New Activity' : 'Edit Activity');
-        const parentActivitySelect = form.querySelector('#parentActivitySelect');
 
+        // Reset the form
+        const parentActivitySelect = form.querySelector('#parentActivitySelect');
+        const select = form.querySelector('#activityAssignees');
+        const ul = form.querySelector('#previousComments');
         form.reset();
 
-        if (isNewActivity) {
+        const activity = this.findActivity(project.activities, taskId);
+
+        if (isNewActivity || !activity) {
             form.dataset.isNew = 'true';
             form.querySelector('#activityParticipants').value = this.user ? this.user.username + ',' : '';
+            this.populateAssigneeSelect(select, project.members);
             this.populateParentActivitySelect(parentActivitySelect, project.activities);
+            this.populateActivityComments(ul, null);
         } else {
             form.dataset.isNew = 'false';
-            const activity = this.findActivity(project.activities, taskId);
-            if (activity) {
-                form.querySelector('#activityName').value = activity.name;
-                const startDate = new Date(activity.startDate || activity.dueDate);
-                form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
-                form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
-                form.querySelector('#activityParticipants').value = activity.participants ? activity.participants.join(', ') : '';
-                form.querySelector('#activityDescription').value = activity.description || '';
-                form.dataset.activity = JSON.stringify(activity);
+            form.querySelector('#activityTitle').value = activity.title;
+            const startDate = new Date(activity.startDate || activity.dueDate);
+            form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
+            form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
+            this.populateAssigneeSelect(select, project.members, activity.assignees);
 
-                if (parentActivitySelect.children.length === 1) {
-                    const parentActivity = this.project.activities.find(a => a.subActivities && a.subActivities.find(sa => sa._id === activity._id));
-                    this.populateParentActivitySelect(parentActivitySelect, project.activities, parentActivity);
-                }
-            }
+            this.populateActivityComments(ul, activity.comments);
+
+            form.dataset.activity = JSON.stringify(activity);
+            
+            const parentActivity = this.project.activities.find(a => a.subActivities?.some(sa => sa._id === activity._id));
+            this.populateParentActivitySelect(parentActivitySelect, project.activities, parentActivity ? parentActivity._id : null, activity._id);
         }
+
 
         this._modal.openModal();  // Apri il modale
     }
@@ -559,15 +657,18 @@ class ProjectCard extends HTMLElement {
         return null;
     }
 
-    populateParentActivitySelect(select, activities, currentParentActivity = null) {
+    populateParentActivitySelect(select, activities, currentParentActivityId = null, currentActivityId = null) {
+        select.innerHTML = '<option value="">No Parent (Top-level Activity)</option>';
         activities.forEach(activity => {
             let option = document.createElement('option');
             option.value = activity._id;
-            option.textContent = activity.name;
-            select.appendChild(option);
-            if (currentParentActivity && currentParentActivity._id === activity._id) {
+            option.textContent = activity.title;
+            if (currentParentActivityId && currentParentActivityId === activity._id) { // Set the current parent activity as selected
                 option.selected = true;
-            }
+            } else if (!currentParentActivityId && currentActivityId && currentActivityId === activity._id) {
+                return; // Don't show the current activity as a parent
+            } 
+            select.appendChild(option);
         });
     }
 
@@ -584,14 +685,14 @@ class ProjectCard extends HTMLElement {
         const parentActivityId = form.querySelector('#parentActivitySelect').value === '' ? null : form.querySelector('#parentActivitySelect').value;
 
         const activityData = {
-            name: form.querySelector('#activityName').value,
+            title: form.querySelector('#activityName').value,
             startDate: new Date(form.querySelector('#activityStartDate').value),
             dueDate: new Date(form.querySelector('#activityDueDate').value),
-            participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()).filter(p => p !== ''),
-            description: form.querySelector('#activityDescription').value,
-            completed: oldActivity ? oldActivity.completed : false,
+            participants: form.querySelector('#activityParticipants').values,
+            status: form.querySelector('#activityStatus').value,
             subActivities: subActivities,
-            _id: oldActivity ? oldActivity._id : null
+            _id: oldActivity ? oldActivity._id : null,
+            comments: form.querySelector('#activityComments').value.split(',').map(comment => comment.trim())
         };
 
         if (isNewActivity) {
@@ -742,7 +843,7 @@ class ProjectCard extends HTMLElement {
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
             </svg>
           </button>
-          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.name}
+          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.title}
         </div>
       </div>
               `,
@@ -752,7 +853,7 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
         <div class="gantt-cell participants-column">
-          ${activity.participants?.length > 0 ? activity.participants.join(', ') : 'no one'}
+          ${activity.assignees?.length > 0 ? activity.assignees.join(', ') : 'no one'}
         </div>
 
         ${days.map(day => {
