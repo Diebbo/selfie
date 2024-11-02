@@ -1,5 +1,3 @@
-import { Activity } from "lucide-react";
-
 class ProjectCard extends HTMLElement {
     constructor() {
         super();
@@ -862,9 +860,11 @@ class ProjectCard extends HTMLElement {
             this.isActivityFullyComplete(subActivity)
         );
 
-        if (activity.completed && allSubActivitiesComplete) {
+        const completed = activity.status === 'completed';
+
+        if (completed && allSubActivitiesComplete) {
             return 'completed';
-        } else if (activity.completed || someSubActivitiesComplete) {
+        } else if (completed || someSubActivitiesComplete) {
             return 'in-progress';
         } else {
             return 'pending';
@@ -906,11 +906,9 @@ class ProjectCard extends HTMLElement {
                 const activityEndTimestamp = activityEnd.getTime();
 
                 if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-                    const statusText = completionStatus === 'completed' ? 'Completed' :
-                        completionStatus === 'pending' ? 'In Progress' : 'Not Started';
-                    return `<div class="gantt-task-cell gantt-cell ${completionStatus}" 
+                    return `<div class="gantt-task-cell gantt-cell ${activity.status}" 
                  data-activity-name="${activity.title}"
-                 data-status="${statusText}"></div>`;
+                 data-status="${activity.status}"></div>`;
                 }
                 return '<div class="gantt-cell"></div>';
             }).join('')
