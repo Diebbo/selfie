@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
 import { SelfieEvent } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
@@ -123,7 +123,6 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
 }) => {
   const [isAllEventsOpen, setIsAllEventsOpen] = useState(false);
   const router = useRouter();
-
   const cellDate = new Date(date.getFullYear(), date.getMonth(), day);
   const safeEvents = Array.isArray(events) ? events : [];
   const todayEvents = getEventsByDay(safeEvents, cellDate);
