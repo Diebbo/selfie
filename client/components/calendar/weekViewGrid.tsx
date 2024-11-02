@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { SelfieEvent } from "@/helpers/types";
+import { SelfieEvent, ProjectModel } from "@/helpers/types";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure } from "@nextui-org/react";
 
 // Helper function to generate hours
@@ -19,7 +19,8 @@ export const WeekViewGrid: React.FC<{
   date: Date,
   events?: SelfieEvent[],
   isMobile: boolean,
-}> = ({ date, events, isMobile }) => {
+  projects: ProjectModel[],
+}> = ({ date, events, isMobile, projects }) => {
   const hours = generateHours();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [selectedHourEvents, setSelectedHourEvents] = useState<SelfieEvent[]>([]);

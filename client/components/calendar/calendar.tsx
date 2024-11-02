@@ -4,7 +4,7 @@ import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent, People } from "@/helpers/types";
+import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
 import { getCurrentTime } from "@/actions/setTime";
@@ -14,6 +14,7 @@ interface CalendarPageProps {
   participatingEvents: SelfieEvent[];
   dbdate: Date;
   friends: People;
+  projects: ProjectModel[];
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -93,6 +94,7 @@ const CalendarPage = (props: CalendarPageProps) => {
             date={dayDate}
             isToday={isToday}
             events={events}
+            projects={props.projects}
           />
         </td>
       );
@@ -136,6 +138,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 date={currentDate}
                 isToday={isToday}
                 events={events}
+                projects={props.projects}
               />
             ) : null}
           </td>,
