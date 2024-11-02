@@ -181,7 +181,6 @@ const CalendarPage = (props: CalendarPageProps) => {
         1,
       ),
     );
-    setReloadEvents(true);
   };
 
   const changeWeek = (increment: number) => {
@@ -189,7 +188,6 @@ const CalendarPage = (props: CalendarPageProps) => {
       const newDate = new Date(currentDate);
       newDate.setDate(currentDate.getDate() + (increment));
       setCurrentDate(newDate);
-      setReloadEvents(true);
     }
   };
 
