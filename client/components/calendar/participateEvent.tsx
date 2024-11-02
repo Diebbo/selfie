@@ -23,7 +23,7 @@ import { useRouter } from 'next/navigation';
 import { parseDateTime } from "@internationalized/date";
 
 interface ParticipantContentProps {
-  eventid: string;
+  event: SelfieEvent;
   participant: string;
 }
 
@@ -39,9 +39,8 @@ const initialNotification = {
 };
 
 
-const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, participant }) => {
+const ParticipantContent: React.FC<ParticipantContentProps> = ({ event, participant }) => {
   const [isOpen, setIsOpen] = useState(true);
-  const [event, setEvent] = useState<SelfieEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [owner, setOwner] = useState<string>("");
@@ -51,6 +50,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
   const [notificationData, setNotificationData] =
     useState<Partial<SelfieNotification>>(initialNotification);
   const [trueParticipant, setTrueParticipant] = useState(false);
+  const eventid = event?._id;
 
   const EVENTS_API_URL = "/api/events";
 
@@ -102,38 +102,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
     });
   }
 
-  useEffect(() => {
-    async function fetchEvent() {
-      try {
-        const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          cache: "no-store",
-        });
-
-        if (res.status === 401) {
-          throw new Error("Unauthorized, please login.");
-        } else if (res.status >= 500) {
-          throw new Error(`Server error: ${res.statusText}`);
-        } else if (!res.ok) {
-          throw new Error("Failed to fetch the event");
-        }
-
-        setEvent(await res.json());
-
-      } catch (error) {
-        console.error("Error fetching event:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchEvent();
-
-  }, [eventid]);
-
+  //da rivedere e mettere serverside, dopo il merge con develop
   useEffect(() => {
     async function fetchParticipantsUsername() {
 
@@ -171,8 +140,10 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ eventid, partic
 
     fetchParticipantsUsername();
     console.log("partecipants: ", participants);
-  }, [event?.participants]);
+  }, [event.participants]);
 
+
+  //da rivedere e mettere serverside, dopo il merge con develop
   useEffect(() => {
     async function fetchOwner() {
       if (!event?.uid) return;

@@ -126,38 +126,13 @@ async function fetchParticipants(eventid: string) {
   }
 }
 
-async function fetchEvent(eventid: string) {
-  try {
-    const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store"
-    });
-
-    if (res.status === 401) {
-      throw new Error("Unauthorized, please login.");
-    } else if (res.status >= 500) {
-      throw new Error(`Server error: ${res.statusText}`);
-    } else if (!res.ok) {
-      throw new Error("Failed to fetch the event");
-    }
-
-    const data = await res.json();
-    return data;
-  } catch (e: unknown) {
-    throw new Error(`Error during fetch event: ${(e as Error).message}`);
-  }
-}
 
 interface ShowEventProps {
-  eventid: string;
+  event: SelfieEvent;
   user: Person;
-  friends: Person[]
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user, friends }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ event, user }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
@@ -172,6 +147,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user, friends }) => {
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Person[] | null>(null);
   const [owner, setOwner] = useState<string>("");
+  const eventid = event._id;
   const isOwner = user.events.created?.some(event => event._id === eventid) || false;
 
 
@@ -220,39 +196,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user, friends }) => {
       }
     }
 
-    const getEvent = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const event = await fetchEvent(eventid);
-
-        if (isMounted) {
-          setSelectedEvent(event);
-          // Initialize dateRange with the fetched event dates
-          if (event?.dtstart && event?.dtend) {
-            dispatch({
-              type: 'UPDATE_DATE_RANGE',
-              payload: {
-                start: new Date(event.dtstart),
-                end: new Date(event.dtend)
-              }
-            });
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError((err as Error).message);
-          console.error('Error fetching event:', err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
     if (eventid) {
-      getEvent();
       getParticipants();
     }
 

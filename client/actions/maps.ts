@@ -19,10 +19,11 @@ export type MapFriend = {
   name: string;
   lat: number;
   lng: number;
+  avatar?: string;
 };
 
 export async function getEvents(): Promise<MapEvent[]> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -68,7 +69,7 @@ export async function getEvents(): Promise<MapEvent[]> {
 }
 
 export async function getFriends(): Promise<MapFriend[]> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
@@ -108,6 +109,7 @@ export async function getFriends(): Promise<MapFriend[]> {
           user.username || `${user.name || ""} ${user.surname || ""}`.trim(),
         lat: user.position.latitude,
         lng: user.position.longitude,
+        avatar: user.avatar,
       }),
     );
 }
