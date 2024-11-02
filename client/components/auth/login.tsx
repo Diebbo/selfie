@@ -12,10 +12,14 @@ import { login } from "@/actions/auth.action";
 import { useState } from "react";
 import { MailIcon } from "./MailIcon";
 import { PassLockIcon } from "./PassLockIcon";
+import { useSearchParams } from 'next/navigation'
 
 export const Login = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams()
+
+  const redirect = searchParams.get('redirect')
 
   const initialValues: LoginFormType = {
     email: "die.barbieri03@gmail.com",
@@ -32,7 +36,7 @@ export const Login = () => {
           return;
         }
         await createAuthCookie(response.token);
-        router.replace("/");
+        router.replace(redirect || "/");
       } catch (err: any) {
         setError(
           err.message ? err.message.toString() : "An unknown error occurred",

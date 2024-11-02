@@ -15,7 +15,7 @@ export default async function middleware(req: NextRequest) {
   // 3. Decrypt the session from the cookie
   try {
     const cookieStore = await cookies();
-	  const token = cookieStore.get('token')?.value;
+    const token = cookieStore.get('token')?.value;
     if (token) {
       try {
         const res = await isVerified();
@@ -44,7 +44,9 @@ export default async function middleware(req: NextRequest) {
               // forward without redirects
               return NextResponse.next();
             }
-            return NextResponse.redirect(new URL("/login", req.nextUrl));
+            const loginUrl = new URL("/login", req.nextUrl);
+            loginUrl.searchParams.append("redirect", path);
+            return NextResponse.redirect(loginUrl);
         }
       } catch (err) {
         console.log(err);
@@ -53,12 +55,16 @@ export default async function middleware(req: NextRequest) {
       // Se non c'è il cookie allora l'utente non è loggato quindi lo si reindirizza alla pagina di login
       console.log("no cookie");
       if (isProtectedRoute) {
-        return NextResponse.redirect(new URL("/login", req.nextUrl));
+        const loginUrl = new URL("/login", req.nextUrl);
+        loginUrl.searchParams.append("redirect", path);
+        return NextResponse.redirect(loginUrl);
       }
     }
   } catch (error) {
     // token is invalid
-    return NextResponse.redirect(new URL("/login", req.nextUrl));
+    const loginUrl = new URL("/login", req.nextUrl);
+    loginUrl.searchParams.append("redirect", path);
+    return NextResponse.redirect(loginUrl);
   }
   return NextResponse.next();
 }
