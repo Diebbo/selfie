@@ -74,6 +74,29 @@ export default function createProjectService(models, lib) {
     return project;
   }
 
+  const STATUS_TRANSITIONS = {
+    'pending': 'in-progress',
+    'in-progress': 'completed',
+    'completed': 'pending'
+  };
+
+  /**
+   * Updates the status of an activity following a cyclic transition
+   * @param {Array} activities - Array of activities to search through
+   * @param {ObjectId} activityId - ID of the activity to update
+   * @returns {boolean} - Whether the activity was found and updated
+   */
+  const toggleActivityStatus = (activities, activityId) => {
+    if (!activities || !Array.isArray(activities)) return false;
+
+    const activity = activities.find(a => a._id.equals(activityId));
+    if (!activity) return false;
+
+    activity.status = STATUS_TRANSITIONS[activity.status];
+    return true;
+  };
+
+
   return {
     async updateProject(uid, projectId, project) {
       const dbProj = await projectModel.findOne({ _id: projectId, creator: uid });
@@ -233,30 +256,46 @@ export default function createProjectService(models, lib) {
       const populatedProject = await populateMembers(newProject);
       return populatedProject;
     },
+    /**
+     * Toggles an activity's status within a project, searching both top-level activities
+     * and sub-activities
+     * @param {string} uid - User ID
+     * @param {string} projectId - Project ID
+     * @param {string} activityId - Activity ID to toggle
+     * @returns {Promise<Project>} - Updated project
+     */
+    async toggleActivityStatusInProject(uid, projectId, activityId) {
+      const project = await projectModel.findOne({
+        _id: projectId,
+        creator: uid
+      });
 
-    async toggleActivityStatus(uid, projectId, activityId) {
-      const project = await projectModel.findOne({ _id: projectId, creator: uid });
-      if (!project) throw new Error("Progetto non trovato");
+      if (!project) {
+        throw new Error("Project not found");
+      }
 
-      const activity = project.activities.id(activityId);
+      // Try to update top-level activities
+      let found = toggleActivityStatus(project.activities, activityId);
 
-      if (activity) {
-        switch (activity.status) {
-          case "pending":
-            activity.status = "in-progress";
+      // If not found in top-level, search through sub-activities
+      if (!found) {
+        for (const activity of project.activities) {
+          if (toggleActivityStatus(activity.subActivities, activityId)) {
+            found = true;
             break;
-          case "in-progress":
-            activity.status = "completed";
-            break;
-          case "completed":
-            activity.status = "pending";
-            break;
+          }
         }
       }
+
+      if (!found) {
+        throw new Error("Activity not found in project");
+      }
+
+      // Save and return the updated project
       await project.save();
 
-      return await populateMembers(project);
+      return populateMembers(project);
     }
-  }
+  };
 }
 
