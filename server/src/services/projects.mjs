@@ -241,7 +241,17 @@ export default function createProjectService(models, lib) {
       const activity = project.activities.id(activityId);
 
       if (activity) {
-        activity.status = activity.status === 'completed' ? 'in-progress' : 'completed';
+        switch (activity.status) {
+          case "pending":
+            activity.status = "in-progress";
+            break;
+          case "in-progress":
+            activity.status = "completed";
+            break;
+          case "completed":
+            activity.status = "pending";
+            break;
+        }
       }
       await project.save();
 
