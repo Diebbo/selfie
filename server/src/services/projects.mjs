@@ -178,83 +178,45 @@ export default function createProjectService(models, lib) {
         throw new Error(`Some members were not found: ${missingMembers.join(', ')}`);
       }
 
-      // Map usernames to IDs for the database
-      const memberIds = members.map(member => member._id);
-
       // Process activities if they exist
       let processedActivities = [];
-      if (activities && Array.isArray(activities) && activities.length > 0) {
-        activities.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-        const errors = [];
-        for (let activity of activities) {
+      if (activities) {
+        for (const activity of activities) {
           try {
-            // Verify and map assignees to their IDs
-            if (activity.assignees && Array.isArray(activity.assignees)) {
-              const assigneeMembers = members.filter(m =>
-                activity.assignees.includes(m.username)
-              );
-              activity.assignees = assigneeMembers.map(m => m._id);
-            }
-
-            // Process any sub-activities
-            if (activity.subActivities && Array.isArray(activity.subActivities)) {
-              activity.subActivities = activity.subActivities.map(sub => {
-                if (sub.assignees && Array.isArray(sub.assignees)) {
-                  const subAssigneeMembers = members.filter(m =>
-                    sub.assignees.includes(m.username)
-                  );
-                  sub.assignees = subAssigneeMembers.map(m => m._id);
-                }
-                return sub;
-              });
-            }
-
-            // Validate activity fits within project timeline
-            const validatedActivity = await lib.addActivityToProject(project, activity);
-            processedActivities.push(validatedActivity);
+            lib.checkActivityFit(project, activity);
+            processedActivities.push(activity);
           } catch (e) {
-            errors.push(e.message);
+            // Skip invalid activities
+            console.warn(`Skipping invalid activity: ${e.message}`);
           }
         }
-
-        if (errors.length > 0) {
-          throw new Error("Invalid activities: " + errors.join(", "));
-        }
       }
-
       // Get current timestamp
       const now = await lib.getDateTime();
 
       // Create the project with proper ID references
       const projectData = {
         ...project,
-        creator: uid,
-        members: memberIds,
-        activities: processedActivities,
-        creationDate: now
+        creator: user.username,
+        creationDate: now,
+        activities: processedActivities
       };
 
+      const projectDataUpdated = await populateDbMembers(projectData);
+
       // Save the new project
-      let newProject = await projectModel.create(projectData);
+      const newProject = await projectModel.create(projectDataUpdated);
       if (!newProject) {
         throw new Error("Failed to create project");
       }
 
       // Update all member users with the new project reference
       await userModel.updateMany(
-        { _id: { $in: memberIds } },
+        { _id: { $in: projectData.members } },
         { $addToSet: { projects: newProject._id } }
       );
 
-      // Populate and return the complete project
-      newProject = await projectModel.findById(newProject._id);
-      if (!newProject) {
-        throw new Error("Failed to retrieve created project");
-      }
-
-      const populatedProject = await populateMembers(newProject);
-      return populatedProject;
+      return await populateMembers(newProject);
     },
     /**
      * Toggles an activity's status within a project, searching both top-level activities
