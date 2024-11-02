@@ -6,6 +6,7 @@ class ProjectComponent extends HTMLElement {
     this._user = null;
     this.currentIndex = 0;
     this._modal = null;
+    this._friends = [];
     this.addEventListener('delete-project', this.handleDeleteProject);
     this.addEventListener('update-project', this.handleSaveProject);
   }
@@ -63,7 +64,8 @@ class ProjectComponent extends HTMLElement {
 }
 
 #projectForm input,
-#projectForm textarea {
+#projectForm textarea,
+#projectForm select {
   width: 100%;
   padding: 0.5rem; /* p-2 */
   margin-top: 0.5rem; /* my-2 */
@@ -143,6 +145,29 @@ class ProjectComponent extends HTMLElement {
     }
   }
 
+  set friends(value) {
+    if (Array.isArray(value)) {
+      this._friends = value;
+      this.render();
+    }
+  }
+
+  populateSelectMembers(select) {
+    this._friends.forEach(friend => {
+      const option = document.createElement('option');
+      option.value = friend;
+      option.textContent = friend;
+      select.appendChild(option);
+    });
+
+    const userOption = document.createElement('option');
+    userOption.value = this._user._id;
+    userOption.textContent = this._user.name;
+    userOption.selected = true;
+    select.appendChild(userOption);
+  }
+
+
   openModal({ title, startDate, deadline, description }) {
     this._modal = this.shadowRoot.querySelector('#projectModal');
     const form = this._modal.querySelector('#projectForm');
@@ -152,8 +177,8 @@ class ProjectComponent extends HTMLElement {
     form.querySelector('#projectStartDate').value = new Date(startDate).toISOString().split('T')[0];
     form.querySelector('#projectDeadline').value = new Date(deadline).toISOString().split('T')[0];
     form.querySelector('#projectDescription').value = description || '';
-    form.querySelector('#projectMembers').value = this._user ? this._user.username + ',' : '';
-
+    const membersForm = form.querySelector('#projectMembers');
+    this.populateSelectMembers(membersForm);
 
     form.dataset.isNew = 'true';
     this._modal.openModal();
@@ -176,7 +201,8 @@ class ProjectComponent extends HTMLElement {
         const startDate = form.querySelector('#projectStartDate').value;
         const deadline = form.querySelector('#projectDeadline').value;
         const description = form.querySelector('#projectDescription').value;
-        const members = form.querySelector('#projectMembers').value.split(',').map(m => m.trim());
+        const multipleSelect = form.querySelector('#projectMembers');
+        const members = Array.from(multipleSelect.selectedOptions).map(option => option.value);
 
         return {
           title,
@@ -236,7 +262,8 @@ class ProjectComponent extends HTMLElement {
         <input type="text" id="projectTitle" placeholder="Project Title" required>
         <input type="date" id="projectStartDate" placeholder="Start Date" required>
         <input type="date" id="projectDeadline" placeholder="Deadline" required>
-        <input type="text" id="projectMembers" placeholder="Members (comma-separated)">
+        <select id="projectMembers" multiple>
+        </select>
         <textarea id="projectDescription" placeholder="Description" required></textarea>
         <button type="submit" class="success">Save Changes</button>
       </form>

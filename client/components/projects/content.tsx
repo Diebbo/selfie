@@ -19,9 +19,11 @@ export default function Content({ projects, user }: ContentProps) {
     if (projectComponentRef.current) {
       projectComponentRef.current.projects = projects;
       projectComponentRef.current._user = user;
+      projectComponentRef.current.friends = user.friends.map((friend) => friend.username);
+      console.log('Content: projects passed to custom element', projectComponentRef.current);
       // projectComponentRef.classList.add('font-sans', 'bg-gray-900', 'text-white');
     }
-  }, [projects, user]);
+  }, [user]);
 
   return (
     <div className="m-3">

@@ -117,7 +117,7 @@ export function createProjectRouter(db) {
     const activityId = req.params.activityId;
 
     try {
-      var result = await db.projectService.toggleActivityStatus(uid, projectId, activityId);
+      var result = await db.projectService.toggleActivityStatusInProject(uid, projectId, activityId);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
