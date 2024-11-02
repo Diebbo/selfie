@@ -9,18 +9,18 @@ export default function createProjectService(models, lib) {
     populatedProject.creator = populatedProject.members.find(m => m._id.equals(populatedProject.creator)).username;
 
     function mapAssignees(assignees, members) {
-      return assignees.map(assignee => members.find(m => m._id.equals(assignee._id)).username);
+      return assignees?.map(assignee => members.find(m => m._id.equals(assignee._id)).username);
     }
 
     function mapComments(comments, members) {
-      return comments.map(comment => {
+      return comments?.map(comment => {
         comment.creator = members.find(m => m._id.equals(comment.creator)).username;
         return comment;
       });
     }
 
     function mapSubActivities(subActivities, members) {
-      return subActivities.map(subActivity => {
+      return subActivities?.map(subActivity => {
         subActivity.assignees = mapAssignees(subActivity.assignees, members);
         subActivity.comments = mapComments(subActivity.comments, members);
         return subActivity;
@@ -41,9 +41,10 @@ export default function createProjectService(models, lib) {
   async function populateDbMembers(project) {
     const members = await models.userModel.find({ username: { $in: project.members } });
     project.members = members.map(m => m._id);
+    project.creator = members.find(m => m.username === project.creator)._id;
 
     function mapAssigneesToIds(assignees, members) {
-      return assignees.map(assigneeUsername => {
+      return assignees?.map(assigneeUsername => {
         const member = members.find(m => m.username === assigneeUsername);
         if (!member) throw new Error(`Member ${assigneeUsername} not found for assignee`);
         return member._id;
@@ -51,20 +52,20 @@ export default function createProjectService(models, lib) {
     }
 
     function mapCommentsToIds(comments, members) {
-      comments.forEach(comment => {
+      comments?.forEach(comment => {
         comment.creator = members.find(m => m.username === comment.creator)._id;
         if (!comment.creator) throw new Error(`Member ${comment.creator} not found for comment creator`);
       });
     }
 
     function mapSubActivitiesToIds(subActivities, members) {
-      subActivities.forEach(subActivity => {
+      subActivities?.forEach(subActivity => {
         subActivity.assignees = mapAssigneesToIds(subActivity.assignees, members);
         mapCommentsToIds(subActivity.comments, members);
       });
     }
 
-    project.activities.forEach(activity => {
+    project.activities?.forEach(activity => {
       activity.assignees = mapAssigneesToIds(activity.assignees, members);
       mapCommentsToIds(activity.comments, members);
       mapSubActivitiesToIds(activity.subActivities, members);
@@ -81,23 +82,27 @@ export default function createProjectService(models, lib) {
       if (!user) throw new Error("User not found");
 
       // Validate activities
-      for (const activity of project.activities) {
+      for (const activity of (project.activities || [])) {
         lib.checkActivityFit(project, activity);
       }
 
       // Populate members
       project.members = project.members || [];
-      project.members.push(user.username);
-      await populateDbMembers(project);
+      if (!project.members.includes(user.username)) {
+        project.members.push(user.username);
+      }
+      project = await populateDbMembers(project);
 
-      let result = await projectModel.findOneAndUpdate({ _id: projectId, creator: uid }, project, { new: true });
+      let result = await projectModel.findOneAndUpdate(
+        { _id: projectId, creator: uid },
+        project,
+        { new: true }
+      );
       if (!result) throw new Error("Errore nell'aggiornamento del progetto");
 
       result = await populateMembers(result);
-
       return result;
     },
-
     async delete(uid, projectId) {
       const result = await projectModel.deleteOne({ _id: projectId, creator: uid });
       if (result.deletedCount === 0) throw new Error("Errore nell'eliminazione del progetto");
@@ -123,6 +128,7 @@ export default function createProjectService(models, lib) {
     },
 
     async createProject(uid, project, activities = null) {
+      // Verify the creating user exists
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
@@ -135,56 +141,97 @@ export default function createProjectService(models, lib) {
         throw new Error("Project start date must be before the deadline");
       }
 
-      project.members = project.members || [];
-      project.members.push(user.username);
+      // Initialize and validate members array
+      project.members = Array.isArray(project.members) ? project.members : [];
+      if (!project.members.includes(user.username)) {
+        project.members.push(user.username);
+      }
 
-      // Add activities to the project
-      let errors = [];
-      if (activities && activities.length > 0) {
+      // Verify all members exist in the database before proceeding
+      const members = await userModel.find({ username: { $in: project.members } });
+      if (members.length !== project.members.length) {
+        const foundUsernames = members.map(m => m.username);
+        const missingMembers = project.members.filter(username => !foundUsernames.includes(username));
+        throw new Error(`Some members were not found: ${missingMembers.join(', ')}`);
+      }
+
+      // Map usernames to IDs for the database
+      const memberIds = members.map(member => member._id);
+
+      // Process activities if they exist
+      let processedActivities = [];
+      if (activities && Array.isArray(activities) && activities.length > 0) {
         activities.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
+        const errors = [];
         for (let activity of activities) {
           try {
-            project = await lib.addActivityToProject(project, activity);
+            // Verify and map assignees to their IDs
+            if (activity.assignees && Array.isArray(activity.assignees)) {
+              const assigneeMembers = members.filter(m =>
+                activity.assignees.includes(m.username)
+              );
+              activity.assignees = assigneeMembers.map(m => m._id);
+            }
+
+            // Process any sub-activities
+            if (activity.subActivities && Array.isArray(activity.subActivities)) {
+              activity.subActivities = activity.subActivities.map(sub => {
+                if (sub.assignees && Array.isArray(sub.assignees)) {
+                  const subAssigneeMembers = members.filter(m =>
+                    sub.assignees.includes(m.username)
+                  );
+                  sub.assignees = subAssigneeMembers.map(m => m._id);
+                }
+                return sub;
+              });
+            }
+
+            // Validate activity fits within project timeline
+            const validatedActivity = await lib.addActivityToProject(project, activity);
+            processedActivities.push(validatedActivity);
           } catch (e) {
             errors.push(e.message);
           }
         }
+
+        if (errors.length > 0) {
+          throw new Error("Invalid activities: " + errors.join(", "));
+        }
       }
 
-      if (errors.length > 0) {
-        throw new Error("Invalid activities: " + errors.join(", "));
-      }
-
-      // Populate members
-      project = await populateDbMembers(project);
-
-      // Add today's date to the project
+      // Get current timestamp
       const now = await lib.getDateTime();
-      const newProject = await projectModel.create({
+
+      // Create the project with proper ID references
+      const projectData = {
         ...project,
         creator: uid,
-        creationDate: now,
-      });
+        members: memberIds,
+        activities: processedActivities,
+        creationDate: now
+      };
 
-      // Save the project
-      const addedProject = await newProject.save();
-      if (!addedProject) throw new Error("Project not created");
-
-      // Add project to the user's projects
-      if (!user.projects) user.projects = [];
-      user.projects.push(addedProject._id);
-      await user.save();
-
-      // Add all the members to the project
-      const members = await userModel.find({ username: { $in: project.members } });
-      for (let member of members) {
-        if (!member.projects) member.projects = [];
-        member.projects.push(addedProject._id);
-        await member.save();
+      // Save the new project
+      let newProject = await projectModel.create(projectData);
+      if (!newProject) {
+        throw new Error("Failed to create project");
       }
 
-      return addedProject;
+      // Update all member users with the new project reference
+      await userModel.updateMany(
+        { _id: { $in: memberIds } },
+        { $addToSet: { projects: newProject._id } }
+      );
+
+      // Populate and return the complete project
+      newProject = await projectModel.findById(newProject._id);
+      if (!newProject) {
+        throw new Error("Failed to retrieve created project");
+      }
+
+      const populatedProject = await populateMembers(newProject);
+      return populatedProject;
     },
 
     async toggleActivityStatus(uid, projectId, activityId) {
@@ -202,3 +249,4 @@ export default function createProjectService(models, lib) {
     }
   }
 }
+
