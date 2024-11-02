@@ -79,14 +79,22 @@ export const Login = () => {
                 onChange={handleChange("password")}
               />
             </div>
-
-            <Button
-              onPress={() => handleSubmit()}
-              variant="flat"
-              color="primary"
-            >
-              Login
-            </Button>
+            <div className="flex align-center flex-wrap flex-row gap-4">
+              <Button
+                onPress={() => handleSubmit()}
+                variant="flat"
+                color="primary"
+              >
+                Login
+              </Button>
+              <Button
+                variant="flat"
+                color="success"
+                onPress={() => router.push("/register")}
+              >
+                Register
+              </Button>
+            </div>
           </>
         )}
       </Formik>
@@ -97,18 +105,7 @@ export const Login = () => {
         </div>
       )}
 
-      <div className="font-light text-slate-400 mt-4 text-sm">
-        Don&apos;t have an account ?{" "}
-        <Link href="/register" className="font-bold">
-          Register here
-        </Link>
-      </div>
 
-      <div className="font-light text-slate-400 mt-4 text-sm">
-        <Link href="/forgot-password" className="font-bold">
-          Forgot password ?
-        </Link>
-      </div>
     </>
   );
 };
