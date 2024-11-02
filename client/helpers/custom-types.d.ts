@@ -7,6 +7,7 @@ declare global {
   interface HTMLProjectComponentElement extends HTMLElement {
     projects: ProjectModel[];
     _user?: Person;
+    friends: String[];
   }
 
   // Update the tag name map
