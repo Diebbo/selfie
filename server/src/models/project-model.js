@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const projectActivitySchema = new mongoose.Schema({
+    _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
     title: { type: String, required: true, trim: true },
     startDate: Date,
     dueDate: Date,
@@ -10,8 +11,8 @@ const projectActivitySchema = new mongoose.Schema({
         default: 'pending',
         index: true
     },
-    input: [{ type: String, trim: true }],
-    output: [{ type: String, trim: true }],
+    inputs: [{ type: String, trim: true }],
+    outputs: [{ type: String, trim: true }],
     comments: [
         {
             creator: {
@@ -31,6 +32,7 @@ const projectActivitySchema = new mongoose.Schema({
         }
     ],
     subActivities: [{
+        _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
         title: { type: String, required: true, trim: true },
         startDate: Date,
         dueDate: Date,
@@ -40,8 +42,8 @@ const projectActivitySchema = new mongoose.Schema({
             default: 'pending',
             index: true
         },
-        input: [{ type: String, trim: true }],
-        output: [{ type: String, trim: true }],
+        inputs: [{ type: String, trim: true }],
+        outputs: [{ type: String, trim: true }],
         comments: [
             {
                 creator: {
