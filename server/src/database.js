@@ -828,58 +828,54 @@ export async function createDataBase() {
     return projects;
   };
 
-  const checkActivityFitInProject = (project, activity) => {
+  const checkActivityFit = ({ startDate, deadline }, activity) => {
     if (!activity) {
       throw new Error("Activity must be provided");
     }
 
-    if (!activity.name || !activity.dueDate || !activity.startDate) {
+    if (!activity.title || !activity.startDate || !activity.dueDate) {
       throw new Error(
-        `Activity must have a name, start and due date: ${JSON.stringify(activity)}`,
+        `Activity must have a title, start date, and due date: ${JSON.stringify(activity)}`
       );
     }
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
     if (
-      project.startDate &&
-      new Date(activity.dueDate) < new Date(project.startDate)
+      startDate &&
+      new Date(activity.dueDate) < new Date(startDate)
     ) {
       throw new Error(
-        `Activity due date must be after the project start date: ${project.startDate}`,
+        `Activity due date must be after the project start date: ${startDate}`
       );
     }
-    if (new Date(activity.dueDate) > new Date(project.deadline)) {
+
+    if (new Date(activity.dueDate) > new Date(deadline)) {
       throw new Error(
-        `Activity due date must be on or before the project deadline: ${project.deadline}`,
+        `Activity due date must be on or before the project deadline: ${deadline}`
       );
     }
 
-    if (new Date(activity.startDate) < new Date(project.startDate)) {
+    if (new Date(activity.startDate) < new Date(startDate)) {
       throw new Error(
-        `Activity start date must be after the project start date: ${project.startDate}`,
+        `Activity start date must be after the project start date: ${startDate}`
       );
     }
 
-    // Check if the sub activities are valid
-    if (activity.subActivities && activity.subActivities.length > 0) {
-      for (let subActivity of activity.subActivities) {
-        // Recursively check each sub activity
-        checkActivityFitInProject(project, subActivity);
-
-        // Ensure sub-activity due date is not later than parent activity due date
-        if (new Date(subActivity.dueDate) > new Date(activity.dueDate)) {
-          throw new Error(
-            `Sub-activity due date must not be later than parent activity due date: ${activity.dueDate}`,
-          );
-        }
-
-        if (new Date(subActivity.startDate) < new Date(activity.startDate)) {
-          throw new Error(
-            `Sub-activity start date must be after the parent activity start date: ${activity.startDate}`,
-          );
-        }
-      }
+    // Ensure activity's start date is before its due date
+    if (new Date(activity.startDate) > new Date(activity.dueDate)) {
+      throw new Error(
+        `Activity start date must be before its due date: ${activity.dueDate}`
+      );
     }
+
+    // Validate assignees if provided
+    if (activity.assignees && !Array.isArray(activity.assignees)) {
+      throw new Error("Activity assignees must be an array if provided");
+    }
+
+    activity.subActivities?.forEach((subActivity) => {
+      checkActivityFit({ startDate:activity.startDate, deadline:activity.dueDate }, subActivity);
+    });
   };
 
   const convertUsernameToId = async (username) => {
@@ -914,7 +910,7 @@ export async function createDataBase() {
   };
 
   const addActivityToProject = async (project, activity) => {
-    checkActivityFitInProject(project, activity);
+    checkActivityFit(project, activity);
     activity = await processActivityParticipants(activity, project.members);
 
     if (!project.activities) project.activities = [];
@@ -1725,11 +1721,11 @@ export async function createDataBase() {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: { ...msg, sender: sender.username },
-                avatar: otherUser.avatar,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: { ...msg, sender: sender.username },
+              avatar: otherUser.avatar,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1852,7 +1848,7 @@ export async function createDataBase() {
   };
 
   const projectService = createProjectService(models, {
-    checkActivityFitInProject,
+    checkActivityFit,
     userService,
     addDatesToProjectActivities,
     addActivityToProject,

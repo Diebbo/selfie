@@ -14,8 +14,9 @@ class ProjectCard extends HTMLElement {
     }
 
     setupStyle() {
-        this.shadowRoot.innerHTML = `
-      <style>
+        const style = document.createElement('style');
+        this.shadowRoot.appendChild(style);
+        const existingStyles = `
       .project-card {
         min-width: 300px;
         padding: 1.25rem; 
@@ -78,7 +79,7 @@ class ProjectCard extends HTMLElement {
       .gantt-task-cell.completed {
           background-color: hsl(var(--nextui-success)); 
       }
-            .gantt-task-cell.partial-completed {
+            .gantt-task-cell.in-progress {
           background-color: hsl(var(--nextui-warning)); 
       }
 
@@ -192,7 +193,8 @@ class ProjectCard extends HTMLElement {
 }
 
 #activityForm input,
-#activityForm textarea {
+#activityForm textarea,
+#activityForm select{
     width: 100%; 
     padding: 0.5rem; 
     margin: 0.5rem 0; 
@@ -203,6 +205,12 @@ class ProjectCard extends HTMLElement {
     transition: ring-2 0.2s ease-in-out; 
 }
 
+#activityForm ul {
+    width: 100%; 
+    padding: 0.5rem; 
+    margin: 0.5rem 0; 
+    outline: none;
+}
 #activityForm button {
     color: white; 
     padding: 0.625rem 1rem; 
@@ -226,8 +234,35 @@ class ProjectCard extends HTMLElement {
         border-radius: 0.375rem; 
         margin-right: 5px;
       }
-      </style>
     `;
+        const newStyles = `
+            .status-pending {
+                background-color: hsl(var(--nextui-warning-200));
+            }
+            .status-in-progress {
+                background-color: hsl(var(--nextui-primary-200));
+            }
+            .status-completed {
+                background-color: hsl(var(--nextui-success-200));
+            }
+            .status-blocked {
+                background-color: hsl(var(--nextui-danger-200));
+            }
+            
+            .activity-meta {
+                font-size: 0.75rem;
+                color: hsl(var(--nextui-foreground-400));
+                margin-top: 0.25rem;
+            }
+            
+            .comment-count {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+                margin-left: 0.5rem;
+            }
+        `;
+        style.textContent = existingStyles + newStyles;
     }
 
     connectedCallback() {
@@ -304,11 +339,22 @@ class ProjectCard extends HTMLElement {
         </div>
         <modal-component id="activityModal">
           <form id="activityForm">
-            <input type="text" id="activityName" placeholder="Activity Name" required>
+            <input type="text" id="activityTitle" placeholder="Activity Title" required>
             <input type="date" id="activityStartDate" placeholder="Start Date" required>
             <input type="date" id="activityDueDate" placeholder="Due Date" required>
-            <input type="text" id="activityParticipants" placeholder="Participants (comma-separated)">
-            <textarea id="activityDescription" placeholder="Description"></textarea>
+            <label for="activityAssignees">Assignees</label>
+            <select id="activityAssignees" multiple>
+            </select>
+            <label for="activityStatus">Status</label>
+            <select id="activityStatus">
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+            <input type="text" id="activityInputs" placeholder="Input1, input2,... (comma-separated)" />
+            <input type="text" id="activityOutputs" placeholder="Output1, output2,... (comma-separated)" />
+            <ul id="previousComments"></ul>
+            <textarea id="comments" placeholder="comments"></textarea>
             <select id="parentActivitySelect" class="parent-activity-select">
               <option value="">No Parent (Top-level Activity)</option>
             </select>
@@ -322,7 +368,6 @@ class ProjectCard extends HTMLElement {
 
         // Event listeners per apertura modale
         this.addEventListeners(this.project);
-
     }
 
     toggleActivityCompletion(activityId, project) {
@@ -371,7 +416,7 @@ class ProjectCard extends HTMLElement {
         editButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.stopPropagation(); // Previene il bubbling dell'evento
-                const activityId = button.closest('.gantt-row').dataset.activityId;
+                const activityId = button.parentElement.parentElement.dataset.activityId;
                 this.openModal(activityId, project, false);
             });
         });
@@ -413,6 +458,25 @@ class ProjectCard extends HTMLElement {
 
         form.addEventListener('submit', (e) => this.handleFormSubmit(e, project));
 
+        form.querySelector('#comments').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const commentsInput = form.querySelector('#comments');
+                const commentsList = form.querySelector('#previousComments');
+                const comment = commentsInput.value.trim();
+                if (comment) {
+                    // remove default message
+                    if (commentsList.querySelector('li')?.textContent === 'No comments') {
+                        commentsList.innerHTML = '';
+                    }
+                    const li = document.createElement('li');
+                    li.textContent = project.creator + ': ' + comment;
+                    commentsList.appendChild(li);
+                    commentsInput.value = '';
+                }
+            }
+        });
+
         this.setupTooltips();
     }
 
@@ -428,6 +492,7 @@ class ProjectCard extends HTMLElement {
         });
         this.dispatchEvent(updateEvent);
         this.setAttribute('project', JSON.stringify(project));
+        this.project = project;
         this.render();
     }
 
@@ -511,35 +576,74 @@ class ProjectCard extends HTMLElement {
         });
     }
 
+    populateAssigneeSelect(select, assignees, currentAssignees = []) {
+        select.innerHTML = '';
+        if (!assignees || assignees.length === 0) {
+            select.innerHTML = '<option value="">No assignees</option>';
+        }
+        assignees?.forEach(assignee => {
+            let option = document.createElement('option');
+            option.value = assignee;
+            option.textContent = assignee;
+            if (currentAssignees.includes(assignee)) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
+    populateActivityComments(ul, comments) {
+        ul.innerHTML = '';
+        if (!comments || comments.length === 0) {
+            ul.innerHTML = '<li>No comments</li>';
+        }
+        comments?.forEach(comment => {
+            let li = document.createElement('li');
+            li.textContent = `${comment.creator}: ${comment.comment}`;
+            ul.appendChild(li);
+        });
+    }
+
+
     openModal(taskId, project, isNewActivity) {
         const form = this.shadowRoot.querySelector('#activityForm');
         this._modal.setTitle(isNewActivity ? 'Add New Activity' : 'Edit Activity');
-        const parentActivitySelect = form.querySelector('#parentActivitySelect');
 
+        // Reset the form
+        const parentActivitySelect = form.querySelector('#parentActivitySelect');
+        const select = form.querySelector('#activityAssignees');
+        const ul = form.querySelector('#previousComments');
+        const activityI = form.querySelector('#activityInputs');
+        const activityO = form.querySelector('#activityOutputs');
         form.reset();
 
-        if (isNewActivity) {
+        const activity = this.findActivity(project.activities, taskId);
+
+        if (isNewActivity || !activity) {
             form.dataset.isNew = 'true';
-            form.querySelector('#activityParticipants').value = this.user ? this.user.username + ',' : '';
+            form.querySelector('#activityAssignees').value = this.user ? this.user.username + ',' : '';
+            this.populateAssigneeSelect(select, project.members);
             this.populateParentActivitySelect(parentActivitySelect, project.activities);
+            this.populateActivityComments(ul, null);
         } else {
             form.dataset.isNew = 'false';
-            const activity = this.findActivity(project.activities, taskId);
-            if (activity) {
-                form.querySelector('#activityName').value = activity.name;
-                const startDate = new Date(activity.startDate || activity.dueDate);
-                form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
-                form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
-                form.querySelector('#activityParticipants').value = activity.participants ? activity.participants.join(', ') : '';
-                form.querySelector('#activityDescription').value = activity.description || '';
-                form.dataset.activity = JSON.stringify(activity);
+            form.querySelector('#activityTitle').value = activity.title;
+            const startDate = new Date(activity.startDate || activity.dueDate);
+            form.querySelector('#activityStartDate').value = startDate.toISOString().split('T')[0];
+            form.querySelector('#activityDueDate').value = new Date(activity.dueDate).toISOString().split('T')[0];
 
-                if (parentActivitySelect.children.length === 1) {
-                    const parentActivity = this.project.activities.find(a => a.subActivities && a.subActivities.find(sa => sa._id === activity._id));
-                    this.populateParentActivitySelect(parentActivitySelect, project.activities, parentActivity);
-                }
-            }
+            if (activity.inputs) activityI.value = activity.inputs?.join(', ');
+            if (activity.outputs) activityO.value = activity.outputs?.join(', ');
+            this.populateAssigneeSelect(select, project.members, activity.assignees);
+
+            this.populateActivityComments(ul, activity.comments);
+
+            form.dataset.activity = JSON.stringify(activity);
+
+            const parentActivity = this.project.activities.find(a => a.subActivities?.some(sa => sa._id === activity._id));
+            this.populateParentActivitySelect(parentActivitySelect, project.activities, parentActivity ? parentActivity._id : null, activity._id);
         }
+
 
         this._modal.openModal();  // Apri il modale
     }
@@ -559,15 +663,18 @@ class ProjectCard extends HTMLElement {
         return null;
     }
 
-    populateParentActivitySelect(select, activities, currentParentActivity = null) {
+    populateParentActivitySelect(select, activities, currentParentActivityId = null, currentActivityId = null) {
+        select.innerHTML = '<option value="">No Parent (Top-level Activity)</option>';
         activities.forEach(activity => {
             let option = document.createElement('option');
             option.value = activity._id;
-            option.textContent = activity.name;
-            select.appendChild(option);
-            if (currentParentActivity && currentParentActivity._id === activity._id) {
+            option.textContent = activity.title;
+            if (currentParentActivityId && currentParentActivityId === activity._id) { // Set the current parent activity as selected
                 option.selected = true;
+            } else if (!currentParentActivityId && currentActivityId && currentActivityId === activity._id) {
+                return; // Don't show the current activity as a parent
             }
+            select.appendChild(option);
         });
     }
 
@@ -583,15 +690,29 @@ class ProjectCard extends HTMLElement {
         let subActivities = oldActivity && oldActivity.subActivities ? oldActivity.subActivities : [];
         const parentActivityId = form.querySelector('#parentActivitySelect').value === '' ? null : form.querySelector('#parentActivitySelect').value;
 
+        const selectElement = form.querySelector('#activityAssignees');
+        const assaignees = Array.from(selectElement.selectedOptions).map(option => option.value);
+
+
+        const commentList = form.querySelector('#previousComments');
+        const comments = [];
+        commentList.querySelectorAll('li').forEach(li => {
+            if (li.textContent === 'No comments') return;
+            const [creator, comment] = li.textContent.split(':').map(item => item.trim());
+            comments.push({ creator, comment });
+        });
+
         const activityData = {
-            name: form.querySelector('#activityName').value,
+            title: form.querySelector('#activityTitle').value,
             startDate: new Date(form.querySelector('#activityStartDate').value),
             dueDate: new Date(form.querySelector('#activityDueDate').value),
-            participants: form.querySelector('#activityParticipants').value.split(',').map(p => p.trim()).filter(p => p !== ''),
-            description: form.querySelector('#activityDescription').value,
-            completed: oldActivity ? oldActivity.completed : false,
+            assignees: assaignees,
+            status: form.querySelector('#activityStatus').value,
+            inputs: form.querySelector('#activityInputs').value?.split(',').map(input => input.trim()) || [],
+            outputs: form.querySelector('#activityOutputs').value?.split(',').map(output => output.trim()) || [],
             subActivities: subActivities,
-            _id: oldActivity ? oldActivity._id : null
+            _id: oldActivity ? oldActivity._id : undefined,
+            comments: comments,
         };
 
         if (isNewActivity) {
@@ -606,6 +727,27 @@ class ProjectCard extends HTMLElement {
             this.addError(error.message);
         });
     }
+
+    addActivityToProject(project, activity, parentActivityId) {
+        if (!project || !activity) {
+            this.addError('Invalid project or activity data');
+            return;
+        }
+
+        if (!parentActivityId) {
+            project.activities.push(activity);
+        } else {
+            project.activities.forEach(parentActivity => {
+                if (parentActivity._id === parentActivityId) {
+                    if (!parentActivity.subActivities) {
+                        parentActivity.subActivities = [];
+                    }
+                    parentActivity.subActivities.push(activity);
+                }
+            });
+        }
+    }
+
 
     async fetchProject(project) {
         const response = await fetch(`/api/projects/${project._id}`, {
@@ -670,22 +812,23 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell days-column">Days</div>
         <div class="gantt-cell start-date-column">Start Date</div>
         <div class="gantt-cell end-date-column">End Date</div>
-        <div class="gantt-cell participants-column">Participants</div>
+        <div class="gantt-cell participants-column">Assignees</div>
       ${days.map(day => `<div class="gantt-cell" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
     }
 
 
     isActivityFullyComplete(activity) {
+        const isCompleted = activity.status === 'completed';
         if (!activity.subActivities || activity.subActivities.length === 0) {
-            return activity.completed;
+            return isCompleted;
         }
 
         const allSubActivitiesComplete = activity.subActivities.every(subActivity =>
             this.isActivityFullyComplete(subActivity)
         );
 
-        return activity.completed && allSubActivitiesComplete;
+        return isCompleted && allSubActivitiesComplete;
     }
 
     // Add this helper method to your class
@@ -704,7 +847,7 @@ class ProjectCard extends HTMLElement {
     getActivityCompletionStatus(activity, parentActivity = null) {
         // If it's a leaf activity (no sub-activities)
         if (!activity.subActivities || activity.subActivities.length === 0) {
-            return activity.completed ? 'completed' : 'pending';
+            return activity.status;
         }
 
         // Check if all sub-activities are complete
@@ -717,10 +860,12 @@ class ProjectCard extends HTMLElement {
             this.isActivityFullyComplete(subActivity)
         );
 
-        if (activity.completed && allSubActivitiesComplete) {
+        const completed = activity.status === 'completed';
+
+        if (completed && allSubActivitiesComplete) {
             return 'completed';
-        } else if (activity.completed || someSubActivitiesComplete) {
-            return 'partial-completed';
+        } else if (completed || someSubActivitiesComplete) {
+            return 'in-progress';
         } else {
             return 'pending';
         }
@@ -742,7 +887,7 @@ class ProjectCard extends HTMLElement {
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
             </svg>
           </button>
-          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.name}
+          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.title}
         </div>
       </div>
               `,
@@ -752,7 +897,7 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell start-date-column">${this.formatDate(activityStart)}</div>
         <div class="gantt-cell end-date-column">${this.formatDate(activityEnd)}</div>
         <div class="gantt-cell participants-column">
-          ${activity.participants?.length > 0 ? activity.participants.join(', ') : 'no one'}
+          ${activity.assignees?.length > 0 ? activity.assignees.join(', ') : 'no one'}
         </div>
 
         ${days.map(day => {
@@ -761,12 +906,9 @@ class ProjectCard extends HTMLElement {
                 const activityEndTimestamp = activityEnd.getTime();
 
                 if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-                    const statusText = completionStatus === 'completed' ? 'Completed' :
-                        completionStatus === 'partial-completed' ? 'Partially Completed' :
-                            completionStatus === 'pending' ? 'In Progress' : 'Not Started';
-                    return `<div class="gantt-task-cell gantt-cell ${completionStatus}" 
-                 data-activity-name="${activity.name}"
-                 data-status="${statusText}"></div>`;
+                    return `<div class="gantt-task-cell gantt-cell ${activity.status}" 
+                 data-activity-name="${activity.title}"
+                 data-status="${activity.status}"></div>`;
                 }
                 return '<div class="gantt-cell"></div>';
             }).join('')
@@ -809,7 +951,7 @@ class ProjectCard extends HTMLElement {
             cell.addEventListener('mouseout', () => {
                 tooltip.classList.remove('visible');
             });
-            cell.addEventListener('click', (e) => {
+            cell.addEventListener('click', () => {
                 tooltip.classList.remove('visible');
             });
         });
