@@ -1,5 +1,6 @@
 "use client";
-import { Chip, Button, Tooltip } from "@nextui-org/react";
+
+import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
@@ -24,6 +25,7 @@ const CalendarPage = (props: CalendarPageProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(props.dbdate);
   const [reloadEvents, setReloadEvents] = useState(false);
+  const [isMonthView, setIsMonthView] = useState(true);
 
   const setCurrentTime = async () => {
     const date = await getCurrentTime();
@@ -35,11 +37,9 @@ const CalendarPage = (props: CalendarPageProps) => {
   useEffect(() => {
     if (reloadEvents) {
       console.log("sto fetchando gli eventi");
-      const u = getUser();
-      // update the events calling getUser server Action
-      // TODO: we should use getEvents instead of getUser to have faster response from server db
-      u.then((user) => {
-        setEvents(user.events.created.concat(user.events.participating));
+      const e = getEvents();
+      e.then((events) => {
+        setEvents(events);
       });
       setCurrentTime();
       setReloadEvents(false);
@@ -64,7 +64,51 @@ const CalendarPage = (props: CalendarPageProps) => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const renderCalendar = () => {
+
+  const renderCalendarWeek = () => {
+
+    if (!currentDate) return <span>  testo </span>;
+
+    const daysOfWeek = [];
+    const currentWeekStart = new Date(currentDate);
+
+    // Adjust to the start of the week (Sunday)
+    currentWeekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(currentWeekStart);
+      dayDate.setDate(currentWeekStart.getDate() + i);
+
+      const isToday =
+        dayDate.getDate() === today?.getDate() &&
+        dayDate.getMonth() === today.getMonth() &&
+        dayDate.getFullYear() === today.getFullYear();
+
+      daysOfWeek.push(
+        <td
+          key={`week-cell-${i}`}
+          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+        >
+          <CalendarCell
+            isMonthView={isMonthView}
+            day={dayDate.getDate()}
+            date={dayDate}
+            isToday={isToday}
+            events={events}
+          />
+        </td>
+      );
+    }
+
+    return (
+      <tr>
+        {daysOfWeek}
+      </tr>);
+
+  };
+
+
+  const renderCalendarMonth = () => {
     const totalDays = daysInMonth(currentDate);
     const startingDay = firstDayOfMonth(currentDate);
     const rows = 6; // Fissiamo il numero di righe a 6 per coprire tutti i possibili casi
@@ -86,10 +130,11 @@ const CalendarPage = (props: CalendarPageProps) => {
         week.push(
           <td
             key={`cell-${i}-${j}`}
-            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-gray-300 dark:bg-zinc-600"} border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-gray-300 dark:bg-zinc-600"} border-gray-400 p-1 md:p-2 align-top h-[calc(87vh/6)]`}
           >
             {isValidDay ? (
               <CalendarCell
+                isMonthView={isMonthView}
                 day={dayIndex}
                 date={currentDate}
                 isToday={isToday}
@@ -99,7 +144,10 @@ const CalendarPage = (props: CalendarPageProps) => {
           </td>,
         );
       }
-      days.push(<tr key={`row-${i}`}>{week}</tr>);
+      days.push(<tr
+        key={`row-${i}`}
+        className="overflow-y-auto scrollbar max-h-[calc(85vh)]"
+      >{week}</tr>);
     }
 
     return days;
@@ -124,16 +172,32 @@ const CalendarPage = (props: CalendarPageProps) => {
     setCurrentTime();
   };
 
+  const handleToggle = () => {
+    setIsMonthView(!isMonthView);
+  };
+
   const changeMonth = (increment: number) => {
     setCurrentDate(
       new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth() + increment,
+        currentDate.getFullYear() as number,
+        currentDate.getMonth() as number + increment,
         1,
       ),
     );
   };
 
+  const changeWeek = (increment: number) => {
+    if (currentDate) {
+      const newDate = new Date(currentDate);
+      newDate.setDate(currentDate.getDate() + (increment));
+      setCurrentDate(newDate);
+    }
+  };
+
+  if (!currentDate || !today || props.friends === null || props.user === null || events === undefined) {
+    console.log("dio bello", currentDate, today, props.friends, props.user, events);
+    return (<span> Caricamento... </span>);
+  }
   return (
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
       <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
@@ -144,17 +208,32 @@ const CalendarPage = (props: CalendarPageProps) => {
           <div className="flex-grow">
             <div className="bg-white dark:bg-black h-screen flex flex-col">
               <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
-                <button
-                  onClick={() => changeMonth(-1)}
-                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-                >
-                  &lt;
-                </button>
+
                 <EventAdder
                   friends={props.friends}
                   isMobile={isMobile}
                   aria-label="Event Adder Button"
                 />
+
+                <button
+                  onClick={() => { isMonthView ? changeMonth(-1) : changeWeek(-7) }}
+                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                >
+                  &lt;
+                </button>
+
+                <div className="flex items-center gap-4">
+                  <Switch
+                    defaultSelected={true}
+                    onValueChange={handleToggle}
+                    color="primary"
+                    startContent={<span> M </span>}
+                    endContent={<span> W </span>}
+                    className="data-[state=checked]:bg-primary"
+                    aria-label="Cambia visualizzazione"
+                  />
+                </div>
+
                 <Tooltip
                   content={today.toISOString().split('T')[0]}
                   showArrow
@@ -168,12 +247,12 @@ const CalendarPage = (props: CalendarPageProps) => {
                     ],
                     content: [
                       "py-2 px-4 shadow-xl",
-                      "text-black bg-gradient-to-br from-white to-neutral-400",
+                      "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
                     ],
                   }}>
                   <Chip
                     variant="solid"
-                    className="text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default"
+                    className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
                   >
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                   </Chip>
@@ -186,7 +265,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                   Oggi
                 </Button>
                 <button
-                  onClick={() => changeMonth(1)}
+                  onClick={() => { isMonthView ? changeMonth(1) : changeWeek(7) }}
                   className="text-white hover:text-yellow-300 text-xl md:text-2xl"
                 >
                   &gt;
@@ -195,12 +274,13 @@ const CalendarPage = (props: CalendarPageProps) => {
               <div className="flex-grow overflow-auto">
                 <table className="w-full h-full table-fixed">
                   <thead>
-                    <tr>
+                    <tr className="h-2">
                       {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
                         (day) => (
                           <th
                             key={day}
-                            className="h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7 h-1/9"
+                            aria-label="day line"
+                            className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
                           >
                             {day}
                           </th>
@@ -208,9 +288,19 @@ const CalendarPage = (props: CalendarPageProps) => {
                       )}
                     </tr>
                   </thead>
-                  <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
-                    {renderCalendar()}
-                  </tbody>
+                  {
+                    isMonthView &&
+                    <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendarMonth()}
+                    </tbody>
+                  }
+
+                  {!isMonthView &&
+                    <tbody
+                      className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendarWeek()}
+                    </tbody>
+                  }
                 </table>
               </div>
             </div>

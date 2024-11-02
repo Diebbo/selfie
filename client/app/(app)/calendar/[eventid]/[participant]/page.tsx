@@ -1,16 +1,17 @@
 import ParticipantContent from "@/components/calendar/participateEvent";
+import { getEvent } from '@/actions/events'
 
 const ParticipantPage = async ({
   params,
 }: {
   params: Promise<{ eventid: string; participant: string }>;
 }) => {
-  const eventid = (await params).eventid;
+  const event = await getEvent((await params).eventid);
   const participantid = (await params).participant;
   return (
     <ParticipantContent
-      eventid={eventid}
-      participantid={participantid}
+      event={event}
+      participant={participantid}
     />
   );
 };

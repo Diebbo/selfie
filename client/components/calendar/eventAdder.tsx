@@ -381,26 +381,14 @@ const EventAdder: React.FC<EventAdderProps> = ({
 
   return (
     <>
-      {!isMobile &&
-        <Button
-          variant="bordered"
-          className=" rounded-xl bg-primary text-base text-white border-transparent border-2 hover:border-white"
-          onPress={handleOpen}
-        >
-          Nuovo Evento
-        </Button>
-      }
-
-      {isMobile &&
-        <Button
-          className="fixed bottom-6 right-6 min-w-[56px] h-14 rounded-full shadow-lg z-50 p-0 bg-primary hover:bg-primary/90"
-          isIconOnly
-          onPress={handleOpen}
-          aria-label="Add Event"
-        >
-          <span className="text-2xl font-bold text-white">+</span>
-        </Button>
-      }
+      <Button
+        className="fixed bottom-6 right-6 min-w-[56px] h-14 rounded-full shadow-lg z-50 p-0 bg-primary hover:bg-primary/90"
+        isIconOnly
+        onPress={handleOpen}
+        aria-label="Add Event"
+      >
+        <span className="text-2xl font-bold text-white">+</span>
+      </Button>
 
 
       <Modal
