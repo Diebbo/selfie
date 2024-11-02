@@ -72,7 +72,7 @@ export async function createDataBase() {
       link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
     };
 
-    return { res, payload };
+    return { dbuser:res, payload };
   };
 
   const updateUsername = async (uid, username) => {
