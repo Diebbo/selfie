@@ -17,7 +17,7 @@ const Page = async () => {
       participatingEvents={user.events.participating}
       dbdate={new Date(dbDate)}
       friends={friends}
-      user={user} />;
+    />;
   } catch (error) {
     console.log(error);
   }

@@ -130,9 +130,10 @@ async function fetchParticipants(eventid: string) {
 interface ShowEventProps {
   event: SelfieEvent;
   user: Person;
+  owner: string;
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ event, user }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
@@ -142,45 +143,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ event, user }) => {
   const [state, dispatch] = useReducer(eventReducer, initialState);
   const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
-  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Person[] | null>(null);
-  const [owner, setOwner] = useState<string>("");
   const eventid = event._id;
-  const isOwner = user.events.created?.some(event => event._id === eventid) || false;
+  const isOwner = user._id === event.uid ? true : false;
 
 
-  useEffect(() => {
-    async function fetchOwner() {
-      if (!selectedEvent?.uid) return;
-
-      try {
-        //quella che non posso chiamare per il bug strano
-        const res = await fetch(`/api/users/${selectedEvent.uid}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (res.status === 401) {
-          throw new Error("Unauthorized, please login.");
-        } else if (res.status >= 500) {
-          throw new Error(`Server error: ${res.statusText}`);
-        } else if (!res.ok) {
-          throw new Error("Failed to fetch the event's owner");
-        }
-
-        const ownerData = await res.json();
-        setOwner(ownerData);
-      } catch (error) {
-        console.error("Error fetching event's owner: ", error);
-      }
-    }
-
-    fetchOwner();
-  }, [selectedEvent?.uid]); // Dependency on selectedEvent.uid
 
   useEffect(() => {
     let isMounted = true;
@@ -214,7 +183,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ event, user }) => {
   const handleClose = () => {
     setIsOpen(false);
     router.refresh();
-    router.push('/calendar');
+    router.back();
   };
 
   const handleReset = () => {
@@ -311,7 +280,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ event, user }) => {
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
 
   if (!isOpen) return null;
-  console.log("owner", owner, "participants", participants);
 
   return (
     <Modal
@@ -321,11 +289,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ event, user }) => {
       scrollBehavior="outside"
     >
       <ModalContent>
-        {isLoading ? (
-          <div className="flex justify-center items-center p-8">
-            <Spinner size="lg" />
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="p-8 text-center text-red-500">
             <p>Error: {error}</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>

@@ -62,6 +62,16 @@ function createCalendarRouter(db, sendNotification) {
     return res.status(200).json(result);
   });
 
+
+  router.get("/owner/:id", cookieJwtAuth, async (req, res) => {
+    try {
+      const uid = await db.userService.fromIdtoUsername(req.params.id);
+      return res.status(200).json(uid);
+    } catch (error) {
+      return res.status(404).json({ message: error.message });
+    }
+  });
+
   router.delete("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;

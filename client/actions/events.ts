@@ -56,9 +56,37 @@ export async function getEvent(eventid: string): Promise<SelfieEvent> {
   } else if (res.status >= 500) {
     throw new ServerError(`Server error: ${res.statusText}`);
   } else if (!res.ok) {
-    throw new Error('Failed to fetch event');
+    throw new Error(`Failed to fetch event: ${res.statusText}`);
   }
 
   return data;
->>>>>>> calendario-build
+}
+
+
+export async function getOwner(ownerid: String): Promise<string> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${getBaseUrl()}/api/events/owner/${ownerid}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+  });
+
+  if (response.status !== 200) {
+    const errorText = await response.text();
+    throw new Error(
+      `HTTP error! status: ${response.status}, message: ${errorText}`,
+    );
+  }
+
+  const owner = await response.json();
+
+  return owner;
 }
