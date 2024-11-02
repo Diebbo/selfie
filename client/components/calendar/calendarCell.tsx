@@ -70,13 +70,11 @@ const EventsList = ({ events, date, handleClick, isMonthView }: {
   const { isMobile, setIsMobile } = useContext(mobileContext) as any;
 
   const handleColor = (event: SelfieEvent): string => {
-    console.log(event.participants);
-    if (event.participants.length > 0 && event.allDay)
-      return "bg-warning-300 text-warning-800 hover:border-warning-800"
-    if (event.participants.length > 0)
-      return "bg-deafult-300 text-default-700 hover:border-default"
+    //se accedo a event.participants.length si rompe tutto boh?!
+    //chiedere a claude
+    console.log("ma??", event.dtstart, event.participants);
     if (event.allDay)
-      return "bg-success-200 text-success-700 hover:border-success-700";
+      return "bg-primary-200 text-primary-700 hover:border-success-700";
     return "bg-danger-100 text-danger-700 hover:border-danger-700";
   }
 
@@ -126,7 +124,6 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   const router = useRouter();
   const cellDate = new Date(date.getFullYear(), date.getMonth(), day);
   const safeEvents = Array.isArray(events) ? events : [];
-  console.log("safeEvents", safeEvents);
   const todayEvents = getEventsByDay(safeEvents, cellDate);
   const hasMoreEvents = todayEvents.length > 2;
   const hasEvents = todayEvents.length > 0;
