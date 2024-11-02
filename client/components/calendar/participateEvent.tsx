@@ -22,11 +22,6 @@ import NotificationMenu from "@/components/calendar/notificationMenu";
 import { useRouter } from 'next/navigation';
 import { parseDateTime } from "@internationalized/date";
 
-interface ParticipantContentProps {
-  event: SelfieEvent;
-  participant: string;
-}
-
 const initialNotification = {
   title: "",
   description: "",
@@ -38,12 +33,15 @@ const initialNotification = {
   fromDate: new Date(),
 };
 
+interface ParticipantContentProps {
+  event: SelfieEvent;
+  participant: string;
+  owner: string;
+}
 
-const ParticipantContent: React.FC<ParticipantContentProps> = ({ event, participant }) => {
+const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, participant }) => {
   const [isOpen, setIsOpen] = useState(true);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [owner, setOwner] = useState<string>("");
   const [participants, setParticipants] = useState<string[]>([""]);
   const [notificationError, setNotificationError] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -59,7 +57,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ event, particip
     router.refresh();
     router.push("/calendar");
   };
-
 
   const handleInputChange = (
     e:
@@ -124,8 +121,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ event, particip
         }
 
         const participants = await res.json();
-        console.log("usernames: ", participants.usernames);
-        console.log("uids: ", participants.uids);
         // if you are not a participant you are redirected to calendar page
         if (!participants.uids.includes(participant)) {
           router.refresh()
@@ -142,38 +137,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ event, particip
     console.log("partecipants: ", participants);
   }, [event.participants]);
 
-
-  //da rivedere e mettere serverside, dopo il merge con develop
-  useEffect(() => {
-    async function fetchOwner() {
-      if (!event?.uid) return;
-
-      try {
-        console.log("check event owner: ", event.uid);
-        const res = await fetch(`/api/users/${event.uid}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (res.status === 401) {
-          throw new Error("Unauthorized, please login.");
-        } else if (res.status >= 500) {
-          throw new Error(`Server error: ${res.statusText}`);
-        } else if (!res.ok) {
-          throw new Error("Failed to fetch the event's owner");
-        }
-
-        const ownerData = await res.json();
-        setOwner(ownerData);
-      } catch (error) {
-        console.error("Error fetching event's owner: ", error);
-      }
-    }
-
-    fetchOwner();
-  }, [event?.uid]); // Dependency on event.uid
 
   // TODO: controllare che esista ancora l'evento e lo user 
   const handleResponse = async (response: 'accept' | 'decline') => {
@@ -233,7 +196,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ event, particip
   };
 
   //Skeleton di caricamento
-  if (loading || !trueParticipant) {
+  if (!trueParticipant) {
     return (
       <Modal isOpen={true} className="w-[60%] h-[70%] space-y-5 p-4" radius="lg">
         <ModalContent>

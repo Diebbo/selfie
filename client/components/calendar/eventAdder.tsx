@@ -538,6 +538,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   label="Amici"
                   placeholder="Seleziona un utente da invitare"
                   labelPlacement="inside"
+                  selectedKey=""
                   className="max-w-sm"
                   isDisabled={availableFriends.length === 0}
                   onSelectionChange={(key) => {

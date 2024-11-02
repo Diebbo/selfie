@@ -4,10 +4,9 @@ import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
 import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent, Person, People } from "@/helpers/types";
+import { SelfieEvent, People } from "@/helpers/types";
 import { reloadContext, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
-import { getUser } from "@/actions/user";
 import { getCurrentTime } from "@/actions/setTime";
 
 interface CalendarPageProps {
@@ -15,7 +14,6 @@ interface CalendarPageProps {
   participatingEvents: SelfieEvent[];
   dbdate: Date;
   friends: People;
-  user: Person;
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -107,7 +105,6 @@ const CalendarPage = (props: CalendarPageProps) => {
 
   };
 
-
   const renderCalendarMonth = () => {
     const totalDays = daysInMonth(currentDate);
     const startingDay = firstDayOfMonth(currentDate);
@@ -184,6 +181,7 @@ const CalendarPage = (props: CalendarPageProps) => {
         1,
       ),
     );
+    setReloadEvents(true);
   };
 
   const changeWeek = (increment: number) => {
@@ -191,13 +189,10 @@ const CalendarPage = (props: CalendarPageProps) => {
       const newDate = new Date(currentDate);
       newDate.setDate(currentDate.getDate() + (increment));
       setCurrentDate(newDate);
+      setReloadEvents(true);
     }
   };
 
-  if (!currentDate || !today || props.friends === null || props.user === null || events === undefined) {
-    console.log("dio bello", currentDate, today, props.friends, props.user, events);
-    return (<span> Caricamento... </span>);
-  }
   return (
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
       <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>

@@ -37,7 +37,6 @@ export const NotificationsDropdown = () => {
         credentials: "include",
       });
       console.log("END FETCHING NOTIFICATIONS");
-      console.log("response: ", response);
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
