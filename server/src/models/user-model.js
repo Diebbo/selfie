@@ -9,7 +9,10 @@ export const userSchema = new mongoose.Schema({
   isVerified: Boolean,
 
   notifications: {
-    emailOn: Boolean,
+    emailOn: {
+      type: Boolean,
+      default: true,
+    },
     pushOn: Boolean,
     subscriptions: [
       {

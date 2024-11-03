@@ -90,8 +90,9 @@ export function createAuthRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    // Send email verification
-    await emitNotification(dbuser._id, payload);
+    // add Email to inbox
+    await db.addNotificationToInbox(dbuser._id, payload);
+
 
     const user = userCast(dbuser);
 

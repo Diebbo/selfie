@@ -5,7 +5,6 @@ import { RegisterSchema } from "@/helpers/schemas";
 import { RegisterFormType, RegisterType } from "@/helpers/types";
 import { Button, Input } from "@nextui-org/react";
 import { Formik } from "formik";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import Stepper from "@/components/stepper/stepper";
@@ -22,7 +21,7 @@ export const Register = () => {
     surname: "user",
     email: "test@gmail.com",
     password: "usersss",
-    confirmPassword: "admin",
+    confirmPassword: "usersss",
     country: "India",
     zip: "123456",
     city: "Chennai",
