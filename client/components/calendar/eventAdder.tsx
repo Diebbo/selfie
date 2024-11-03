@@ -32,7 +32,7 @@ import {
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
-import { reloadContext } from "./contextStore";
+import { useReload } from "./contextStore";
 
 async function createEvent(event: SelfieEvent): Promise<boolean> {
   try {
@@ -119,7 +119,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [notifications, setNotifications] = useState(false);
   const [isError, setIsError] = useState(false);
   const [notificationError, setNotificationError] = useState(false);
-  const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
+  const { reloadEvents, setReloadEvents } = useReload();
   const availableFriends = friends.filter(
     (friend) => !eventData.participants?.includes(friend._id)
   );

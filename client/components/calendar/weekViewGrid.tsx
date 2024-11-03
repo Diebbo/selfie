@@ -209,7 +209,7 @@ export const WeekViewGrid: React.FC<{
                     </div>
                   ))
                 ) : (
-                  <p>Nessun appuntamento per quest'ora</p>
+                  <p>Nessun appuntamento</p>
                 )}
               </ModalBody>
               <ModalFooter>
