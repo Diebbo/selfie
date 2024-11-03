@@ -13,6 +13,7 @@ export default function createUserRouter(db) {
     }
   });
 
+
   router.get("/id", cookieJwtAuth, async (req, res) => {
     try {
       const dbuser = await db.userService.getById(req.user._id);

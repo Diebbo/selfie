@@ -1,6 +1,8 @@
 import getBaseUrl from "@/config/proxy";
+import { ProjectModel } from "@/helpers/types";
 import { cookies } from "next/headers";
-async function getProjects() {
+
+async function getProjects(): Promise<ProjectModel[]> {
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
   if (!token) {
@@ -18,7 +20,10 @@ async function getProjects() {
     throw new Error("Failed to fetch projects");
   }
 
-  return await response.json();
+  const projects = await response.json();
+  console.log(projects);
+
+  return projects;
 }
 
 export default getProjects;

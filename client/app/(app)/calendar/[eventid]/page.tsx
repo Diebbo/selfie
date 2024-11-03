@@ -1,13 +1,16 @@
 import ShowEvent from '@/components/calendar/showEvent';
 import { getUser } from "@/actions/user";
+import { getEvent, getOwner } from '@/actions/events'
 
 const EventPage = async ({ params }: { params: Promise<{ eventid: string }> }) => {
-  const { eventid } = await params;
+  const event = await getEvent((await params).eventid);
   const user = await getUser();
+  const owner = await getOwner(event.uid);
   return (
     <ShowEvent
-      eventid={eventid}
+      event={event}
       user={user}
+      owner={owner}
     />
   );
 };
