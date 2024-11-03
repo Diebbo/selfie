@@ -2,7 +2,7 @@ import React from "react";
 import { Input, Select, SelectItem } from "@nextui-org/react";
 import { DatePicker } from "@nextui-org/react";
 import { SelfieNotification } from "@/helpers/types";
-import { parseDateTime } from "@internationalized/date";
+import { now, getLocalTimeZone } from "@internationalized/date";
 
 interface NotificationMenuProps {
   value: boolean;
@@ -43,7 +43,7 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 mt-3">
       <Input
         label="Titolo notifica"
         value={notification?.title?.toString() || ""}
@@ -76,9 +76,10 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
         </SelectItem>
       </Select>
       <DatePicker
-        defaultValue={parseDateTime(startEventDate.toISOString().split('T')[0])}
+        defaultValue={now(getLocalTimeZone())}
         label="Data di inizio notifiche"
         isRequired
+        hideTimeZone
         onChange={(date) => handleNotificationChange("fromDate", date)}
         isInvalid={notificationError}
         granularity={isAllDay ? "day" : "minute"}

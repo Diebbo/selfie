@@ -10,6 +10,7 @@ import {
   Button,
   Input,
   DateRangePicker,
+  DatePicker,
   Spinner
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
@@ -99,9 +100,10 @@ function eventReducer(state: State, action: Action): State {
   }
 }
 
-async function fetchEvent(eventid: string) {
+
+async function fetchParticipants(eventid: string) {
   try {
-    const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
+    const res = await fetch(`${EVENTS_API_URL}/${eventid}/participants`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -114,22 +116,24 @@ async function fetchEvent(eventid: string) {
     } else if (res.status >= 500) {
       throw new Error(`Server error: ${res.statusText}`);
     } else if (!res.ok) {
-      throw new Error("Failed to fetch the event");
+      throw new Error("Failed to fetch participants' usernames");
     }
 
     const data = await res.json();
     return data;
-  } catch (e: unknown) {
-    throw new Error(`Error during fetch event: ${(e as Error).message}`);
+  } catch (error: unknown) {
+    console.error("Error fetching participants' usernames:", error);
   }
 }
 
+
 interface ShowEventProps {
-  eventid: string;
+  event: SelfieEvent;
   user: Person;
+  owner: string;
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
@@ -139,47 +143,30 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
   const [state, dispatch] = useReducer(eventReducer, initialState);
   const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
-  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
   const [error, setError] = useState<string | null>(null);
-  const isOwner = user.events.created?.some(event => event._id === eventid) || false;
+  const [participants, setParticipants] = useState<Person[] | null>(null);
+  const eventid = event._id;
+  const isOwner = user._id === event.uid ? true : false;
+
+
 
   useEffect(() => {
     let isMounted = true;
 
-    const getEvent = async () => {
+    const getParticipants = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
-        const event = await fetchEvent(eventid);
-
-        if (isMounted) {
-          setSelectedEvent(event);
-          // Initialize dateRange with the fetched event dates
-          if (event?.dtstart && event?.dtend) {
-            dispatch({
-              type: 'UPDATE_DATE_RANGE',
-              payload: {
-                start: new Date(event.dtstart),
-                end: new Date(event.dtend)
-              }
-            });
-          }
+        const result = await fetchParticipants(eventid);
+        if (result) {
+          setParticipants(result.usernames);
         }
-      } catch (err) {
-        if (isMounted) {
-          setError((err as Error).message);
-          console.error('Error fetching event:', err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      } catch (e: unknown) {
+        console.log("Error fetching participants", e)
       }
-    };
+    }
 
     if (eventid) {
-      getEvent();
+      getParticipants();
     }
 
     return () => {
@@ -196,7 +183,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
   const handleClose = () => {
     setIsOpen(false);
     router.refresh();
-    router.push('/calendar');
+    router.back();
   };
 
   const handleReset = () => {
@@ -302,15 +289,11 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
       scrollBehavior="outside"
     >
       <ModalContent>
-        {isLoading ? (
-          <div className="flex justify-center items-center p-8">
-            <Spinner size="lg" />
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="p-8 text-center text-red-500">
             <p>Error: {error}</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Close
+              Chiudi
             </Button>
           </div>
         ) : displayEvent ? (
@@ -324,20 +307,22 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
               />
               <div className="justify-end">
                 <Button
-                  className={`mx-2 ${state.isEditing ? "" : "hidden"}`}
+                  className={`mx-2 mr-4 ${state.isEditing ? "" : "hidden"}`}
                   onClick={handleReset}
                   color="secondary"
                 >
-                  Cancel
+                  Annulla
                 </Button>
-                <Button
-                  className="mx-2 mr-4"
-                  onClick={handleEdit}
-                  isDisabled={state.isEditing}
-                  color="primary"
-                >
-                  Edit
-                </Button>
+                {user._id === displayEvent.uid && !state.isEditing &&
+                  <Button
+                    className="mx-2 mr-4"
+                    onClick={handleEdit}
+                    color="primary"
+                  >
+                    Modifica
+                  </Button>
+                }
+
               </div>
             </ModalHeader>
             <ModalBody>
@@ -371,6 +356,17 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 className="mb-4"
               />
+
+              {participants && participants.length > 0 &&
+                <Input
+                  isReadOnly={!state.isEditing}
+                  label="Participants"
+                  value={[owner, ...participants.map(p => p.toString())].join(", ")}
+
+                  onChange={(e) => handleInputChange('URL', e.target.value)}
+                  className="mb-4"
+                />
+              }
               <Input
                 isReadOnly={!state.isEditing}
                 label="URL"
@@ -394,33 +390,33 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                     onChange={(e) => handleNotificationChange('title', e.target.value)}
                     className="mb-4"
                   />
-                  <Input
+                  <DatePicker
                     isReadOnly={!state.isEditing}
                     label="Notification Start Date"
-                    value={displayEvent.notification.fromDate.toString().split('T')[0]}
-                    onChange={(e) => handleNotificationChange('fromDate', new Date(e.target.value))}
-                    type="date"
+                    onChange={(date) => handleNotificationChange('fromDate', date)}
                     className="mb-4"
                   />
                 </>
               )}
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="justify-end">
 
               {isOwner && (
                 <div>
                   <Button
                     color="danger"
                     variant="light"
+                    className="border-1 border-danger mx-2"
                     onPress={deleteEvent}
                   >
-                    Delete Event
+                    Cancella Evento
                   </Button>
                   <Button
-                    color="primary"
+                    color={`${!state.isEditing ? "primary" : "success"}`}
+                    className="mx-2"
                     onPress={state.isEditing ? modifyEvent : handleClose}
                   >
-                    {state.isEditing ? "Save" : "Close"}
+                    {state.isEditing ? "Salva" : "Chiudi"}
                   </Button>
                 </div>
               )}
@@ -432,13 +428,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
                     variant="light"
                     onPress={dodgeEvent}
                   >
-                    Dodge Event
+                    Non Partecipare
                   </Button>
                   <Button
                     color="primary"
                     onPress={handleClose}
                   >
-                    {"Close"}
+                    Chiudi
                   </Button>
                 </div>
               )}
@@ -449,7 +445,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ eventid, user }) => {
           <div className="p-8 text-center">
             <p>No event data found</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Close
+              Chiudi
             </Button>
           </div>
         )}
