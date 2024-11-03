@@ -221,7 +221,7 @@ export default function createNotificationWorker(db) {
       }
 
       // Add socket notification
-      //notifications.push(emitNotification(user._id, payload));
+      await emitNotification(user._id.toString(), payload);
 
       // Add push notifications if enabled
       if (

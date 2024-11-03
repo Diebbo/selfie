@@ -19,9 +19,7 @@ interface ChatModalProps {
   receiverUsername: string;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({
-  receiverUsername,
-}) => {
+const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,18 +31,21 @@ const ChatModal: React.FC<ChatModalProps> = ({
   const [isOnline, setIsOnline] = useState(false);
   const socketRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const messagesEndRef = useRef<HTMLDivElement>(null); const scrollToBottom = () => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const getChatByUsername = async (username: string): Promise<MessageModel[]> => {
+  const getChatByUsername = async (
+    username: string
+  ): Promise<MessageModel[]> => {
     const res = await fetch(`/api/chats/messages/${username}`);
     if (!res.ok) throw new Error("Failed to fetch chat");
     return res.json();
   };
 
   const getUser = async (): Promise<Person> => {
-    const res = await fetch('/api/users/id');
+    const res = await fetch("/api/users/id");
     if (!res.ok) throw new Error("Failed to fetch user");
     return res.json();
   };
@@ -62,7 +63,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
         const [user, receiverData, chatMessages] = await Promise.all([
           getUser(),
           getUserByUsername(receiverUsername),
-          getChatByUsername(receiverUsername)
+          getChatByUsername(receiverUsername),
         ]);
 
         setCurrentUser(user);
@@ -115,7 +116,7 @@ const ChatModal: React.FC<ChatModalProps> = ({
         if (data.username === receiverUsername) {
           setIsTyping(false);
         }
-      },
+      }
     );
 
     socketRef.current.on(
@@ -127,9 +128,9 @@ const ChatModal: React.FC<ChatModalProps> = ({
               return { ...msg, status: data.status as StatusEnum };
             }
             return msg;
-          }),
+          })
         );
-      },
+      }
     );
 
     // Listen for online/offline events
@@ -293,10 +294,11 @@ const ChatModal: React.FC<ChatModalProps> = ({
             {messages.map((msg, idx) => (
               <div
                 key={msg._id || idx}
-                className={`flex gap-5 ${msg.sender === currentUser.username
-                  ? "flex-row-reverse"
-                  : "flex-row"
-                  }`}
+                className={`flex gap-5 ${
+                  msg.sender === currentUser.username
+                    ? "flex-row-reverse"
+                    : "flex-row"
+                }`}
               >
                 <Avatar
                   isBordered
@@ -309,14 +311,18 @@ const ChatModal: React.FC<ChatModalProps> = ({
                   }
                 />
                 <div
-                  className={`flex flex-col gap-1 max-w-[70%] ${msg.sender === currentUser.username ? "items-end" : "items-start"
-                    }`}
+                  className={`flex flex-col gap-1 max-w-[70%] ${
+                    msg.sender === currentUser.username
+                      ? "items-end"
+                      : "items-start"
+                  }`}
                 >
                   <p
-                    className={`px-4 py-2 rounded-lg ${msg.sender === currentUser.username
-                      ? "bg-primary text-white"
-                      : "bg-gray-100 dark:bg-gray-800"
-                      }`}
+                    className={`px-4 py-2 rounded-lg ${
+                      msg.sender === currentUser.username
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 dark:bg-gray-800"
+                    }`}
                   >
                     {msg.message}
                   </p>
