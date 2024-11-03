@@ -1,5 +1,5 @@
+//client/components/calendar/showEvent.tsx
 "use client";
-
 import React, { useReducer, useState, useEffect } from "react";
 import {
   Modal,
@@ -11,11 +11,11 @@ import {
   Input,
   DateRangePicker,
   DatePicker,
-  Spinner
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
+import { useReload } from "./contextStore";
 
 const EVENTS_API_URL = "/api/events";
 
@@ -148,7 +148,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   const [participants, setParticipants] = useState<Person[] | null>(null);
   const eventid = event._id;
   const isOwner = user._id === event.uid ? true : false;
-
+  const { reloadEvents, setReloadEvents } = useReload();
 
 
   useEffect(() => {
@@ -181,8 +181,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   };
 
   const handleClose = () => {
-    setIsOpen(false);
-    router.refresh();
+    setReloadEvents(true);
     router.back();
   };
 
@@ -227,7 +226,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
         throw new Error(`Failed to modify event: ${res.statusText}`);
       }
 
-      dispatch({ type: 'RESET_STATE' });
       handleClose();
     } catch (e: unknown) {
       console.error(`Error during modify event: ${(e as Error).message}`);
