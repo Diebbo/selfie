@@ -5,6 +5,7 @@ import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 function createCalendarRouter(db, sendNotification) {
   const router = express.Router();
 
+  //fare anche la createEvents per eventi che si ripetono (i.e. compleanno)
   router.put("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const event = req.body.event;
