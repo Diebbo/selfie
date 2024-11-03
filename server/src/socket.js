@@ -260,7 +260,7 @@ export async function emitNotification(userId, notification) {
   }
 
   try {
-    console.log("Trying to emit notification to user", userId, notification);
+    //console.log("Trying to emit notification to user", userId, notification);
     // Invia la notifica alla room personale dell'utente
     ioInstance.to(userId).emit("new_notification", notification);
     console.log(`Notification emitted to user ${userId}`);
