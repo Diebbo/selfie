@@ -47,7 +47,7 @@ export const NotificationsDropdown = () => {
       setNotifications(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error fetching notifications",
+        err instanceof Error ? err.message : "Error fetching notifications"
       );
     } finally {
       setIsLoading(false);
@@ -105,7 +105,7 @@ export const NotificationsDropdown = () => {
             setTimeout(() => {
               setLatestNotification(null);
             }, 5000);
-          },
+          }
         );
 
         // Gestione errori di connessione
@@ -116,7 +116,7 @@ export const NotificationsDropdown = () => {
       } catch (error) {
         console.error("Error initializing socket:", error);
         setError(
-          error instanceof Error ? error.message : "Error initializing socket",
+          error instanceof Error ? error.message : "Error initializing socket"
         );
       } finally {
         setIsLoading(false);
@@ -152,7 +152,7 @@ export const NotificationsDropdown = () => {
       setNotifications([]); // Aggiorna lo stato locale dopo la cancellazione
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error clearing notifications",
+        err instanceof Error ? err.message : "Error clearing notifications"
       );
     }
   };
@@ -169,11 +169,11 @@ export const NotificationsDropdown = () => {
       }
 
       setNotifications((prev) =>
-        prev.filter((n) => n._id !== notification._id),
+        prev.filter((n) => n._id !== notification._id)
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error deleting notification",
+        err instanceof Error ? err.message : "Error deleting notification"
       );
     }
   };

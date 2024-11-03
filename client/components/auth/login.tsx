@@ -12,10 +12,14 @@ import { login } from "@/actions/auth.action";
 import { useState } from "react";
 import { MailIcon } from "./MailIcon";
 import { PassLockIcon } from "./PassLockIcon";
+import { useSearchParams } from 'next/navigation'
 
 export const Login = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams()
+
+  const redirect = searchParams.get('redirect')
 
   const initialValues: LoginFormType = {
     email: "die.barbieri03@gmail.com",
@@ -32,7 +36,7 @@ export const Login = () => {
           return;
         }
         await createAuthCookie(response.token);
-        router.replace("/");
+        router.replace(redirect || "/");
       } catch (err: any) {
         setError(
           err.message ? err.message.toString() : "An unknown error occurred",
@@ -75,14 +79,22 @@ export const Login = () => {
                 onChange={handleChange("password")}
               />
             </div>
-
-            <Button
-              onPress={() => handleSubmit()}
-              variant="flat"
-              color="primary"
-            >
-              Login
-            </Button>
+            <div className="flex align-center flex-wrap flex-row gap-4">
+              <Button
+                onPress={() => handleSubmit()}
+                variant="flat"
+                color="primary"
+              >
+                Login
+              </Button>
+              <Button
+                variant="flat"
+                color="success"
+                onPress={() => router.push("/register")}
+              >
+                Register
+              </Button>
+            </div>
           </>
         )}
       </Formik>
@@ -93,18 +105,7 @@ export const Login = () => {
         </div>
       )}
 
-      <div className="font-light text-slate-400 mt-4 text-sm">
-        Don&apos;t have an account ?{" "}
-        <Link href="/register" className="font-bold">
-          Register here
-        </Link>
-      </div>
 
-      <div className="font-light text-slate-400 mt-4 text-sm">
-        <Link href="/forgot-password" className="font-bold">
-          Forgot password ?
-        </Link>
-      </div>
     </>
   );
 };

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
+import { emitNotification } from "../socket.js";
 
 const router = express.Router();
 
@@ -78,14 +79,20 @@ export function createAuthRouter(db) {
     };
     console.log(`User registering: ${newUser.username}`);
 
-    let dbuser;
+    let dbuser, payload;
 
     try {
-      dbuser = await db.register(newUser);
+      const res = await db.register(newUser);
+      dbuser = res.dbuser;
+      payload = res.payload;
     } catch (e) {
       console.error(e.message);
       return res.status(400).json({ message: e.message });
     }
+
+    // add Email to inbox
+    await db.addNotificationToInbox(dbuser._id, payload);
+
 
     const user = userCast(dbuser);
 
