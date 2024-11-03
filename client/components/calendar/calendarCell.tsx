@@ -47,11 +47,18 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
   }
 
   // Add projects
-  //console.log("capiamo", projects);
   if (Array.isArray(projects)) {
     projects.forEach(project => {
       const projectDeadline = new Date(project.deadline);
-      if (areSameDay(date, projectDeadline)) {
+      const projectStartDate = new Date(project.creationDate);
+
+      if (areSameDay(date, projectStartDate)) {
+        appointments.push({
+          type: 'project',
+          project: project
+        });
+      }
+      else if (areSameDay(date, projectDeadline)) {
         appointments.push({
           type: 'project',
           project: project
@@ -254,7 +261,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
         ) : (
           <Button
             onClick={() => setIsAllEventsOpen(true)}
-            className={`justify-center w-[calc(82vw/7)] h-10 rounded-full p-0 ${dayButtonClass}`}
+            className={`text-bold justify-center w-[calc(82vw/7)] min-w-0 h-10 rounded-full p-0 ${dayButtonClass}`}
           >
             {day}
           </Button>
