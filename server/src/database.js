@@ -56,7 +56,7 @@ export async function createDataBase(uri) {
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
 
-    let res = await userModel.create({ ...user });
+    let res = await userModel.create({ ...user, avatar: `https://api.dicebear.com/9.x/open-peeps/svg?seed=${user.username}` });
 
     // OLD send verification email
     /*addNotification(res, {
