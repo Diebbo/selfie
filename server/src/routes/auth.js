@@ -228,7 +228,7 @@ export function createAuthRouter(db, sendNotification) {
   router.patch("/verifyemail", async (req, res) => {
     const emailToken = req.query.emailToken;
     if (!emailToken) {
-      return res.status(400).json({ error: "No Token provided" });
+      return res.status(400).json({ message: "No Token provided" });
     }
     try {
       const dbuser = await db.verifyEmail(emailToken);
@@ -245,9 +245,9 @@ export function createAuthRouter(db, sendNotification) {
         // signed: true, // Enable if using signed cookies
       });
 
-      return res.status(200).json({ user, token });
+      return res.status(200).json({ user, token, message: "Email verified" });
     } catch (e) {
-      return res.status(400).json({ error: e.message });
+      return res.status(400).json({ message: e.message });
     }
   });
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { deleteAuthCookie } from "@/actions/auth.action";
+import { deleteAuthCookie, verification } from "@/actions/auth.action";
 import getBaseUrl from "@/config/proxy";
 
 export function EmailVerificationPage() {
@@ -14,33 +14,20 @@ export function EmailVerificationPage() {
   const emailToken = searchParams.get("emailToken");
   const router = useRouter();
 
-  const handleVerification = () => {
-    const path = `${getBaseUrl()}/api/auth/verifyemail?emailToken=${emailToken}`;
-
-    fetch(path, {
-      method: "PATCH",
-    })
-      .then((res) => {
-        if (!res.ok) {
-          setVerificationStatus("Verifica email fallita. Token non valido.");
-          return;
-        }
-        setVerificationStatus(
-          "Verifica email riuscita! Clicca qui per andare alla pagina di login.",
-        );
-        setIsVerified(true);
-      })
-      .catch(() => {
-        setVerificationStatus("Verifica email fallita. Token non valido.");
-      });
-  };
+  const handleVerification = async (email: string) => {
+      const res = await verification(email);
+      setVerificationStatus(res.message);
+  }; 
 
   useEffect(() => {
-    if (emailToken) {
-      handleVerification();
-    } else {
-      setVerificationStatus("Token non inserito");
-    }
+    const verifyEmail = async () => {
+      if (emailToken) {
+        await handleVerification(emailToken);
+      } else {
+        setVerificationStatus("Token non inserito");
+      }
+    };
+    verifyEmail();
   }, [emailToken]);
 
   const handleLoginRedirect = async () => {

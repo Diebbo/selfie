@@ -66,7 +66,7 @@ export async function register(user: RegisterType) {
 
 export async function verification(emailToken: string) {
   const response = await fetch(
-    `/api/auth/verifyemail?emailToken=${emailToken}`,
+    `${getBaseUrl()}/api/auth/verifyemail?emailToken=${emailToken}`,
     {
       method: "PATCH",
       headers: {
@@ -74,11 +74,6 @@ export async function verification(emailToken: string) {
       },
     },
   );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Verification failed");
-  }
 
   return await response.json();
 }

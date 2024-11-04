@@ -220,8 +220,7 @@ export default function createNotificationWorker(db) {
         throw new Error("Invalid user object");
       }
 
-      // Add socket notification
-      await emitNotification(user._id.toString(), payload);
+      if (user.isVerified) await emitNotification(user._id.toString(), payload);
 
       // Add push notifications if enabled
       if (
