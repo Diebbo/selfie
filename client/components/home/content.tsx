@@ -43,46 +43,24 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("today");
   //const { position, error } = useGeolocation();
-  const [user, setUser] = useState<Person | null>(props.user);
+  const [user, setUser] = useState<Person>(props.user);
   const [isLoaded, setIsLoaded] = useState(true);
   const [events, setEvents] = useState<UserEvents | null>(props.user.events);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
-  const [error, setError] = useState<Error | null>(null);
- 
 
-  // useEffect(() => {
-  //   // !error because if user denied GPS we set default position to Bologna, but we also report error
-  //   if (position && !error) {
-  //     sendPositionToServer(position);
-  //   }
-  // }, [position]);
 
-  /*useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/users/id");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user data");
-        }
-
-        const user = await response.json();
-        setUser(user);
-        const allEvents:UserEvents = {
-          created: user.events,
-          participating: user.eventsParticipating,
-        };
-        setEvents(allEvents);
-        setFriends(user.friends);
-        setIsLoaded(true);
-      } catch (error: any) {
-        setError(error.message);
-        setIsLoaded(true);
-      }
-    };
-
-    fetchUser();
-  }, []);
-  */
+ /*
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                const { latitude, longitude } = coords;
+                setPosition({ latitude, longitude });
+                sendPositionToServer({latitude, longitude });
+            },
+        );
+    }
+}, []);
 
 
   const sendPositionToServer = async (position: {
@@ -108,11 +86,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
       console.error("Error updating position:", error);
     }
   };
-
-  if (error) {
-    console.error("Geolocation error:", error);
-  }
-
+*/
   const filterEvents = (
     events: SelfieEvent[],
     filter: "today" | "week" | "all",
@@ -156,7 +130,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
     });
   };
 
-  const renderSpinner = () => {
+  /*const renderSpinner = () => {
     return (
       <div className="flex justify-center items-center h-full">
         <Spinner />
@@ -174,7 +148,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
     );
   }
 
-  if (!events || !friends || !user) return renderSpinner();
+  if (!events || !friends || !user) return renderSpinner();*/
   
 
   return (
@@ -301,19 +275,12 @@ export const Content = (props: ContentProps): ReactJSXElement => {
             <ProjectTable projects={user.projects} creator={user} />
           </div>
 
-          {/* <div className="h-full flex flex-col gap-2">
-            <h3 className="text-xl font-semibold">Calendar</h3>
-            <div className="w-full bg-default-50 shadow-lg rounded-2xl p-6 ">
-
-              TODO
-            </div>
-          </div> */}
         </div>
 
         {/* Left Section */}
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
-          { //<WeatherCard position={position} />
-          }
+          {/*<WeatherCard position={position} />*/}
+          
           <div className="grid grid-cols-1 mt-1 max-w-[500px]">
             <PomodoroStatistics stats={user.pomodoro} />
           </div>
@@ -321,7 +288,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           <h3 className="text-xl font-semibold">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardFriends
-              friends={friends}
+              friends={friends as People}
               setFriends={setFriends}
               currentUserId={user._id}
             />
@@ -329,6 +296,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           </div>
         </div>
       </div>
+      
 
       { /* position && (
          <div className="mt-4 p-4 bg-default-100 rounded-lg">

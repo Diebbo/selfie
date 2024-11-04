@@ -91,3 +91,26 @@ export async function getUserTasks(): Promise<TaskModel> {
 
   return await response.json();
 }
+
+export async function updateGPS(position: { latitude: number; longitude: number }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${getBaseUrl()}/api/users/gps`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+    body: JSON.stringify(position),
+  });
+
+
+  if (!response.ok) {
+    throw new Error("Failed to update position");
+  }
+}

@@ -13,6 +13,7 @@ import { MapEvent, MapFriend } from "@/actions/maps";
 import EventIcon from "../icons/EventIcon";
 import CalendarIcon from "../icons/CalendarIcon";
 import FriendsIcon from "../icons/FriendsIcon";
+import { updateGPS } from "@/actions/user";
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -31,10 +32,29 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
     { lat: number; lng: number } | undefined
   >(undefined);
 
-  // Get user position from db when loading the page to center the map
   useEffect(() => {
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                console.log("updating gps");
+                const { latitude, longitude } = coords;
+                setCenterOn({ lat: latitude, lng: longitude });
+                updateGPS({ latitude, longitude });
+            },
+            (error) => {
+                fetchUserPosition();
+            } 
+        );
+    } else {
+        fetchUserPosition();
+    }
+  }, []);
+
+  // Get user position from db when loading the page to center the map
+  
     const fetchUserPosition = async () => {
       try {
+        console.log("fetching user position");
         const response = await fetch("/api/users/gps", {
           method: "GET",
           headers: {
@@ -53,39 +73,8 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
       }
     };
 
-    fetchUserPosition();
-  }, []);
 
-  // Send user position to server
-  const sendPositionToServer = useCallback(
-    async (position: { latitude: number; longitude: number }) => {
-      try {
-        const response = await fetch("/api/users/gps", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(position),
-        });
 
-        if (!response.ok) {
-          throw new Error("Failed to update position");
-        }
-
-        console.log("Position updated successfully");
-      } catch (error) {
-        console.error("Error updating position:", error);
-      }
-    },
-    [],
-  );
-
-  const handlePositionUpdate = useCallback(
-    (position: { latitude: number; longitude: number }) => {
-      sendPositionToServer(position);
-    },
-    [sendPositionToServer],
-  );
 
   // Center map on event position when clicked on the event in the list
   const handleItemClick = (item: MapEvent | MapFriend) => {
@@ -181,7 +170,6 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
             events={events}
             friends={friends}
             centerOn={centerOn || { lat: 44.498955, lng: 11.327591 }}
-            onPositionUpdate={handlePositionUpdate}
           />
         </CardBody>
       </Card>
