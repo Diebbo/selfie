@@ -1,3 +1,4 @@
+//client/components/calendar/calendar.tsx
 "use client";
 
 import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
@@ -5,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
-import { reloadContext, mobileContext } from "./contextStore";
+import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
 import { getCurrentTime } from "@/actions/setTime";
 
@@ -23,8 +24,8 @@ const CalendarPage = (props: CalendarPageProps) => {
   const [today, setToday] = useState(props.dbdate);
   const [isMobile, setIsMobile] = useState(false);
   const [currentDate, setCurrentDate] = useState(props.dbdate);
-  const [reloadEvents, setReloadEvents] = useState(false);
   const [isMonthView, setIsMonthView] = useState(true);
+  const { reloadEvents, setReloadEvents } = useReload();
 
   const setCurrentTime = async () => {
     const date = await getCurrentTime();
@@ -196,114 +197,112 @@ const CalendarPage = (props: CalendarPageProps) => {
 
   return (
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
-      <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
-        <div
-          className="flex flex-col md:flex-row min-h-screen relative"
-          aria-label="Back Ground Calendar"
-        >
-          <div className="flex-grow">
-            <div className="bg-white dark:bg-black h-screen flex flex-col">
-              <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
+      <div
+        className="flex flex-col md:flex-row min-h-screen relative"
+        aria-label="Back Ground Calendar"
+      >
+        <div className="flex-grow">
+          <div className="bg-white dark:bg-black h-screen flex flex-col">
+            <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
 
-                <EventAdder
-                  friends={props.friends}
-                  isMobile={isMobile}
-                  aria-label="Event Adder Button"
+              <EventAdder
+                friends={props.friends}
+                isMobile={isMobile}
+                aria-label="Event Adder Button"
+              />
+
+              <button
+                onClick={() => { isMonthView ? changeMonth(-1) : changeWeek(-7) }}
+                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+              >
+                &lt;
+              </button>
+
+              <div className="flex items-center gap-4">
+                <Switch
+                  defaultSelected={true}
+                  onValueChange={handleToggle}
+                  color="primary"
+                  startContent={<span> M </span>}
+                  endContent={<span> W </span>}
+                  className="data-[state=checked]:bg-primary"
+                  aria-label="Cambia visualizzazione"
                 />
+              </div>
 
-                <button
-                  onClick={() => { isMonthView ? changeMonth(-1) : changeWeek(-7) }}
-                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-                >
-                  &lt;
-                </button>
-
-                <div className="flex items-center gap-4">
-                  <Switch
-                    defaultSelected={true}
-                    onValueChange={handleToggle}
-                    color="primary"
-                    startContent={<span> M </span>}
-                    endContent={<span> W </span>}
-                    className="data-[state=checked]:bg-primary"
-                    aria-label="Cambia visualizzazione"
-                  />
-                </div>
-
-                <Tooltip
-                  content={today.toISOString().split('T')[0]}
-                  showArrow
-                  key="tooltip day"
-                  delay={0}
-                  closeDelay={0}
-                  placement="top"
-                  classNames={{
-                    base: [
-                      "before:bg-neutral-400 dark:before:bg-white",
-                    ],
-                    content: [
-                      "py-2 px-4 shadow-xl",
-                      "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
-                    ],
-                  }}>
-                  <Chip
-                    variant="solid"
-                    className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
-                  >
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                  </Chip>
-                </Tooltip>
-                <Button
+              <Tooltip
+                content={today.toISOString().split('T')[0]}
+                showArrow
+                key="tooltip day"
+                delay={0}
+                closeDelay={0}
+                placement="top"
+                classNames={{
+                  base: [
+                    "before:bg-neutral-400 dark:before:bg-white",
+                  ],
+                  content: [
+                    "py-2 px-4 shadow-xl",
+                    "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
+                  ],
+                }}>
+                <Chip
                   variant="solid"
-                  onClick={handleToday}
-                  className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
+                  className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
                 >
-                  Oggi
-                </Button>
-                <button
-                  onClick={() => { isMonthView ? changeMonth(1) : changeWeek(7) }}
-                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-                >
-                  &gt;
-                </button>
-              </div>
-              <div className="flex-grow overflow-auto">
-                <table className="w-full h-full table-fixed">
-                  <thead>
-                    <tr className="h-2">
-                      {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
-                        (day) => (
-                          <th
-                            key={day}
-                            aria-label="day line"
-                            className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
-                          >
-                            {day}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  {
-                    isMonthView &&
-                    <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
-                      {renderCalendarMonth()}
-                    </tbody>
-                  }
-
-                  {!isMonthView &&
-                    <tbody
-                      className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
-                      {renderCalendarWeek()}
-                    </tbody>
-                  }
-                </table>
-              </div>
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </Chip>
+              </Tooltip>
+              <Button
+                variant="solid"
+                onClick={handleToday}
+                className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
+              >
+                Oggi
+              </Button>
+              <button
+                onClick={() => { isMonthView ? changeMonth(1) : changeWeek(7) }}
+                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+              >
+                &gt;
+              </button>
             </div>
-          </div>
-        </div>
-      </reloadContext.Provider>
-    </mobileContext.Provider>
+            <div className="flex-grow overflow-auto">
+              <table className="w-full h-full table-fixed">
+                <thead>
+                  <tr className="h-2">
+                    {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
+                      (day) => (
+                        <th
+                          key={day}
+                          aria-label="day line"
+                          className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
+                        >
+                          {day}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                {
+                  isMonthView &&
+                  <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    {renderCalendarMonth()}
+                  </tbody>
+                }
+
+                {!isMonthView &&
+                  <tbody
+                    className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    {renderCalendarWeek()}
+                  </tbody>
+                }
+              </table>
+            </div >
+          </div >
+        </div >
+      </div >
+    </mobileContext.Provider >
   );
 };
 

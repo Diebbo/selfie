@@ -91,6 +91,12 @@ export const SidebarWrapper = () => {
                 icon={<ReportsIcon />}
                 href="calendar"
               />
+              <SidebarItem
+                isActive={pathname === "/task"}
+                title="Task"
+                icon={<ReportsIcon />}
+                href="task"
+              />
             </SidebarMenu>
 
             <SidebarMenu title="General">

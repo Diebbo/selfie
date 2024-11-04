@@ -3,7 +3,7 @@ import cookieJwtAuth from './middleware/cookieJwtAuth.js';
 
 function createActivityRouter(db) {
   const router = express.Router();
-  
+
   //put attività
   //URL: /?parent=parentId per la sotto attività
   router.put('/', cookieJwtAuth, async function(req, res) {
@@ -16,12 +16,15 @@ function createActivityRouter(db) {
     let result;
 
     try {
-      if(!parentId) {
+      if (!parentId) {
+        console.log("stampona:", uid, activity, parentId);
         result = await db.createActivity(uid, projectId, activity);
+        console.log(result);
       } else {
         result = await db.createSubActivity(uid, projectId, parentId, activity);
       }
-    } catch (e) { 
+      console.log("sono qua", result);
+    } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
@@ -31,15 +34,16 @@ function createActivityRouter(db) {
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {
+    console.log("ohi 2");
     const uid = req.user._id;
-
     try {
       var result = await db.getActivities(uid, null);
+      console.log("queste sono le mie attività", result);
     } catch (e) {
       return res.status(400).json({ message: e.message });
     }
 
-    if (!result) return res.status(404).json({ message: "no activity has been created" });
+    if (!result) return res.status(404).json({ message: "no activity has been found" });
 
     return res.status(200).json(result);
   });
@@ -57,7 +61,7 @@ function createActivityRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({message:"Activity has been Deleted Successfully", result});
+    return res.status(200).json({ message: "Activity has been Deleted Successfully", result });
   });
 
   //patch attività
@@ -74,7 +78,7 @@ function createActivityRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({message:"Activity has been Modified Successfully", result});
+    return res.status(200).json({ message: "Activity has been Modified Successfully", result });
   });
 
   return router;
