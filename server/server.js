@@ -19,7 +19,8 @@ const PORT = 8000;
 async function startServer() {
   try {
     // Connect to database
-    const db = await createDataBase();
+    const uri = process.env.MONGODB_URI;
+    const db = await createDataBase(uri);
     console.log("server.js: connected to database");
 
     const sendNotification = createNotificationWorker(db);

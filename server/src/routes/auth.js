@@ -4,8 +4,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
-import { emitNotification } from "../socket.js";
-import { send } from "process";
 
 const router = express.Router();
 

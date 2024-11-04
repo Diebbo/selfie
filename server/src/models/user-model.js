@@ -6,7 +6,7 @@ export const userSchema = new mongoose.Schema({
   password: String,
   email: String,
   emailtoken: String,
-  isVerified: {Boolean, default: false},
+  isVerified: {type: Boolean, default: false},
 
   notifications: {
     emailOn: {
@@ -74,17 +74,17 @@ export const userSchema = new mongoose.Schema({
   ],
 
   position: {
-    latitude: {Number, default: 44.494887},
-    longitude: {Number, default: 11.3426163},
+    latitude: {type: Number, default: 44.494887},
+    longitude: {type: Number, default: 11.3426163},
   },
 
   pomodoro: {
-    totalStudyTime: {Number, default: 0},
-    totalBreakTime: {Number, default: 0},
+    totalStudyTime: {type: Number, default: 0},
+    totalBreakTime: {type: Number, default: 0},
     settings: {
-      studyDuration: {Number, default: 25},
-      shortBreakDuration: {Number, default: 5},
-      longBreakDuration: {Number, default: 15},
+      studyDuration: {type: Number, default: 25},
+      shortBreakDuration: {type: Number, default: 5},
+      longBreakDuration: {type: Number, default: 15},
     },
   },
 
@@ -94,7 +94,7 @@ export const userSchema = new mongoose.Schema({
       ref: "Song",
       default: null,
     },
-    currentTime: {Number, default: 0},
+    currentTime: {type: Number, default: 0},
     likedSongs: [String],
   },
 

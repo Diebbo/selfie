@@ -10,13 +10,13 @@ import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
 
+
 // services import
 import createProjectService from "./services/projects.mjs";
 
-export async function createDataBase() {
-  const uri =
-    "mongodb+srv://test:test@cluster0.iksyo9p.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
+export async function createDataBase(uri) {
+  
+  
   // creating a model
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
