@@ -1833,7 +1833,7 @@ export async function createDataBase(uri) {
     },
     async getById(id) {
       const user = await userModel
-        .findById(id)
+        .findById(id, "-__v -password -createdAt -updatedAt")
         .populate("participatingEvents")
         .populate("events") // convert  id to event object
         .populate("projects")
