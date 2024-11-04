@@ -10,7 +10,7 @@ import {
 import React, { useEffect, useState, useRef } from "react";
 import { NotificationIcon } from "../icons/navbar/notificationIcon";
 import { io } from "socket.io-client";
-import { ToastNotification } from "./toast-notification";
+import { Toaster, toast } from 'react-hot-toast';
 import { CloseIcon } from "../icons/close-icon";
 import { getUser } from "@/actions/user";
 
@@ -24,19 +24,15 @@ interface Notification {
 export const NotificationsDropdown = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [latestNotification, setLatestNotification] =
-    useState<Notification | null>(null);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<any>(null);
 
   const fetchNotifications = async () => {
     try {
-      console.log("FETCHING NOTIFICATIONS");
       const response = await fetch("/api/users/inbox", {
         method: "GET",
         credentials: "include",
       });
-      console.log("END FETCHING NOTIFICATIONS");
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
@@ -94,19 +90,23 @@ export const NotificationsDropdown = () => {
         });
 
         // Ascolta per nuove notifiche
-        socketRef.current.on(
-          "new_notification",
-          (notification: Notification) => {
-            console.log("Received new notification", notification);
-            setNotifications((prev) => [notification, ...prev]);
-            setLatestNotification(notification);
-
-            // Rimuovi la latest notification dopo alcuni secondi
-            setTimeout(() => {
-              setLatestNotification(null);
-            }, 5000);
-          }
-        );
+        socketRef.current.on("new_notification", (notification: Notification) => {
+          console.log("Received new notification", notification);
+          setNotifications((prev) => [notification, ...prev]);
+          
+          toast(
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+              <div className="p-4">
+                <h4 className="font-semibold text-gray-900 dark:text-white">{notification.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{notification.body}</p>
+              </div>
+            </div>,
+            {
+              duration: 5000  ,
+              position: 'top-right',
+            }
+          );
+        });
 
         // Gestione errori di connessione
         socketRef.current.on("connect_error", (error: any) => {
@@ -180,9 +180,23 @@ export const NotificationsDropdown = () => {
 
   return (
     <div className="flex items-center">
-      {latestNotification && (
-        <ToastNotification notification={latestNotification} />
-      )}
+      <div className="top-10">
+      <Toaster 
+        containerStyle={
+          {
+            marginTop: '5.5vh',
+          }
+        }
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'transparent',
+            boxShadow: 'none',
+            padding: '0',
+          },
+        }}
+    />
+      </div>
       <Dropdown
         className="overflow-y-auto scrollbar-hide"
         placement="bottom-end"
