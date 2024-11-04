@@ -100,6 +100,13 @@ export async function createDataBase() {
     return user;
   };
 
+  const isVerified = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    return user.isVerified;
+  };
+
   const updateEmail = async (uid, email, emailToken) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -1914,6 +1921,7 @@ export async function createDataBase() {
     getNextNotifications,
     getDateTime,
     verifyEmail,
+    isVerified,
     createActivity,
     createSubActivity,
     getActivities,

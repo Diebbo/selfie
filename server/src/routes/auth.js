@@ -259,11 +259,8 @@ export function createAuthRouter(db) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      if (user.isVerified) {
-        return res.status(200).json({ message: "User is verified" });
-      } else {
-        return res.status(401).json({ message: "User is not verified" });
-      }
+      const result = await db.isVerified(user._id);
+      return res.status(200).json({ isVerified: result });
     } catch (e) {
       return res.status(401).json({ message: e.message });
     }
