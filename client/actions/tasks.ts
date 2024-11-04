@@ -4,7 +4,12 @@ import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 import { TaskModel } from "@/helpers/types";
 
-async function getTasks(): Promise<TaskModel[]> {
+interface TaskResponse {
+  activities: TaskModel[];
+  message: string;
+}
+
+export async function getTasks(): Promise<TaskResponse> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -21,10 +26,120 @@ async function getTasks(): Promise<TaskModel[]> {
     cache: "no-store",
   });
 
-  const tasks = await res.json();
-  console.log("tasks", tasks);
+  const { activities, message } = await res.json();
 
-  return tasks;
+  if (!res.ok) {
+    return Promise.reject(new Error(message));
+  }
+
+  return { activities, message };
 }
 
-export { getTasks };
+export async function addTaskToParent(task: Partial<TaskModel>, parent: TaskModel): Promise<TaskModel> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const res = await fetch(`${getBaseUrl()}/api/activities?parent=${parent._id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      'Cookie': `token=${token.toString()}`,
+    },
+    body: JSON.stringify({ activity: task }),
+  });
+
+  const { activity }: { activity: TaskModel } = await res.json();
+  return activity;
+}
+
+export async function addTask(task: Partial<TaskModel>): Promise<TaskModel> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const res = await fetch(`${getBaseUrl()}/api/activities`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      'Cookie': `token=${token.toString()}`,
+    },
+    body: JSON.stringify({ activity: task }),
+  });
+
+  const { activity }: { activity: TaskModel } = await res.json();
+  return activity;
+}
+
+export async function saveTask(task: TaskModel): Promise<TaskModel> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const res = await fetch(`${getBaseUrl()}/api/activities/${task._id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      'Cookie': `token=${token.toString()}`,
+    },
+    body: JSON.stringify({ activity: task }),
+  });
+
+  const { activity }: { activity: TaskModel } = await res.json();
+  return activity;
+}
+
+export async function saveTaskInParent(task: TaskModel, parent: TaskModel): Promise<TaskModel> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  parent.subActivity = parent.subActivity.map((subTask:TaskModel) => {
+    if (subTask._id === task._id) {
+      return task;
+    }
+    return subTask;
+  });
+
+  const res = await fetch(`${getBaseUrl()}/api/activities/${parent._id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      'Cookie': `token=${token.toString()}`,
+    },
+    body: JSON.stringify({ activity: parent }),
+  });
+
+  const { activity }: { activity: TaskModel } = await res.json();
+  return activity;
+}
+
+export async function deleteTask(task: TaskModel): Promise<void> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  await fetch(`${getBaseUrl()}/api/activities/${task._id}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      'Cookie': `token=${token.toString()}`,
+    },
+  });
+}
+

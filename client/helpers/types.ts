@@ -147,6 +147,7 @@ export interface Song {
 */
 
 export interface TaskModel {
+  _id: string;
   name: string;
   dueDate: Date;
   completed: boolean;
