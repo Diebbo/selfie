@@ -1,19 +1,48 @@
-import type { NextPage } from "next";
+// page.tsx (Server-Side Component)
+
+import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
+import { getUser } from "@/actions/user";
+
+import {
+  ChatModel,
+  NoteModel,
+  Person,
+  PomodoroStats,
+  ProjectModel,
+  SelfieEvent,
+} from "@/helpers/types";
+import { getNotes } from "@/actions/notes";
+import { getStats } from "@/actions/pomodoro";
+import getProjects from "@/actions/projects";
 import { getEvents } from "@/actions/events";
 
-const Home: NextPage = async () => {
+
+export default async function Home() {
   try {
-    // Fetch events from the backend
-    const events = await getEvents();
+    const [chats,  user]: [
+      ChatModel[],
+      Person
+    ] = await Promise.all([
+      getChats(),
+      getUser(),
+    ]);
 
-    // Pass the fetched events to the Content component
-    return <Content events={events} />;
-  } catch (error) {
-    console.error("Failed to fetch events:", error);
-    // You might want to render an error state here
-    return <div>Error loading events. Please try again later.</div>;
+    // Pass the fetched data to the client-side component
+    return (
+      <>
+        <Content
+          chats={chats}
+          notes={user.notes}
+          projects={user.projects}
+          pomodoro={user.pomodoro}
+          events={user.events}
+          user = {user}
+        />
+      </>
+    );
+  } catch (error: any) {
+    console.error("Unexpected error:", error);
+    return <div>Unexpected error occurred. Please try again later.</div>;
   }
-};
-
-export default Home;
+}

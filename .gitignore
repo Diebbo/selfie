@@ -1,0 +1,6 @@
+.env
+.next
+note_modules
+node_modules
+next-env.d.ts
+client/nextbuild

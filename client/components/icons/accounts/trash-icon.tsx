@@ -1,21 +1,13 @@
 import React from "react";
+interface TrashIconProps {
+  className?: string;
+  size?: number;
+}
 
-export const TrashIcon = () => {
+export const TrashIcon = (props: TrashIconProps) => {
   return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        className="fill-default-400"
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19V9C18 7.9 17.1 7 16 7H8C6.9 7 6 7.9 6 9V19ZM11.65 10.35C11.85 10.15 12.16 10.15 12.36 10.35L16 14H14V18H10V14H8L11.65 10.35ZM15.5 4L14.79 3.29C14.61 3.11 14.35 3 14.09 3H9.91C9.65 3 9.39 3.11 9.21 3.29L8.5 4H6C5.45 4 5 4.45 5 5C5 5.55 5.45 6 6 6H18C18.55 6 19 5.55 19 5C19 4.45 18.55 4 18 4H15.5Z"
-        fill="#969696"
-      />
+    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width={props.size} height={props.size} viewBox="0 0 48 48" className={props.className}>
+      <path d="M 38.982422 6.9707031 A 2.0002 2.0002 0 0 0 37.585938 7.5859375 L 24 21.171875 L 10.414062 7.5859375 A 2.0002 2.0002 0 0 0 8.9785156 6.9804688 A 2.0002 2.0002 0 0 0 7.5859375 10.414062 L 21.171875 24 L 7.5859375 37.585938 A 2.0002 2.0002 0 1 0 10.414062 40.414062 L 24 26.828125 L 37.585938 40.414062 A 2.0002 2.0002 0 1 0 40.414062 37.585938 L 26.828125 24 L 40.414062 10.414062 A 2.0002 2.0002 0 0 0 38.982422 6.9707031 z"></path>
     </svg>
   );
 };
