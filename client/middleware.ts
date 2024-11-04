@@ -11,6 +11,10 @@ export default async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isPublicRoute = publicRoutes.includes(path);
   const isProtectedRoute = !isPublicRoute;
+  // to make manifest file public 
+  if (path === "/manifest.webmanifest") {
+    return NextResponse.next();
+  }
 
   // 3. Decrypt the session from the cookie
   try {
