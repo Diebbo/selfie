@@ -57,7 +57,6 @@ export default async function middleware(req: NextRequest) {
       }
     } else {
       // Se non c'è il cookie allora l'utente non è loggato quindi lo si reindirizza alla pagina di login
-      console.log("no cookie");
       if (isProtectedRoute) {
         const loginUrl = new URL("/login", req.nextUrl);
         loginUrl.searchParams.append("redirect", path);
