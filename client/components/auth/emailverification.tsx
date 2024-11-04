@@ -43,7 +43,7 @@ export function EmailVerificationPage() {
       >
         {verificationStatus}
       </p>
-      {verificationStatus.includes("riuscita") && (
+      {verificationStatus.includes("verificata") && (
         <button
           onClick={handleLoginRedirect}
           className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700"
