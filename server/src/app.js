@@ -39,7 +39,7 @@ export function createApp({ dirpath, database, sendNotification }) {
 
   console.log("createApp.js: initialize routes");
   app.use("/api/", indexRouter);
-  app.use("/api/auth", createAuthRouter(database));
+  app.use("/api/auth", createAuthRouter(database, sendNotification));
   app.use("/api/config", createTimeRouter(database));
   app.use("/api/events", createCalendarRouter(database, sendNotification));
   app.use("/api/notes", createNoteRouter(database));

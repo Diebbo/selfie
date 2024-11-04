@@ -5,11 +5,12 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
 import { emitNotification } from "../socket.js";
+import { send } from "process";
 
 const router = express.Router();
 
 // Function to create the router with dependency injection
-export function createAuthRouter(db) {
+export function createAuthRouter(db, sendNotification) {
   function userCast(user) {
     return {
       _id: user._id,
@@ -91,8 +92,8 @@ export function createAuthRouter(db) {
     }
 
     // add Email to inbox
-    await db.addNotificationToInbox(dbuser._id, payload);
-
+    //await db.addNotificationToInbox(dbuser._id, payload);
+    await sendNotification(dbuser, payload);
 
     const user = userCast(dbuser);
 

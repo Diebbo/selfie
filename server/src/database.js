@@ -68,7 +68,7 @@ export async function createDataBase() {
 
     const payload = {
       title: "Verify your email",
-      body: `Click here to verify your email: https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
+      body: `Click here to verify your email:`,
       link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
     };
 
