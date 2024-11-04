@@ -74,17 +74,17 @@ export const userSchema = new mongoose.Schema({
   ],
 
   position: {
-    latitude: Number,
-    longitude: Number,
+    latitude: {Number, default: 44.494887},
+    longitude: {Number, default: 11.3426163},
   },
 
   pomodoro: {
-    totalStudyTime: Number,
-    totalBreakTime: Number,
+    totalStudyTime: {Number, default: 0},
+    totalBreakTime: {Number, default: 0},
     settings: {
-      studyDuration: Number,
-      shortBreakDuration: Number,
-      longBreakDuration: Number,
+      studyDuration: {Number, default: 25},
+      shortBreakDuration: {Number, default: 5},
+      longBreakDuration: {Number, default: 15},
     },
   },
 
@@ -92,8 +92,9 @@ export const userSchema = new mongoose.Schema({
     songPlaying: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Song",
+      default: null,
     },
-    currentTime: Number,
+    currentTime: {Number, default: 0},
     likedSongs: [String],
   },
 
