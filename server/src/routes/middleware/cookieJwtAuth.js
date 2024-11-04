@@ -12,9 +12,12 @@ const cookieJwtAuth = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    if (!req.user.isVerified) {
+      return res.status(403).json({ error: 'Access Denied: Email not verified' });
+    }
     next();
   } catch (err) {
-    console.error('Token verification failed:', err);
+    console.error('Token verification failed:', err.message);
     res.clearCookie('token');
     return res.status(401).json({ error: 'Access Denied: Invalid token' });
   }

@@ -5,7 +5,6 @@ import { RegisterSchema } from "@/helpers/schemas";
 import { RegisterFormType, RegisterType } from "@/helpers/types";
 import { Button, Input } from "@nextui-org/react";
 import { Formik } from "formik";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import Stepper from "@/components/stepper/stepper";
@@ -18,11 +17,11 @@ export const Register = () => {
   const steps = ["Account", "Personal Info", "Address"];
 
   const initialValues: RegisterFormType = {
-    name: "Admin",
-    surname: "Admin",
-    email: "admin@gmail.com",
-    password: "admin",
-    confirmPassword: "admin",
+    name: "user",
+    surname: "user",
+    email: "test@gmail.com",
+    password: "usersss",
+    confirmPassword: "usersss",
     country: "India",
     zip: "123456",
     city: "Chennai",
@@ -138,7 +137,6 @@ export const Register = () => {
                   type="date"
                   value={values.birthDate.toString()}
                   isInvalid={!!errors.birthDate && !!touched.birthDate}
-                  errorMessage={errors.birthDate}
                   onChange={handleChange("birthDate")}
                 />
                 <Input
@@ -231,10 +229,13 @@ export const Register = () => {
       </Formik>
 
       <div className="font-light text-slate-400 mt-4 text-sm">
-        Already have an account?{" "}
-        <Link href="/login" className="font-bold">
-          Login here
-        </Link>
+        <Button
+          variant="flat"
+          color="secondary"
+          onPress={() => router.push("/login")}
+        >
+          Already have an account? <b>Login</b>
+        </Button>
       </div>
     </>
   );

@@ -1,0 +1,47 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [develop-build]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Create .env.local file
+        run: |
+          echo "${{ secrets.WEATHER_API }}" > client/.env.local
+
+      - name: Compile client
+        run: |
+          cd client
+          npm install
+          npm run build
+          cd ..
+
+      - name: Deploy client via rsync
+        run: |
+          rsync -avzr client/nextbuild deploy:/home/web/site232454/html/
+
+      - name: Install server modules
+        run: |
+          cd server
+          npm install
+          cd ..
+
+      - name: Deploy node_modules via rsync (only new files)
+        run: |
+          rsync -avzr --ignore-existing server/node_modules deploy:/home/web/site232454/html/
+
+      - name: Deploy server via rsync
+        run: |
+          rsync -avzr --delete server/src/* deploy:/home/web/site232454/html/src

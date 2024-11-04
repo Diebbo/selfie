@@ -4,7 +4,8 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "esnext",
+      "es2016"
     ],
     "allowJs": true,
     "skipLibCheck": true,
@@ -24,16 +25,21 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    "helpers/**/*.ts",
+    ".next/types/**/*.ts",
+    "nextbuild/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "typeRoots": ["helpers/types.ts", "./node_modules/@types", "helpers/custom-types.d.ts"]
 }

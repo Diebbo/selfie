@@ -6,10 +6,11 @@ import {
   DropdownSection,
   DropdownTrigger,
 } from "@nextui-org/react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AcmeIcon } from "../icons/acme-icon";
 import { AcmeLogo } from "../icons/acmelogo";
 import { BottomIcon } from "../icons/sidebar/bottom-icon";
+import { getUsername } from "@/actions/auth.action";
 
 interface Company {
   name: string;
@@ -20,9 +21,47 @@ interface Company {
 export const CompaniesDropdown = () => {
   const [company, setCompany] = useState<Company>({
     name: "Acme Co.",
-    location: "Palo Alto, CA",
+    location: "Selfie Calendar",
     logo: <AcmeIcon />,
   });
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      try {
+        const response = await getUsername();
+        setCompany((prevCompany) => ({
+          ...prevCompany,
+          name: response.username,
+        }));
+      } catch (error) {
+        console.error("Failed to fetch username:", error);
+      }
+    };
+
+    fetchUsername();
+
+    // Aggiungi il listener per l'evento usernameUpdated
+    const handleUsernameUpdate = (event: CustomEvent<string>) => {
+      console.log("Username update event received", event.detail); // Per debug
+      setCompany((prevCompany) => ({
+        ...prevCompany,
+        name: event.detail,
+      }));
+    };
+
+    window.addEventListener(
+      "usernameUpdated",
+      handleUsernameUpdate as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "usernameUpdated",
+        handleUsernameUpdate as EventListener,
+      );
+    };
+  }, []);
+
   return (
     <Dropdown
       classNames={{

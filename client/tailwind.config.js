@@ -6,14 +6,21 @@ module.exports = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx,mjs}",
 
-    // Or if using `src` directory:
-    "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      boxShadow: {
+        'light': '0 4px 6px rgba(255, 255, 255, 0.1)', // Ombra chiara per dark mode
+      }
+    },
   },
   darkMode: "class",
-  plugins: [nextui()],
+  plugins: [
+    nextui(),
+    require("@tailwindcss/typography"),
+    require("tailwind-scrollbar"),
+  ],
 };

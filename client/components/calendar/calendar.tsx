@@ -1,0 +1,310 @@
+"use client";
+
+import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
+import React, { useState, useEffect } from "react";
+import EventAdder from "@/components/calendar/eventAdder";
+import CalendarCell from "@/components/calendar/calendarCell";
+import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
+import { reloadContext, mobileContext } from "./contextStore";
+import { getEvents } from "@/actions/events";
+import { getCurrentTime } from "@/actions/setTime";
+
+interface CalendarPageProps {
+  createdEvents: SelfieEvent[];
+  participatingEvents: SelfieEvent[];
+  dbdate: Date;
+  friends: People;
+  projects: ProjectModel[];
+}
+
+const CalendarPage = (props: CalendarPageProps) => {
+  //concat of 2 events arraies
+  const [events, setEvents] = useState<SelfieEvent[]>(props.createdEvents.concat(props.participatingEvents));
+  const [today, setToday] = useState(props.dbdate);
+  const [isMobile, setIsMobile] = useState(false);
+  const [currentDate, setCurrentDate] = useState(props.dbdate);
+  const [reloadEvents, setReloadEvents] = useState(false);
+  const [isMonthView, setIsMonthView] = useState(true);
+
+  const setCurrentTime = async () => {
+    const date = await getCurrentTime();
+    console.log("date", date);
+    setToday(new Date(date));
+    setCurrentDate(new Date(date));
+  };
+
+  useEffect(() => {
+    if (reloadEvents) {
+      console.log("sto fetchando gli eventi");
+      const e = getEvents();
+      e.then((events) => {
+        setEvents(events);
+      });
+      setCurrentTime();
+      setReloadEvents(false);
+    }
+  }, [reloadEvents]);
+
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const daysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const firstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+
+  const renderCalendarWeek = () => {
+
+    if (!currentDate) return <span>  testo </span>;
+
+    const daysOfWeek = [];
+    const currentWeekStart = new Date(currentDate);
+
+    // Adjust to the start of the week (Sunday)
+    currentWeekStart.setDate(currentDate.getDate() - currentDate.getDay());
+
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(currentWeekStart);
+      dayDate.setDate(currentWeekStart.getDate() + i);
+
+      const isToday =
+        dayDate.getDate() === today?.getDate() &&
+        dayDate.getMonth() === today.getMonth() &&
+        dayDate.getFullYear() === today.getFullYear();
+
+      daysOfWeek.push(
+        <td
+          key={`week-cell-${i}`}
+          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+        >
+          <CalendarCell
+            isMonthView={isMonthView}
+            day={dayDate.getDate()}
+            date={dayDate}
+            isToday={isToday}
+            events={events}
+            projects={props.projects}
+          />
+        </td>
+      );
+    }
+
+    return (
+      <tr>
+        {daysOfWeek}
+      </tr>);
+
+  };
+
+  const renderCalendarMonth = () => {
+    const totalDays = daysInMonth(currentDate);
+    const startingDay = firstDayOfMonth(currentDate);
+    const rows = 6; // Fissiamo il numero di righe a 6 per coprire tutti i possibili casi
+
+    let days = [];
+
+    for (let i = 0; i < rows; i++) {
+      let week = [];
+      for (let j = 0; j < 7; j++) {
+        const dayIndex = i * 7 + j - startingDay + 1;
+        const isValidDay = dayIndex > 0 && dayIndex <= totalDays;
+
+        const isToday =
+          isValidDay &&
+          dayIndex === today.getDate() &&
+          currentDate.getMonth() === today.getMonth() &&
+          currentDate.getFullYear() === today.getFullYear();
+
+        week.push(
+          <td
+            key={`cell-${i}-${j}`}
+            className={`border ${isValidDay ? "bg-white dark:bg-black" : "bg-gray-300 dark:bg-zinc-600"} border-gray-400 p-1 md:p-2 align-top h-[calc(87vh/6)]`}
+          >
+            {isValidDay ? (
+              <CalendarCell
+                isMonthView={isMonthView}
+                day={dayIndex}
+                date={currentDate}
+                isToday={isToday}
+                events={events}
+                projects={props.projects}
+              />
+            ) : null}
+          </td>,
+        );
+      }
+      days.push(<tr
+        key={`row-${i}`}
+        className="overflow-y-auto scrollbar max-h-[calc(85vh)]"
+      >{week}</tr>);
+    }
+
+    return days;
+  };
+
+  const monthNames = [
+    "Gennaio",
+    "Febbraio",
+    "Marzo",
+    "Aprile",
+    "Maggio",
+    "Giugno",
+    "Luglio",
+    "Agosto",
+    "Settembre",
+    "Ottobre",
+    "Novembre",
+    "Dicembre",
+  ];
+
+  const handleToday = () => {
+    setCurrentTime();
+  };
+
+  const handleToggle = () => {
+    setIsMonthView(!isMonthView);
+  };
+
+  const changeMonth = (increment: number) => {
+    setCurrentDate(
+      new Date(
+        currentDate.getFullYear() as number,
+        currentDate.getMonth() as number + increment,
+        1,
+      ),
+    );
+  };
+
+  const changeWeek = (increment: number) => {
+    if (currentDate) {
+      const newDate = new Date(currentDate);
+      newDate.setDate(currentDate.getDate() + (increment));
+      setCurrentDate(newDate);
+    }
+  };
+
+  return (
+    <mobileContext.Provider value={{ isMobile, setIsMobile }}>
+      <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
+        <div
+          className="flex flex-col md:flex-row min-h-screen relative"
+          aria-label="Back Ground Calendar"
+        >
+          <div className="flex-grow">
+            <div className="bg-white dark:bg-black h-screen flex flex-col">
+              <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
+
+                <EventAdder
+                  friends={props.friends}
+                  isMobile={isMobile}
+                  aria-label="Event Adder Button"
+                />
+
+                <button
+                  onClick={() => { isMonthView ? changeMonth(-1) : changeWeek(-7) }}
+                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                >
+                  &lt;
+                </button>
+
+                <div className="flex items-center gap-4">
+                  <Switch
+                    defaultSelected={true}
+                    onValueChange={handleToggle}
+                    color="primary"
+                    startContent={<span> M </span>}
+                    endContent={<span> W </span>}
+                    className="data-[state=checked]:bg-primary"
+                    aria-label="Cambia visualizzazione"
+                  />
+                </div>
+
+                <Tooltip
+                  content={today.toISOString().split('T')[0]}
+                  showArrow
+                  key="tooltip day"
+                  delay={0}
+                  closeDelay={0}
+                  placement="top"
+                  classNames={{
+                    base: [
+                      "before:bg-neutral-400 dark:before:bg-white",
+                    ],
+                    content: [
+                      "py-2 px-4 shadow-xl",
+                      "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
+                    ],
+                  }}>
+                  <Chip
+                    variant="solid"
+                    className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
+                  >
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                  </Chip>
+                </Tooltip>
+                <Button
+                  variant="solid"
+                  onClick={handleToday}
+                  className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
+                >
+                  Oggi
+                </Button>
+                <button
+                  onClick={() => { isMonthView ? changeMonth(1) : changeWeek(7) }}
+                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                >
+                  &gt;
+                </button>
+              </div>
+              <div className="flex-grow overflow-auto">
+                <table className="w-full h-full table-fixed">
+                  <thead>
+                    <tr className="h-2">
+                      {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
+                        (day) => (
+                          <th
+                            key={day}
+                            aria-label="day line"
+                            className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
+                          >
+                            {day}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  {
+                    isMonthView &&
+                    <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendarMonth()}
+                    </tbody>
+                  }
+
+                  {!isMonthView &&
+                    <tbody
+                      className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                      {renderCalendarWeek()}
+                    </tbody>
+                  }
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </reloadContext.Provider>
+    </mobileContext.Provider>
+  );
+};
+
+export default CalendarPage;
