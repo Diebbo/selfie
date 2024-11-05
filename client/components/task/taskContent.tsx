@@ -1,34 +1,24 @@
-'use client'
+// Componente Content aggiornato
+'use client';
 
 import { addTask, addTaskToParent, saveTask, saveTaskInParent } from "@/actions/tasks";
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { TaskModel } from "@/helpers/types";
 import { Circle, ChevronDown, ChevronRight, Edit } from "lucide-react";
-
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Input,
-  Checkbox,
-  Button,
-  Card,
-} from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Checkbox, Button } from "@nextui-org/react";
 
 interface TaskItemProps {
   task: TaskModel;
   level: number;
-  onAddSubtask: (task: TaskModel) => void;
+  onAddSubtask: null | ((task: TaskModel) => void);
   onEditTask: (task: TaskModel) => void;
   onTaskUpdate: (task: TaskModel) => void;
 }
 
 const TaskItem = ({ task, level, onAddSubtask, onEditTask, onTaskUpdate }: TaskItemProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const hasSubTasks = task.subActivity && task.subActivity.length > 0;
+  const hasSubTasks = task.subActivities && task.subActivities.length > 0;
 
   const handleStatusChange = () => {
     onTaskUpdate({ ...task, completed: !task.completed });
