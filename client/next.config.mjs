@@ -4,9 +4,6 @@ const nextConfig = {
   reactStrictMode: false,
   distDir: "nextbuild",
   experimental: {
-    staleTimes: {
-      dynamic: 1,
-    },
   },
   async rewrites() {
     return [
