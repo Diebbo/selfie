@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  NextUIProvider,
   Card,
+  Tab,
+  Tabs,
   Input,
+  Chip,
   Button,
   Switch,
   Spacer,
@@ -15,11 +17,9 @@ import {
   useDisclosure,
   ModalContent,
   Avatar,
-  Autocomplete,
 } from "@nextui-org/react";
 import { DarkModeSwitch } from "../navbar/darkmodeswitch";
 import { PassLockIcon } from "../auth/PassLockIcon";
-import { createAuthCookie, deleteAuthCookie } from "@/actions/auth.action";
 import NotificationSettings from "../auth/NotificationSettings";
 import { useRouter } from "next/navigation";
 
@@ -119,10 +119,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       setStatusPasswordChange("Password cambiata con successo");
     } else if (type === "email") {
       setEmailEdit(false);
-      const event = new CustomEvent("emailUpdated", { detail: { updatedEmail: email }});
+      const event = new CustomEvent("emailUpdated", { detail: { updatedEmail: email } });
       window.dispatchEvent(event);
     } else if (type === "avatar") {
-      const event = new CustomEvent("avatarUpdated", { detail: { updatedAvatar: avatar }});
+      const event = new CustomEvent("avatarUpdated", { detail: { updatedAvatar: avatar } });
       window.dispatchEvent(event);
     }
   };
@@ -147,10 +147,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     let body = {};
     if (type === "push") {
       body = { enable: !pushNotifications };
-      
+
     } else if (type === "email") {
       body = { enable: !emailNotifications };
-      
+
     } else {
       console.error("Tipo non supportato:", type);
       return;
@@ -179,7 +179,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             size="lg"
             alt="avatar"
           />
-          <Input 
+          <Input
             variant="faded"
             label="Avatar"
             placeholder="Inserisci il tuo link avatar"
@@ -354,11 +354,26 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
         <NotificationSettings />
         <Spacer y={4} />
-        <h3 className="mb-3">Cambia Tema</h3>
-        <div>
-          <DarkModeSwitch />
+        <div className="flex flex-row mb-7 gap-10">
+          <div className="flex flex-col w-[150px]">
+            <h3 className="mb-3">Change Theme</h3>
+            <DarkModeSwitch />
+          </div>
+
         </div>
-        <Spacer y={4} />
+        <div className="flex align-center ">
+
+          <div className="gap-4 flex-row mr-4 mb-4">
+            <Tabs key="import-export-tabs" variant="solid" aria-label="Tabs variants">
+              <Tab key="import" title="Import" />
+              <Tab key="export" title="Export" />
+            </Tabs>
+          </div>
+          <Chip color="primary" size="lg" radius="sm" className="mr-3 py-5 gap-4"> Your Calendar</Chip>
+        </div>
+        <div className="mb-4">
+          <Input placeholder="paste your URL || copy URL" className="text-gray-400" />
+        </div>
 
         <Button color="danger" onPress={onOpen} className="w-full">
           Elimina Account
