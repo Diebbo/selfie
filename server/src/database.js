@@ -776,22 +776,16 @@ export async function createDataBase(uri) {
     }
   };
 
-  // TYPO
   const getUsrernameForActivity = async (activity) => {
     if (!activity.participants || activity.participants.length === 0) {
       return activity;
     }
 
     // Fetch the user details for all participants based on their IDs
-    console.log(activity.participants);
-    let participants = await userModel.find({
-      _id: { $in: activity.participants.map((id) => id.toString()) },
-    });
-
-    // Replace the participant IDs with their usernames
-    activity.participants = participants.map((user) => user.username);
-    console.log(activity.participants);
-    console.log("-----");
+    await activity.populate("participants", "username");
+    activity = activity.toObject(); // Convert Mongoose document to plain object
+    
+    activity.participants = activity.participants.map((participant) => participant.username);
     return activity;
   };
 
@@ -1295,6 +1289,20 @@ export async function createDataBase(uri) {
       throw new Error("Activity must have a dueDate");
     }
 
+    activity.participants?.push(user.username);
+
+    const users = await userModel.find({
+      username: { $in: activity.participants },
+    });
+
+    if (users.length !== activity.participants.length) {
+      throw new Error("Some participants not found");
+    }
+
+    activity.participants = activity.participants.map((part) =>
+      users.find((user) => user.username === part)._id.toString(),
+    );
+
     if (!parentId) {
       const addedActivity = await activityModel.create({
         ...activity,
@@ -1350,9 +1358,7 @@ export async function createDataBase(uri) {
 
     let activities = await activityModel.find({ uid: uid });
     // for each activiteis, get the participants and subactivities
-    for (let i=0; i<activities.length; i++) {
-      activities[i] = await getUsrernameForActivity(activities[i]);
-    }
+    activities = await getUsernameForActivities(activities);
 
     return activities;
   };
