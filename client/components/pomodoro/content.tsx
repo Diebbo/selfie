@@ -170,7 +170,7 @@ function Pomodoro(props: PomodoroProps) {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        height: "100vh",
+        height: "100%",
         backgroundColor: !isRunning
           ? "#E0FFFF" // Azzurro molto chiaro quando il timer è fermo
           : isFocusTime

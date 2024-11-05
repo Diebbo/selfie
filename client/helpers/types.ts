@@ -70,6 +70,10 @@ export interface Person extends RegisterType {
     totalStudyTime: number;
     totalBreakTime: number;
   }
+  position: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export type People = Person[];
