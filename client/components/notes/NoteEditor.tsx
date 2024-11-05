@@ -1,0 +1,86 @@
+import Markdown from "react-markdown";
+
+interface NoteEditorProps {
+  title: string;
+  content: string;
+  tags: string;
+  showMarkdown: boolean;
+  onTitleChange: (value: string) => void;
+  onContentChange: (value: string) => void;
+  onTagsChange: (value: string) => void;
+  onSave: () => void;
+  onToggleMarkdown: () => void;
+  onBack: () => void;
+  isEditing: boolean;
+  isMobileView: boolean;
+}
+
+export const NoteEditor: React.FC<NoteEditorProps> = ({
+  title,
+  content,
+  tags,
+  showMarkdown,
+  onTitleChange,
+  onContentChange,
+  onTagsChange,
+  onSave,
+  onToggleMarkdown,
+  onBack,
+  isEditing,
+  isMobileView
+}) => {
+  return (
+    <div className="space-y-4">
+      {isMobileView && (
+        <button
+          onClick={onBack}
+          className="mb-4 px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
+        >
+          ← Indietro
+        </button>
+      )}
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+        {isEditing ? "Modifica Nota" : "Crea Nuova Nota"}
+      </h1>
+      <input
+        type="text"
+        placeholder="Titolo"
+        value={title}
+        onChange={(e) => onTitleChange(e.target.value)}
+        className="w-full p-2 border rounded"
+      />
+      <textarea
+        placeholder="Contenuto"
+        value={content}
+        onChange={(e) => onContentChange(e.target.value)}
+        className="w-full p-2 border rounded h-40"
+      />
+      <input
+        type="text"
+        placeholder="Tag (separati da virgola)"
+        value={tags}
+        onChange={(e) => onTagsChange(e.target.value)}
+        className="w-full p-2 border rounded"
+      />
+      <div className="flex gap-2">
+        <button
+          onClick={onSave}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          {isEditing ? "Aggiorna Nota" : "Salva Nota"}
+        </button>
+        <button
+          onClick={onToggleMarkdown}
+          className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+        >
+          {showMarkdown ? "Edit View" : "Markdown View"}
+        </button>
+      </div>
+      {showMarkdown && (
+        <div className="mt-4 p-2 border rounded prose dark:prose-invert">
+          <Markdown>{content}</Markdown>
+        </div>
+      )}
+    </div>
+  );
+};

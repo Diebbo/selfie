@@ -47,6 +47,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   const [isLoaded, setIsLoaded] = useState(true);
   const [events, setEvents] = useState<UserEvents | null>(props.user.events);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
+  const router = useRouter();
 
 
  /*
@@ -226,7 +227,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4">
               <div className="bg-default-100 shadow-lg rounded-2xl p-4 h-[500px] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-semibold text-foreground-900">
@@ -243,16 +244,29 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-hide">
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {user.notes?.sort((a: NoteModel, b: NoteModel) => new Date(b.date!).getTime() - new Date(a.date!).getTime()).map((note) => (
-                        <NoteCard
-                          key={note._id}
-                          note={note}
-                          onClick={() => { }}
-                          onDelete={() => { }}
-                        />
-                      ))}
-                    </div>
+                    {user.notes && user.notes.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {user.notes
+                          ?.sort((a: NoteModel, b: NoteModel) => 
+                            new Date(b.date!).getTime() - new Date(a.date!).getTime()
+                          )
+                          .map((note) => (
+                            <NoteCard
+                              key={note._id}
+                              note={note}
+                              onClick={(note) => {
+                                router.push(`/notes?id=${note._id}`);
+                              }}
+                              onDelete={() => {}}
+                            />
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                        <p className="text-xl font-medium mb-2">Nessuna nota disponibile</p>
+                        <p className="text-sm">Crea una nuova nota per iniziare</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

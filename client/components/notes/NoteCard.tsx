@@ -8,6 +8,7 @@ interface NoteCardProps {
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({ note, onClick, onDelete }) => {
+
   return (
     <div
       key={note._id}
@@ -22,7 +23,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick, onDelete }) => {
       </span>
       <button
         onClick={(e) => {
-          e.stopPropagation(); // Prevent triggering the onClick event of the card
+          e.stopPropagation();
           onDelete(note._id);
         }}
         className="absolute bottom-2 right-2 text-red-500 hover:text-red-700"
