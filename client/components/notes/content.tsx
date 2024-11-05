@@ -5,7 +5,8 @@ import { NoteModel } from "@/helpers/types";
 import NoteCard from "@/components/notes/NoteCard";
 import Markdown from "react-markdown";
 import { getNoteById, getNotes } from "@/actions/notes";
-import { get } from "http";
+import { useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface NotePageProps {
   notes: NoteModel[];
@@ -27,6 +28,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   const [isMobileView, setIsMobileView] = useState(false); // State for mobile view
   const [showNoteForm, setShowNoteForm] = useState(false); // State for showing the note form
   const [showMarkdown, setShowMarkdown] = useState(false);
+  const router = useRouter();
 
   /*const fetchNotes = async () => {
     const res = await fetch(
@@ -47,6 +49,41 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     );
   };*/
 
+  const searchParams = useSearchParams();
+
+useEffect(() => {
+  const noteId = searchParams.get('id');
+  const newNote = searchParams.has('new');
+  const listNote = searchParams.has('list');
+  if (noteId) {
+    fetchNoteById(noteId).then((fetchedNote) => {
+      if (fetchedNote) {
+        setSelectedNote(fetchedNote);
+        setTitle(fetchedNote.title);
+        setContent(fetchedNote.content);
+        setTags(fetchedNote.tags.join(", "));
+        setShowNoteForm(true);
+        setShowNoteList(false);
+      }
+    });
+  }
+  else if (newNote) {
+    console.log("newNote")
+    setShowNoteForm(true);
+    setShowNoteList(false);
+  }
+  else if (listNote) {
+    setShowNoteList(true);
+    setShowNoteForm(false);
+  }
+  else{
+    console.log("else")
+    setShowNoteList(false);
+    setShowNoteForm(false);
+  }
+  
+}, [searchParams]);
+
   const fetchNoteById = async (id: string) => {
 
     // TODO: Decide whether to use fetch or server actions
@@ -57,7 +94,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       },
       cache: "no-store", // This ensures fresh data on every request
     });*/
-    const note = await getNoteById(id);
+    const note = await getNoteById(id); 
     return note;
   };
 
@@ -117,6 +154,8 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     };
   }, [isResizing, initialMouseX, initialPanelWidth]);
 
+
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth <= 768);
@@ -129,6 +168,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+  
 
   const handleSave = async () => {
     const note: NoteModel = {
@@ -147,9 +187,30 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       setSelectedNote(null);
       const notes = await getNotes();
       setNotes(notes);
-      setShowNotification(true); // Show notification
-      setTimeout(() => setShowNotification(false), 3000); // Hide notification after 3 seconds
+      toast(
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white">{"✅ Nota salvata con successo"}</h4>          </div>
+        </div>,
+        {
+          duration: 5000  ,
+          position: 'top-right',
+        }
+      );
       if (isMobileView) setShowNoteList(true); // Show note list after saving on mobile
+    }
+    else {
+      toast(
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white">{"❌ Errore nel salvataggio della nota"}</h4>
+          </div>
+        </div>,
+        {
+          duration: 5000  ,
+          position: 'top-right',
+        }
+      );
     }
   };
 
@@ -163,12 +224,13 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   };
 
   const handleNewNote = () => {
+    window.history.pushState(null, "", `?new`);
     setSelectedNote(null);
     setTitle("");
     setContent("");
     setTags("");
-    setShowNoteForm(true);
-    setShowNoteList(false); // Hide note list when creating a new note
+    //setShowNoteForm(true);
+    //setShowNoteList(false); // Hide note list when creating a new note
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -178,39 +240,26 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   };
 
   const handleShowNoteList = () => {
-    setShowNoteList(true);
-    setShowNoteForm(false);
+    window.history.pushState(null, "", `?list`);
     setSelectedNote(null);
   };
 
   const handleIndietro = () => {
-    setShowNoteForm(false);
-    setShowNoteList(false);
-    setSelectedNote(null);
+    window.history.pushState(null, "", "?");
   };
 
   const handleCardClick = (note: NoteModel) => {
-    setSelectedNote(note);
+    window.history.pushState(null, "", `?id=${note._id}`);
+    /*setSelectedNote(note);
     setTitle(note.title);
     setContent(note.content);
     setTags(note.tags.join(", "));
     setShowNoteForm(true);
-    setShowNoteList(false); // Hide note list when a note is selected
+    setShowNoteList(false); // Hide note list when a note is selected*/
   };
 
   return (
     <div className="flex h-screen">
-      {showNotification && (
-        <div className="fixed top-16 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
-          Nota salvata correttamente
-          <div className="h-1 bg-green-700 mt-2 relative">
-            <div
-              className="absolute top-0 left-0 h-full bg-green-300"
-              style={{ animation: "progress 3s linear" }}
-            />
-          </div>
-        </div>
-      )}
       <div
         className={`bg-gray-100 dark:bg-gray-900 p-4 overflow-y-auto ${
           isMobileView && (showNoteList || showNoteForm) ? "hidden" : ""
@@ -259,17 +308,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
                   className="cursor-pointer hover:text-blue-500 text-gray-900 dark:text-gray-100"
                   onClick={() => {
                     if (note._id) {
-                      fetchNoteById(note._id).then((fetchedNote) => {
-                        if (fetchedNote) {
-                          console.log(fetchedNote._id);
-                          setSelectedNote(fetchedNote);
-                          setTitle(fetchedNote.title);
-                          setContent(fetchedNote.content);
-                          setTags(fetchedNote.tags.join(", "));
-                          setShowNoteForm(true);
-                          setShowNoteList(false); // Hide note list when a note is selected from the sidebar
-                        }
-                      });
+                      window.history.pushState(null, "", `?id=${note._id}`);
                     }
                   }}
                 >
@@ -303,16 +342,23 @@ const NotePage: React.FC<NotePageProps> = (props) => {
           </button>
         )}
         {showNoteList ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {notes.map((note) => (
-              <NoteCard
-                key={note._id}
-                note={note}
-                onClick={handleCardClick}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
+          notes.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {notes.map((note) => (
+                <NoteCard
+                  key={note._id}
+                  note={note}
+                  onClick={handleCardClick}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+              <p className="text-xl font-medium mb-2">Nessuna nota disponibile</p>
+              <p className="text-sm">Clicca su "Nuova Nota" per iniziare</p>
+            </div>
+          )
         ) : (
           <>
             <h1 className="text-2xl font-bold mb-4">
@@ -359,16 +405,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
           </>
         )}
       </div>
-      <style jsx>{`
-        @keyframes progress {
-          from {
-            width: 100%;
-          }
-          to {
-            width: 0;
-          }
-        }
-      `}</style>
+      
     </div>
   );
 };
