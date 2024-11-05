@@ -35,7 +35,7 @@ export async function getTasks(): Promise<TaskResponse> {
   return { activities, message };
 }
 
-export async function addTaskToParent(task: Partial<TaskModel>, parent: TaskModel): Promise<TaskModel> {
+export async function addTaskToParent(task: Partial<TaskModel>, parent: TaskModel): Promise<{activity:TaskModel, message:string}> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -52,11 +52,14 @@ export async function addTaskToParent(task: Partial<TaskModel>, parent: TaskMode
     body: JSON.stringify({ activity: task }),
   });
 
-  const { activity }: { activity: TaskModel } = await res.json();
-  return activity;
+  if (!res.ok) {
+    return Promise.reject(new Error("Error adding task"));
+  }
+
+  return await res.json();
 }
 
-export async function addTask(task: Partial<TaskModel>): Promise<TaskModel> {
+export async function addTask(task: Partial<TaskModel>): Promise<{activity:TaskModel, message:string}> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -73,8 +76,13 @@ export async function addTask(task: Partial<TaskModel>): Promise<TaskModel> {
     body: JSON.stringify({ activity: task }),
   });
 
-  const { activity }: { activity: TaskModel } = await res.json();
-  return activity;
+  if (!res.ok) {
+    return Promise.reject(new Error("Error adding task"));
+  }
+
+  const { activity, message }: { activity: TaskModel, message:string} = await res.json();
+
+  return { activity, message };
 }
 
 export async function saveTask(task: TaskModel): Promise<TaskModel> {
