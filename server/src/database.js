@@ -793,16 +793,6 @@ export async function createDataBase(uri) {
     if (!activities || activities.length === 0) return activities;
 
     for (let i = 0; i < activities.length; i++) {
-      // Check if the activity has subActivities and recursively process them
-      if (
-        activities[i].subActivities &&
-        activities[i].subActivities.length > 0
-      ) {
-        activities[i].subActivities = await getUsernameForActivities(
-          activities[i].subActivities,
-        );
-      }
-
       // Process the participants for the current (father) activity
       activities[i] = await getUsrernameForActivity(activities[i]);
     }
@@ -1311,7 +1301,7 @@ export async function createDataBase(uri) {
       return addedActivity;
     }
 
-    const parentActivity = await activity.findById(parentId);
+    const parentActivity = await activityModel.findById(parentId);
 
     if (!parentActivity) {
       throw new Error("Parent activity not found");
@@ -1331,7 +1321,7 @@ export async function createDataBase(uri) {
 
     await parentActivity.save();
 
-    return parentActivity.lean();
+    return await getUsernameForActivity(parentActivity);
   };
 
   const getUsernameForActivity = async (activity) => {
@@ -1339,14 +1329,15 @@ export async function createDataBase(uri) {
       return activity;
     }
     
-    let participants = await userModel.find({
-      _id: { $in: activity.participants.map((id) => id.toString()) },
-    });
+    await activity.populate("participants", "username");
+    await activity.populate("subActivities.participants", "username");
 
-    activity.participants = participants.map((user) => user.username);
+    activity = activity.toObject();
+
+    activity.participants = activity.participants.map((participant) => participant.username);
 
     for (let i=0; i<activity.subActivities?.length; i++) {
-      activity.subActivities[i] = await getUsernameForActivity(activity.subActivities[i]);
+      activity.subActivities[i].participants = activity.subActivities[i].participants.map((participant) => participant.username);
     }
 
     return activity;
