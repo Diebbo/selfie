@@ -17,13 +17,10 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Create .env.local file
-        run: |
-          echo 'WEATHER_API="${{ secrets.WEATHER_API }}"' > client/.env
-          
       - name: Compile client
         run: |
           cd client
+          echo "WEATHER_API=${{secrets.WEATHER_API}}" >> .env.production
           npm install
           npm run build
           cd ..
