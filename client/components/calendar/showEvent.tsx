@@ -1,4 +1,3 @@
-//client/components/calendar/showEvent.tsx
 "use client";
 import React, { useReducer, useState, useEffect } from "react";
 import {
@@ -11,13 +10,21 @@ import {
   Input,
   DateRangePicker,
   DatePicker,
+  Autocomplete,
+  AutocompleteItem,
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { useReload } from "./contextStore";
+import { useDebouncedCallback } from "use-debounce";
 
 const EVENTS_API_URL = "/api/events";
+
+interface Geo {
+  lat: number;
+  lon: number;
+}
 
 type State = {
   isEditing: boolean;
@@ -31,6 +38,7 @@ type Action =
   | { type: 'UPDATE_FIELD'; payload: { field: keyof SelfieEvent; value: any } }
   | { type: 'UPDATE_DATE_RANGE'; payload: { start: Date; end: Date } }
   | { type: 'UPDATE_NOTIFICATION'; payload: { field: keyof SelfieNotification; value: any } }
+  | { type: 'UPDATE_GEO'; payload: Geo }
   | { type: 'RESET_STATE' };
 
 function eventReducer(state: State, action: Action): State {
@@ -88,6 +96,19 @@ function eventReducer(state: State, action: Action): State {
         } : null
       };
 
+    case 'UPDATE_GEO':
+      console.log("update_geo action", action);
+      return {
+        ...state,
+        editedEvent: state.editedEvent ? {
+          ...state.editedEvent,
+          geo: {
+            lat: action.payload.lat,
+            lon: action.payload.lon,
+          }
+        } : null
+      }
+
     case 'RESET_STATE':
       return {
         isEditing: false,
@@ -99,7 +120,6 @@ function eventReducer(state: State, action: Action): State {
       return state;
   }
 }
-
 
 async function fetchParticipants(eventid: string) {
   try {
@@ -126,6 +146,13 @@ async function fetchParticipants(eventid: string) {
   }
 }
 
+interface LocationSuggestion {
+  label: string;
+  value: string;
+  lat: number;
+  lon: number;
+  id: string;
+}
 
 interface ShowEventProps {
   event: SelfieEvent;
@@ -149,7 +176,19 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   const eventid = event._id;
   const isOwner = user._id === event.uid ? true : false;
   const { reloadEvents, setReloadEvents } = useReload();
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
 
+
+  const handleLocationSelect = (value: string) => {
+    const selectedItem = locationSuggestions.find((item) => item.id === value);
+    if (selectedItem) {
+      handleInputChange('location', selectedItem.label);
+      handleGeoChange({
+        lat: selectedItem.lat,
+        lon: selectedItem.lon
+      });
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -174,6 +213,64 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
     };
   }, []);
 
+  const fetchLocationSuggestions = useDebouncedCallback(
+    async (query: string) => {
+      if (query.length > 3) {
+        try {
+          const response = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`,
+          );
+          const data = await response.json();
+
+          // Usa un Set per tenere traccia degli elementi unici
+          const uniqueItems = new Set();
+
+          const suggestions = data.features
+            .map((item: any) => {
+              const lat = item.geometry.coordinates[1];
+              const lon = item.geometry.coordinates[0];
+
+              // Usa street se c'è housenumber, altrimenti usa name
+              const primaryName = item.properties.housenumber
+                ? item.properties.street
+                : item.properties.name;
+
+              return {
+                label: [
+                  primaryName,
+                  item.properties.housenumber,
+                  item.properties.city,
+                  item.properties.county,
+                  item.properties.state,
+                ]
+                  .filter(Boolean)
+                  .join(", "),
+                value: primaryName,
+                lat,
+                lon,
+                id: `${primaryName}|${lat}|${lon}`, // Crea un ID unico
+              };
+            })
+            .filter((item: LocationSuggestion) => {
+              if (!uniqueItems.has(item.id)) {
+                uniqueItems.add(item.id);
+                return true;
+              }
+              return false;
+            });
+
+          console.log("suggestions: ", suggestions);
+          setLocationSuggestions(suggestions);
+        } catch (error) {
+          console.error("Error fetching location suggestions:", error);
+        }
+      } else {
+        setLocationSuggestions([]);
+      }
+    },
+    300,
+  );
+
   const handleEdit = () => {
     if (selectedEvent) {
       dispatch({ type: 'START_EDITING', payload: selectedEvent });
@@ -195,6 +292,10 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
     dispatch({ type: 'UPDATE_FIELD', payload: { field, value } });
   };
 
+  const handleGeoChange = (coordinates: Geo) => {
+    dispatch({ type: 'UPDATE_GEO', payload: coordinates });
+  }
+
   const handleDateRangeChange = (range: { start: Date; end: Date }) => {
     dispatch({ type: 'UPDATE_DATE_RANGE', payload: range });
   };
@@ -213,6 +314,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
         dtend: state.dateRange?.end || state.editedEvent.dtend,
       };
 
+      console.log("evento modificato: ", updatedEvent);
       const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
         method: "PATCH",
         headers: {
@@ -276,6 +378,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   }
 
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
+  console.log(displayEvent);
 
   if (!isOpen) return null;
 
@@ -340,13 +443,32 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                 isDisabled={!state.isEditing}
                 visibleMonths={2}
               />
-              <Input
-                isReadOnly={!state.isEditing}
-                label="Location"
-                value={displayEvent.location as string}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                className="mb-4"
-              />
+              <div>
+                <Autocomplete
+                  label="Luogo"
+                  placeholder={displayEvent?.location.toString()}
+                  items={locationSuggestions}
+                  isReadOnly={!state.isEditing}
+                  onInputChange={(value) => {
+                    handleInputChange("location", value);
+                    fetchLocationSuggestions(value);
+                  }}
+                  onSelectionChange={(value) => handleLocationSelect(value as string)}
+                  defaultFilter={(textValue, inputValue) => {
+                    const lowerCaseInput = inputValue.toLowerCase().trim();
+                    const searchWords = lowerCaseInput.split(/\s+/);
+                    return searchWords.every((word) =>
+                      textValue.toLowerCase().includes(word)
+                    );
+                  }}
+                >
+                  {(item: LocationSuggestion) => (
+                    <AutocompleteItem key={item.id} textValue={item.label}>
+                      {item.label}
+                    </AutocompleteItem>
+                  )}
+                </Autocomplete>
+              </div>
               <Input
                 isReadOnly={!state.isEditing}
                 label="Description"
