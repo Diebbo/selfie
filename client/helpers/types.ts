@@ -80,6 +80,23 @@ export type People = Person[];
 
 export type FrequencyType = "daily" | "weekly" | "monthly" | "yearly";
 
+export type DayType = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
+
+export type PositionType = -1 | 1 | 2 | 3 | 4 | 5;
+
+export interface RRule {
+  freq: FrequencyType;
+  interval: number;
+  until?: Date;
+  count?: number;
+  bymonth?: number;
+  bymonthday?: number;
+  byday?: Array<{
+    day: DayType;
+    position?: PositionType;
+  }>;
+}
+
 export interface SelfieEvent {
   title: String;
   summary: String;
@@ -87,12 +104,8 @@ export interface SelfieEvent {
   sequence: Number;
   status: String;
   transp: String;
-  rrule: {
-    freq: FrequencyType;
-    interval: Number;
-    bymonth: Number;
-    bymonthday: Number;
-  };
+  isRrule: boolean;
+  rrule: RRule;
   dtstart: Date;
   dtend: Date;
   dtstamp: String;

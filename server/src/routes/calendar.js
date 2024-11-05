@@ -118,6 +118,7 @@ function createCalendarRouter(db, sendNotification) {
 
     if (!isDodge) {
       var event = req.body.event;
+      console.log("event", event);
       if (!event)
         return res.status(400).json({ message: "Id dell'evento non fornito" });
     }

@@ -15,8 +15,8 @@ import { messageSchema } from "./models/chat-model.js";
 import createProjectService from "./services/projects.mjs";
 
 export async function createDataBase(uri) {
-  
-  
+
+
   // creating a model
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
@@ -72,7 +72,7 @@ export async function createDataBase(uri) {
       link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
     };
 
-    return { dbuser:res, payload };
+    return { dbuser: res, payload };
   };
 
   const updateUsername = async (uid, username) => {
@@ -687,6 +687,7 @@ export async function createDataBase(uri) {
         throw new Error("Event replace failed");
       }
 
+      console.log(replacedEvent);
       return { replacedEvent };
     } catch (e) {
       throw new Error("Event did not get changed: " + e.message);
@@ -904,7 +905,7 @@ export async function createDataBase(uri) {
     }
 
     activity.subActivities?.forEach((subActivity) => {
-      checkActivityFit({ startDate:activity.startDate, deadline:activity.dueDate }, subActivity);
+      checkActivityFit({ startDate: activity.startDate, deadline: activity.dueDate }, subActivity);
     });
   };
 

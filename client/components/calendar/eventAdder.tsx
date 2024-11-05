@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Modal,
@@ -29,6 +29,8 @@ import {
   FrequencyType,
   People,
   Person,
+  DayType,
+  RRule,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
@@ -80,12 +82,13 @@ const initialEvent = {
   description: "",
   URL: "",
   participants: [] as string[],
+  isRrule: false,
   rrule: {
     freq: "weekly" as FrequencyType,
     interval: 1,
-    bymonth: 1,
-    bymonthday: 1,
-  },
+    count: 1,
+    byday: [{ day: "MO" as DayType }],
+  } as RRule,
   notification: {
     title: "",
     description: "",
@@ -111,9 +114,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
-  const [locationSuggestions, setLocationSuggestions] = useState<
-    LocationSuggestion[]
-  >([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -288,26 +289,21 @@ const EventAdder: React.FC<EventAdderProps> = ({
       setEventData((prev) => ({
         ...prev,
         rrule: {
-          freq: "weekly" as FrequencyType,
+          freq: "weekly",
           interval: 1,
-          bymonth: 1,
-          bymonthday: 1,
+          count: 1,
+          byday: [{ day: "MO" as DayType }],
         },
       }));
     }
   };
 
-  const handleRruleChange = (frequency: FrequencyType) => {
+  const handleRruleChange = (newRrule: RRule) => {
     setEventData((prev) => ({
       ...prev,
-      rrule: {
-        ...prev.rrule,
-        freq: frequency,
-        interval: prev.rrule?.interval ?? 1,
-        bymonth: prev.rrule?.bymonth ?? 1,
-        bymonthday: prev.rrule?.bymonthday ?? 1,
-      },
+      rrule: newRrule,
     }));
+    console.log("newRrule", newRrule);
   };
 
   const handleParticipantSelect = (friend: Person) => {
@@ -350,20 +346,52 @@ const EventAdder: React.FC<EventAdderProps> = ({
     }
   };
 
+  const validateRrule = (rrule: RRule | undefined): boolean => {
+    if (!rrule) return true;
+
+    // Basic validation
+    if (!rrule.freq || rrule.interval < 1) return false;
+
+    // Validate count or until if present
+    if (rrule.count && rrule.count < 1) return false;
+    if (rrule.until && new Date(rrule.until) < new Date()) return false;
+
+    // Validate weekly frequency
+    if (rrule.freq === "weekly" && (!rrule.byday || rrule.byday.length === 0)) {
+      return false;
+    }
+
+    // Validate monthly frequency
+    if (rrule.freq === "monthly") {
+      // Must have either bymonthday or byday with position, not both
+      if (rrule.bymonthday && rrule.byday) return false;
+      if (!rrule.bymonthday && (!rrule.byday || !rrule.byday[0].position)) return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(isError, notificationError);
+
+    if (repeatEvent && !validateRrule(eventData.rrule)) {
+      console.error("Invalid recurrence rule");
+      return;
+    }
+
     if (!isError && !notificationError) {
       const newEvent: SelfieEvent = {
         ...eventData,
         sequence: 0,
+        isRrule: repeatEvent,
+        rrule: repeatEvent ? eventData.rrule : undefined,
         categories: eventData.categories || [],
         participants: eventData.participants || [],
         allDay: allDayEvent,
       } as SelfieEvent;
 
       try {
-        console.log("partecipanti ", newEvent.participants);
+        console.log("Saving event with rrule:", newEvent.rrule);
         const success = await createEvent(newEvent);
         if (success) {
           console.log("Event created successfully");
@@ -468,30 +496,15 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     isSelected={repeatEvent}
                     onValueChange={handleRepeatChange}
                   >
-                    Si ripete
+                    <span className="pl-2">
+                      Repeat
+                    </span>
                   </Switch>
                   <RepetitionMenu
                     value={repeatEvent}
-                    frequency={eventData.rrule?.freq}
+                    rrule={eventData.rrule}
                     isMobile={isMobile}
                     onChange={handleRruleChange}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                  <Input
-                    className={`${eventData.rrule?.freq ? "w-full sm:w-48" : "hidden"}`}
-                    label="Intervallo fra eventi"
-                    value={eventData.rrule?.interval.toString()}
-                  />
-                  <Input
-                    className={`${eventData.rrule?.freq === "monthly" ? "w-full sm:w-48" : "hidden"}`}
-                    label="Per giorno del mese"
-                    value={eventData.rrule?.bymonthday.toString()}
-                  />
-                  <Input
-                    className={`${eventData.rrule?.freq === "yearly" ? "w-full sm:w-48" : "hidden"}`}
-                    label="Per mese"
-                    value={eventData.rrule?.bymonth.toString()}
                   />
                 </div>
               </div>
