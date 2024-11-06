@@ -72,7 +72,7 @@ const TaskItem = ({ task, level, onAddSubtask, onEditTask, onTaskUpdate }: TaskI
             isIconOnly
             size="sm"
             variant="light"
-            onPress={() => onAddSubtask(task)}
+            onPress={() => { if (onAddSubtask) onAddSubtask(task) }}
             aria-label="Add subtask"
           >
             <Plus className="w-4 h-4" />
@@ -144,13 +144,14 @@ const Content = (props: TaskContentProps) => {
     let fetchedTask: TaskResponse;
 
     try {
-      startTransition(async () => {
-        if (selectedParentTask) {
-          fetchedTask = await saveTaskInParent(updatedTask, selectedParentTask);
+      if (selectedParentTask) {
+        fetchedTask = await saveTaskInParent(updatedTask, selectedParentTask);
 
-          if (!fetchedTask.success) {
-            throw new Error(fetchedTask.message);
-          }
+        if (!fetchedTask.success) {
+          throw new Error(fetchedTask.message);
+        }
+
+        startTransition(() => {
           setTasks((prevTasks) => {
             return prevTasks.map((task) => {
               if (task._id === selectedParentTask._id) {
@@ -159,12 +160,14 @@ const Content = (props: TaskContentProps) => {
               return task;
             });
           });
+        });
 
-        } else {
-          fetchedTask = await saveTask(updatedTask);
-          if (!fetchedTask.success) {
-            throw new Error(fetchedTask.message);
-          }
+      } else {
+        fetchedTask = await saveTask(updatedTask);
+        if (!fetchedTask.success) {
+          throw new Error(fetchedTask.message);
+        }
+        startTransition(() => {
           setTasks((prevTasks) => {
             return prevTasks.map((task) => {
               if (task._id === fetchedTask.activity._id) {
@@ -173,8 +176,8 @@ const Content = (props: TaskContentProps) => {
               return task;
             });
           });
-        }
-      });
+        });
+      }
       // Update the local state with the new tasks
 
       handleCloseModal();
