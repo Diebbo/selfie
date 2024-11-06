@@ -151,11 +151,12 @@ export interface Song {
 */
 
 export interface TaskModel {
+  _id: string;
   name: string;
   dueDate: Date;
   completed: boolean;
-  participants: any[]; // id array of users
-  subActivity: any; // Assuming subActivities are references to other Activities
+  participants: string[]; // Usernames
+  subActivities: TaskModel[];
   uid: string; // User ID
   parentId?: any; // You might want to define this more specifically based on your needs
 }
