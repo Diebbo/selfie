@@ -13,7 +13,6 @@ const notificationSchema = new mongoose.Schema({
 
 const subActivitySchema = new mongoose.Schema({
   name: String,
-  startDate: Date,
   dueDate: Date,
   description: String,
   completed: {
@@ -33,31 +32,42 @@ const subActivitySchema = new mongoose.Schema({
 });
 
 const activitySchema = new mongoose.Schema({
-  name: String,
-  startDate: {
-    type: Date,
-    required: false,
+  name: {
+    type: String,
+    required: true,
   },
-  dueDate: Date,
+  dueDate: {
+    type: Date,
+    required: true,
+  },
   completed: {
     type: Boolean,
     default: false,
   },
   //notifiche per attività
   notification: notificationSchema,
-  participants: [
-    // usernames
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Users",
-    },
-  ],
-  subActivities: [subActivitySchema],
+  participants: {
+    type: [
+      // usernames
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+    ],
+    default: [],
+  },
+  subActivities: {
+    type: [subActivitySchema],
+    default: [],
+  },
   uid: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users",
   },
-  description: String,
+  description: {
+    type: String,
+    default: "",
+  },
 });
 
 const eventSchema = new mongoose.Schema({
