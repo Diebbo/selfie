@@ -1279,6 +1279,7 @@ export async function createDataBase(uri) {
       throw new Error("Activity must have a dueDate");
     }
 
+    if (!activity.participants) activity.participants = [];
     activity.participants?.push(user.username);
 
     const users = await userModel.find({

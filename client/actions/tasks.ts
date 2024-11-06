@@ -9,6 +9,14 @@ interface TaskResponse {
   message: string;
 }
 
+const defaultTask: TaskModel = {
+  name: "",
+  dueDate: new Date(),
+  completed: false,
+  participants: [],
+  subActivity: []
+};
+
 export async function getTasks(): Promise<TaskResponse> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
@@ -43,13 +51,15 @@ export async function addTaskToParent(task: Partial<TaskModel>, parent: TaskMode
     throw new Error("Not authenticated");
   }
 
+  let fetchTask = { ...defaultTask, ...task };
+
   const res = await fetch(`${getBaseUrl()}/api/activities?parent=${parent._id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       'Cookie': `token=${token.toString()}`,
     },
-    body: JSON.stringify({ activity: task }),
+    body: JSON.stringify({ activity: fetchTask }),
   });
 
   if (!res.ok) {
@@ -67,13 +77,15 @@ export async function addTask(task: Partial<TaskModel>): Promise<{activity:TaskM
     throw new Error("Not authenticated");
   }
 
+  let fetchTask = { ...defaultTask, ...task };
+
   const res = await fetch(`${getBaseUrl()}/api/activities`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       'Cookie': `token=${token.toString()}`,
     },
-    body: JSON.stringify({ activity: task }),
+    body: JSON.stringify({ activity: fetchTask }),
   });
 
   if (!res.ok) {
