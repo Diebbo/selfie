@@ -5,8 +5,6 @@ export async function getWeather(position: {
 }) {
   const API_KEY = process.env.WEATHER_API;
 
-  console.log("PRINTING");
-
   const currentWeatherResponse = await fetch(
     `https://api.openweathermap.org/data/2.5/weather?lat=${position.latitude}&lon=${position.longitude}&units=metric&appid=${API_KEY}&lang=it`,
   );
