@@ -253,7 +253,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
             ...prev,
             notification: {
               ...prev.notification,
-              fromDate: new Date(value).toISOString(),
+              fromDate: new Date(value),
             },
           };
         }
