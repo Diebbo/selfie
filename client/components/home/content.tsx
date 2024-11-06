@@ -4,8 +4,9 @@ import dynamic from "next/dynamic";
 import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
-import { Link, Button, Spinner, Modal, ModalBody, ModalHeader } from "@nextui-org/react";
+import { Link, Button } from "@nextui-org/react";
 import NextLink from "next/link";
+import { useTime } from "../contexts/TimeContext";
 
 import {
   PomodoroStats,
@@ -16,14 +17,12 @@ import {
 } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
-// import { useGeolocation } from "@/helpers/useGeolocation";
 import { PomodoroStatistics } from "./pomodoro-stats";
 import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
 import { ReactJSXElement } from "@emotion/react/types/jsx-namespace";
 import { useRouter } from "next/navigation";
-import { TurtleIcon } from "lucide-react";
 
 interface UserEvents {
   created: SelfieEvent[];
@@ -41,60 +40,21 @@ interface ContentProps {
 
 export const Content = (props: ContentProps): ReactJSXElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("today");
-  //const { position, error } = useGeolocation();
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">(
+    "today",
+  );
   const [user, setUser] = useState<Person>(props.user);
-  const [isLoaded, setIsLoaded] = useState(true);
-  const [events, setEvents] = useState<UserEvents | null>(props.user.events);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
+  const { currentTime } = useTime();
   const router = useRouter();
 
-
- /*
-  useEffect(() => {
-    if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            ({ coords }) => {
-                const { latitude, longitude } = coords;
-                setPosition({ latitude, longitude });
-                sendPositionToServer({latitude, longitude });
-            },
-        );
-    }
-}, []);
-
-
-  const sendPositionToServer = async (position: {
-    latitude: number;
-    longitude: number;
-  }) => {
-    try {
-      console.log("Sending position to server:", position);
-      const response = await fetch("/api/users/gps", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(position),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update position");
-      }
-
-      console.log("Position updated successfully");
-    } catch (error) {
-      console.error("Error updating position:", error);
-    }
-  };
-*/
   const filterEvents = (
     events: SelfieEvent[],
     filter: "today" | "week" | "all",
   ) => {
     if (!Array.isArray(events)) return [];
 
-    const today = new Date();
+    const today = new Date(currentTime);
     today.setHours(0, 0, 0, 0); // Imposta l'ora a mezzanotte
 
     const weekEnd = new Date(today);
@@ -130,26 +90,6 @@ export const Content = (props: ContentProps): ReactJSXElement => {
       }
     });
   };
-
-  /*const renderSpinner = () => {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Spinner />
-      </div>
-    );
-  }
-  if (!isLoaded) return renderSpinner();
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-full">
-          <p className="text-danger">Failed to fetch user data</p>
-      </div>
-    );
-  }
-
-  if (!events || !friends || !user) return renderSpinner();*/
-  
 
   return (
     <div className="h-full lg:px-6">
@@ -203,12 +143,12 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                       ? user.events.created
                       : user.events.participating,
                   ) &&
-                    filterEvents(
-                      eventType === "your"
-                        ? user.events.created
-                        : user.events.participating,
-                      timeFilter,
-                    ).length > 0 ? (
+                  filterEvents(
+                    eventType === "your"
+                      ? user.events.created
+                      : user.events.participating,
+                    timeFilter,
+                  ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
                         ? user.events.created
@@ -226,7 +166,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
               </div>
             </div>
 
-              <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
               <div className="bg-default-100 shadow-lg rounded-2xl p-4 h-[500px] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-semibold text-foreground-900">
@@ -246,8 +186,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                     {user.notes && user.notes.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {user.notes
-                          ?.sort((a: NoteModel, b: NoteModel) => 
-                            new Date(b.date!).getTime() - new Date(a.date!).getTime()
+                          ?.sort(
+                            (a: NoteModel, b: NoteModel) =>
+                              new Date(b.date!).getTime() -
+                              new Date(a.date!).getTime(),
                           )
                           .map((note) => (
                             <NoteCard
@@ -262,8 +204,12 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <p className="text-xl font-medium mb-2">Nessuna nota disponibile</p>
-                        <p className="text-sm">Crea una nuova nota per iniziare</p>
+                        <p className="text-xl font-medium mb-2">
+                          Nessuna nota disponibile
+                        </p>
+                        <p className="text-sm">
+                          Crea una nuova nota per iniziare
+                        </p>
                       </div>
                     )}
                   </div>
@@ -287,13 +233,12 @@ export const Content = (props: ContentProps): ReactJSXElement => {
             </div>
             <ProjectTable projects={user.projects} creator={user} />
           </div>
-
         </div>
 
         {/* Left Section */}
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
           <WeatherCard position={user.position} />
-          
+
           <div className="grid grid-cols-1 mt-1 max-w-[500px]">
             <PomodoroStatistics stats={user.pomodoro} />
           </div>
@@ -309,9 +254,8 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           </div>
         </div>
       </div>
-      
 
-      { /* position && (
+      {/* position && (
          <div className="mt-4 p-4 bg-default-100 rounded-lg">
            <h3 className="text-xl font-semibold mb-2">Current Location</h3>
            <p>Latitude: {position.latitude}</p>

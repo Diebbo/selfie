@@ -56,7 +56,7 @@ export async function resetTime() {
   return await response.json();
 }
 
-// NOW for testing purposes
+// Get time from db
 export async function getCurrentTime() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
