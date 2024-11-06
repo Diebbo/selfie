@@ -7,96 +7,7 @@ import { People, Person, TaskModel } from "@/helpers/types";
 import { Circle, ChevronDown, ChevronRight, Edit } from "lucide-react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Checkbox, Button } from "@nextui-org/react";
 import { TaskResponse } from "@/helpers/api-types";
-
-interface TaskItemProps {
-  task: TaskModel;
-  level: number;
-  onAddSubtask: null | ((task: TaskModel) => void);
-  onEditTask: (task: TaskModel) => void;
-  onTaskUpdate: (task: TaskModel) => void;
-}
-
-const TaskItem = ({ task, level, onAddSubtask, onEditTask, onTaskUpdate }: TaskItemProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const hasSubTasks = task.subActivities && task.subActivities.length > 0;
-
-  const handleStatusChange = () => {
-    onTaskUpdate({ ...task, completed: !task.completed });
-  };
-
-  return (
-    <div className="w-full">
-      <div
-        className="flex items-center gap-2 p-2 hover:bg-primary rounded-lg group"
-        style={{ paddingLeft: `${level * 1.5}rem` }}
-      >
-        {hasSubTasks ? (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-gray-200 rounded-full"
-            aria-label={isExpanded ? "Collapse task" : "Expand task"}
-          >
-            {isExpanded ?
-              <ChevronDown className="w-4 h-4 text-gray-500" /> :
-              <ChevronRight className="w-4 h-4 text-gray-500" />
-            }
-          </button>
-        ) : (
-          <div className="w-6" aria-hidden="true" />
-        )}
-
-        <button
-          onClick={handleStatusChange}
-          className="flex items-center"
-          aria-label={`Mark task ${task.completed ? 'incomplete' : 'complete'}`}
-        >
-          <Circle
-            className="w-4 h-4 text-blue-500"
-            fill={task.completed ? "currentColor" : "none"}
-          />
-        </button>
-
-        <span className="text-sm flex-grow">{task.name}</span>
-
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            onPress={() => onEditTask(task)}
-            aria-label="Edit task"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            onPress={() => { if (onAddSubtask) onAddSubtask(task) }}
-            aria-label="Add subtask"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      {hasSubTasks && isExpanded && (
-        <div className="w-full">
-          {task.subActivities.map((subtask) => (
-            <TaskItem
-              key={subtask._id}
-              task={subtask}
-              level={level + 1}
-              onAddSubtask={onAddSubtask}
-              onEditTask={onEditTask}
-              onTaskUpdate={onTaskUpdate}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+import TaskItem from "./taskItem";
 
 interface TaskContentProps {
   tasks: TaskModel[];
@@ -250,18 +161,18 @@ const Content = (props: TaskContentProps) => {
     <>
       <div className="flex items-center justify-between m-4 p-4 bg-primary-50 rounded-lg">
         {error && (
-          <div className="bg-red-50 text-red-600 p-2 mb-4 rounded">
+          <div className="bg-red-50 text-danger p-2 mb-4 rounded">
             {error}
           </div>
         )}
 
 
-        <div className="flex items-start flex-wrap flex-row gap-2 w-full">
+        <div className="flex items-start flex-col gap-2 w-full">
           {
             tasks.length > 0 ? (
               <>
                 {tasks.filter((task) => task.completed).length > 0 && (
-                  <div className="min-w-[200px]" id="done">
+                  <div className="min-w-[200px] w-full border-2 rounded-lg border-solid border-primary p-3" id="done">
                     <h2 className="text-lg font-semibold text-primary">Done</h2>
                     <div className="flex flex-col gap-2">
                       {tasks.filter((task) => task.completed).map((task) => (
@@ -278,8 +189,8 @@ const Content = (props: TaskContentProps) => {
                   </div>
                 )}
                 {tasks.filter((task) => !task.completed).length > 0 && (
-                  <div className="min-w-[200px]" id="done">
-                    <h2 className="text-lg font-semibold text-primary">To Do</h2>
+                  <div className="min-w-[200px] w-full border-2 rounded-lg border-solid border-warning p-3" id="todo">
+                    <h2 className="text-lg font-semibold text-warning">To Do</h2>
                     <div className="flex flex-col gap-2">
                       {tasks.filter((task) => !task.completed).map((task) => (
                         <TaskItem
