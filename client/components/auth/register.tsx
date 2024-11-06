@@ -197,7 +197,7 @@ export const Register = () => {
             )}
 
             {error && (
-              <div className="font-bold text-slate-400 mt-4 text-sm text-red-500">
+              <div className="font-bold mt-4 text-sm text-red-500">
                 {error}
               </div>
             )}

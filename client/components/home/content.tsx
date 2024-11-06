@@ -138,7 +138,6 @@ export const Content = (props: ContentProps): ReactJSXElement => {
       </div>
     );
   }
-
   if (!isLoaded) return renderSpinner();
 
   if (error) {
@@ -293,7 +292,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
 
         {/* Left Section */}
         <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
-          {/*<WeatherCard position={position} />*/}
+          <WeatherCard position={user.position} />
           
           <div className="grid grid-cols-1 mt-1 max-w-[500px]">
             <PomodoroStatistics stats={user.pomodoro} />

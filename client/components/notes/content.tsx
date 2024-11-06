@@ -230,11 +230,11 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex" style={{ height: "calc(100vh - 4rem)" }}>
       {/* Sidebar */}
       {(!uiState.isMobileView ||
         (!uiState.showNoteList && !uiState.showNoteForm)) && (
-        <div className={`${uiState.isMobileView ? "w-full" : "w-64"}`}>
+        <div className={`${uiState.isMobileView ? "w-full" : "w-64"} overflow-scroll`}>
           <NotesSidebar
             notes={notes}
             searchQuery={uiState.searchQuery}
@@ -251,7 +251,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       {(!uiState.isMobileView ||
         uiState.showNoteList ||
         uiState.showNoteForm) && (
-        <main className={`${uiState.isMobileView ? "w-full" : "flex-1"} p-4`}>
+        <div className={`${uiState.isMobileView ? "w-full" : "flex-1"} p-4 overflow-scroll`}>
           {uiState.showNoteList ? (
             <NotesList
               notes={notes}
@@ -277,7 +277,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
               isMobileView={uiState.isMobileView}
             />
           ) : null}
-        </main>
+        </div>
       )}
     </div>
   );
