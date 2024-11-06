@@ -17,6 +17,7 @@ function createActivityRouter(db) {
     try {
       result = await db.createActivity(uid, activity, parentId);
     } catch (e) {
+      console.log(e);
       return res.status(400).json({ message: e.message });
     }
     res.status(200).json({ message: "Activity has been Added Succesfully", activity: result });

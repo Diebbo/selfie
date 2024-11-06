@@ -1,4 +1,3 @@
-// Componente Content aggiornato
 'use client';
 
 import { addTask, addTaskToParent, saveTask, saveTaskInParent } from "@/actions/tasks";
@@ -82,9 +81,9 @@ const TaskItem = ({ task, level, onAddSubtask, onEditTask, onTaskUpdate }: TaskI
 
       {hasSubTasks && isExpanded && (
         <div className="w-full">
-          {task.subActivity.map((subtask, index) => (
+          {task.subActivities.map((subtask) => (
             <TaskItem
-              key={subtask.uid || `subtask-${index}`}
+              key={subtask._id}
               task={subtask}
               level={level + 1}
               onAddSubtask={onAddSubtask}
@@ -112,228 +111,240 @@ const Content = (props: TaskContentProps) => {
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [name, setName] = useState("");
-  const [dueDate, setDueDate] = useState(new Date());
-  const [completed, setCompleted] = useState(false);
+  const [formTask, setFormTask] = useState<Partial<TaskModel>>({
+    _id: "",
+    name: "",
+    description: "",
+    dueDate: new Date(),
+    completed: false,
+    participants: [],
+    subActivity: [],
+  });
 
-  const resetForm = () => {
-    setName("");
-    setDueDate(new Date());
-    setCompleted(false);
-    setSelectedTask(null);
-    setSelectedParentTask(null);
-  };
+const resetForm = () => {
+  setSelectedTask(null);
+  setSelectedParentTask(null);
+};
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    resetForm();
-    setError(null);
-  };
+const handleCloseModal = () => {
+  setIsModalOpen(false);
+  resetForm();
+  setError(null);
+};
 
-  const handleEditTask = (task: TaskModel) => {
-    setSelectedTask(task);
-    setName(task.name);
-    setDueDate(task.dueDate || new Date());
-    setCompleted(task.completed);
-    setIsModalOpen(true);
-  };
+const handleEditTask = (task: TaskModel) => {
+  setSelectedTask(task);
+  setFormTask(task);
+  setIsModalOpen(true);
+};
 
-  const handleTaskUpdate = async (updatedTask: TaskModel) => {
-    setError(null);
+const handleTaskUpdate = async (updatedTask: TaskModel) => {
+  setError(null);
+  let fetchedTask: TaskModel;
 
-    try {
-      startTransition(async () => {
-        if (selectedParentTask) {
-          await saveTaskInParent(updatedTask, selectedParentTask);
-        } else {
-          await saveTask(updatedTask);
-        }
-      });
-      handleCloseModal();
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to save task";
-      setError(errorMessage);
-      console.error("Error saving task:", error);
-      return false;
-    }
-  };
-
-  const handleAddTask = async (newTask: Partial<TaskModel>) => {
-    setError(null);
-    try {
-      // Perform the actual server update
-      startTransition(async () => {
-        if (selectedParentTask) {
-          await addTaskToParent(newTask, selectedParentTask);
-        } else {
-          await addTask(newTask);
-        }
-      });
-
-      handleCloseModal();
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to save task";
-      setError(errorMessage);
-      console.error("Error saving task:", error);
-      return false;
-    }
-  };
-
-  const handleAddSubtask = (parentTask: TaskModel) => {
-    setSelectedParentTask(parentTask);
-    setIsModalOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) return;
-
-    const taskData: Partial<TaskModel> = {
-      name,
-      dueDate: dueDate,
-      completed
-    };
-
-    if (selectedTask) {
-      await handleTaskUpdate({ ...selectedTask, ...taskData });
-    } else {
-      await handleAddTask(taskData);
-    }
-  };
-
-  return (
-    <>
-      <div className="flex items-center justify-between m-4 p-4 bg-primary-50 rounded-lg">
-        {error && (
-          <div className="bg-red-50 text-red-600 p-2 mb-4 rounded">
-            {error}
-          </div>
-        )}
-
-
-        <div className="flex items-start flex-wrap flex-row gap-2 w-full">
-          {
-            tasks.length > 0 ? (
-              <>
-                <div className="min-w-[200px]" id="done">
-                  <h2 className="text-lg font-semibold text-primary">Done</h2>
-                  <div className="flex flex-col gap-2">
-                    {tasks.filter((task) => task.completed).map((task) => (
-                      <TaskItem
-                        key={task._id}
-                        task={task}
-                        level={0}
-                        onAddSubtask={handleAddSubtask}
-                        onEditTask={handleEditTask}
-                        onTaskUpdate={handleTaskUpdate}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="min-w-[200px]" id="done">
-                  <h2 className="text-lg font-semibold text-primary">To Do</h2>
-                  <div className="flex flex-col gap-2">
-                    {tasks.filter((task) => !task.completed).map((task) => (
-                      <TaskItem
-                        key={task._id}
-                        task={task}
-                        level={0}
-                        onAddSubtask={handleAddSubtask}
-                        onEditTask={handleEditTask}
-                        onTaskUpdate={handleTaskUpdate}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-center text-warning py-8" role="status">
-                Nessuna attività
-              </div>
-            )
-          }
-        </div>
-        <Button
-          isIconOnly
-          color="primary"
-          size="lg"
-          className="fixed rounded-[100px] bottom-6 right-6"
-          onPress={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          aria-label="Add new task"
-          isDisabled={isPending}
-        >
-          <Plus />
-        </Button>
-      </div>
-
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        isDismissable={!isPending}
-      >
-        <ModalContent>
-          <ModalHeader>
-            {selectedTask
-              ? "Modifica attività"
-              : selectedParentTask
-                ? `Aggiungi sotto-attività a "${selectedParentTask.name}"`
-                : "Crea nuova attività"
+  try {
+    startTransition(async () => {
+      if (selectedParentTask) {
+        fetchedTask = await saveTaskInParent(updatedTask, selectedParentTask);
+        setTasks((prevTasks) => {
+          return prevTasks.map((task) => {
+            if (task._id === selectedParentTask._id) {
+              return fetchedTask;
             }
-          </ModalHeader>
-          <ModalBody>
-            <div className="flex flex-col gap-4">
-              <Input
-                label="Nome attività"
-                placeholder="Inserisci il nome"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isPending}
-                required
-              />
-              <Input
-                type="date"
-                label="Data di scadenza"
-                typeof="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                disabled={isPending}
-                required
-              />
-              <Checkbox
-                isSelected={completed}
-                onValueChange={setCompleted}
-                disabled={isPending}
-              >
-                Completata
-              </Checkbox>
+            return task;
+          });
+        });
+
+      } else {
+        fetchedTask = await saveTask(updatedTask);
+        setTasks((prevTasks) => {
+          return prevTasks.map((task) => {
+            if (task._id === fetchedTask._id) {
+              return fetchedTask;
+            }
+            return task;
+          });
+        });
+      }
+    });
+    // Update the local state with the new tasks
+
+    handleCloseModal();
+    return true;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to save task";
+    setError(errorMessage);
+    console.error("Error saving task:", error);
+    return false;
+  }
+};
+
+const handleAddTask = async (newTask: Partial<TaskModel>) => {
+  setError(null);
+  try {
+    // Perform the actual server update
+    startTransition(async () => {
+      if (selectedParentTask) {
+        await addTaskToParent(newTask, selectedParentTask);
+      } else {
+        await addTask(newTask);
+      }
+    });
+
+    handleCloseModal();
+    return true;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to save task";
+    setError(errorMessage);
+    console.error("Error saving task:", error);
+    return false;
+  }
+};
+
+const handleAddSubtask = (parentTask: TaskModel) => {
+  setSelectedParentTask(parentTask);
+  setIsModalOpen(true);
+};
+
+const handleSave = async () => {
+  if (selectedTask) {
+    await handleTaskUpdate({ ...selectedTask, ...formTask });
+  } else {
+    await handleAddTask(formTask);
+  }
+};
+
+return (
+  <>
+    <div className="flex items-center justify-between m-4 p-4 bg-primary-50 rounded-lg">
+      {error && (
+        <div className="bg-red-50 text-red-600 p-2 mb-4 rounded">
+          {error}
+        </div>
+      )}
+
+
+      <div className="flex items-start flex-wrap flex-row gap-2 w-full">
+        {
+          tasks.length > 0 ? (
+            <>
+              <div className="min-w-[200px]" id="done">
+                <h2 className="text-lg font-semibold text-primary">Done</h2>
+                <div className="flex flex-col gap-2">
+                  {tasks.filter((task) => task.completed).map((task) => (
+                    <TaskItem
+                      key={task._id}
+                      task={task}
+                      level={0}
+                      onAddSubtask={handleAddSubtask}
+                      onEditTask={handleEditTask}
+                      onTaskUpdate={handleTaskUpdate}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="min-w-[200px]" id="done">
+                <h2 className="text-lg font-semibold text-primary">To Do</h2>
+                <div className="flex flex-col gap-2">
+                  {tasks.filter((task) => !task.completed).map((task) => (
+                    <TaskItem
+                      key={task._id}
+                      task={task}
+                      level={0}
+                      onAddSubtask={handleAddSubtask}
+                      onEditTask={handleEditTask}
+                      onTaskUpdate={handleTaskUpdate}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-warning py-8" role="status">
+              Nessuna attività
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              color="danger"
-              variant="light"
-              onPress={handleCloseModal}
-              isDisabled={isPending}
+          )
+        }
+      </div>
+      <Button
+        isIconOnly
+        color="primary"
+        size="lg"
+        className="fixed rounded-[100px] bottom-6 right-6"
+        onPress={() => {
+          resetForm();
+          setIsModalOpen(true);
+        }}
+        aria-label="Add new task"
+        isDisabled={isPending}
+      >
+        <Plus />
+      </Button>
+    </div>
+
+    <Modal
+      isOpen={isModalOpen}
+      onClose={handleCloseModal}
+      isDismissable={!isPending}
+    >
+      <ModalContent>
+        <ModalHeader>
+          {selectedTask
+            ? "Modifica attività"
+            : selectedParentTask
+              ? `Aggiungi sotto-attività a "${selectedParentTask.name}"`
+              : "Crea nuova attività"
+          }
+        </ModalHeader>
+        <ModalBody>
+          <div className="flex flex-col gap-4">
+            <Input
+              label="Nome attività"
+              placeholder="Inserisci il nome"
+              value={formTask.name || ""}
+              onChange={(e) => setFormTask({ ...formTask, name: e.target.value })}
+              disabled={isPending}
+              required
+            />
+            <Input
+              type="date"
+              label="Data di scadenza"
+              typeof="date"
+              value={formTask.dueDate?.toISOString().split('T')[0]}
+              onChange={(e) => setFormTask({ ...formTask, dueDate: new Date(e.target.value) })}
+              disabled={isPending}
+            />
+            <Checkbox
+              isSelected={formTask.completed}
+              onChange={() => setFormTask({ ...formTask, completed: !formTask.completed })}
+              disabled={isPending}
             >
-              Annulla
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleSave}
-              isLoading={isPending}
-              isDisabled={!name.trim() || isPending}
-            >
-              Salva
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
-  );
+              Completata
+            </Checkbox>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            color="danger"
+            variant="light"
+            onPress={handleCloseModal}
+            isDisabled={isPending}
+          >
+            Annulla
+          </Button>
+          <Button
+            color="primary"
+            onPress={handleSave}
+            isLoading={isPending}
+            isDisabled={!formTask.name || !formTask.dueDate}
+          >
+            Salva
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  </>
+);
 };
 
 export default Content;
