@@ -6,6 +6,7 @@ import { RegisterFormType, RegisterType } from "@/helpers/types";
 import { Button, Input } from "@nextui-org/react";
 import { Formik } from "formik";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import Stepper from "@/components/stepper/stepper";
 
@@ -17,18 +18,18 @@ export const Register = () => {
   const steps = ["Account", "Personal Info", "Address"];
 
   const initialValues: RegisterFormType = {
-    name: "user",
-    surname: "user",
-    email: "test@gmail.com",
-    password: "usersss",
-    confirmPassword: "usersss",
-    country: "India",
-    zip: "123456",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    address: "123, 4th street, Chennai",
-    phoneNumber: "1234567890",
-    username: "admin",
+    name: "",
+    surname: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    country: "Italia",
+    zip: "40133",
+    city: "Bologna",
+    state: "Emilia Romagna",
+    address: "",
+    phoneNumber: "",
+    username: "",
     birthDate: new Date(),
   };
 
@@ -80,6 +81,7 @@ export const Register = () => {
                     isInvalid={!!errors.name && !!touched.name}
                     errorMessage={errors.name}
                     onChange={handleChange("name")}
+                    required
                   />
                   <Input
                     variant="bordered"
@@ -88,6 +90,7 @@ export const Register = () => {
                     isInvalid={!!errors.surname && !!touched.surname}
                     errorMessage={errors.surname}
                     onChange={handleChange("surname")}
+                    required
                   />
                 </div>
                 <Input
@@ -97,6 +100,7 @@ export const Register = () => {
                   isInvalid={!!errors.username && !!touched.username}
                   errorMessage={errors.username}
                   onChange={handleChange("username")}
+                  required
                 />
                 <Input
                   variant="bordered"
@@ -106,6 +110,7 @@ export const Register = () => {
                   isInvalid={!!errors.email && !!touched.email}
                   errorMessage={errors.email}
                   onChange={handleChange("email")}
+                  required
                 />
               </div>
             )}
@@ -232,7 +237,8 @@ export const Register = () => {
         <Button
           variant="flat"
           color="secondary"
-          onPress={() => router.push("/login")}
+          as={Link}
+          href="/login"
         >
           Already have an account? <b>Login</b>
         </Button>
