@@ -1279,8 +1279,7 @@ export async function createDataBase(uri) {
       throw new Error("Activity must have a dueDate");
     }
 
-    if (!activity.participants) activity.participants = [];
-    activity.participants?.push(user.username);
+    /* activity.participants = [user.username];
 
     const users = await userModel.find({
       username: { $in: activity.participants },
@@ -1293,8 +1292,10 @@ export async function createDataBase(uri) {
     activity.participants = activity.participants.map((part) =>
       users.find((user) => user.username === part)._id.toString(),
     );
+    */
 
     if (!parentId) {
+      console.log("Creating new activity", activity);
       const addedActivity = await activityModel.create({
         ...activity,
         uid: uid,
@@ -1322,7 +1323,8 @@ export async function createDataBase(uri) {
 
     await parentActivity.save();
 
-    return await getUsernameForActivity(parentActivity);
+    return parentActivity;
+    //return await getUsernameForActivity(parentActivity);
   };
 
   const getUsernameForActivity = async (activity) => {
@@ -1350,7 +1352,7 @@ export async function createDataBase(uri) {
 
     let activities = await activityModel.find({ uid: uid });
     // for each activiteis, get the participants and subactivities
-    activities = await getUsernameForActivities(activities);
+    // activities = await getUsernameForActivities(activities);
 
     return activities;
   };
@@ -1380,12 +1382,14 @@ export async function createDataBase(uri) {
     const oldActivity = await activityModel.find({ _id: activityId, uid: uid });
     if (!oldActivity) throw new Error("Old Activity not found");
 
-    const replacedActivity = await activityModel.replaceOne(
-      { _id: activityId },
-      { activity }
+    activity.participants = undefined;
+
+    await activityModel.updateOne(
+      { _id: activityId, uid: uid },
+      { ...activity, uid: uid },
     );
 
-    return replacedActivity;
+    return await activityModel.findById(activityId)?.lean();
   };
 
   const chatService = {
