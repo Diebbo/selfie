@@ -17,10 +17,9 @@ import { Clock } from "./Clock";
 
 interface Props {
   children: React.ReactNode;
-  currentTime: Date;
 }
 
-export const NavbarWrapper = ({ children, currentTime }: Props) => {
+export const NavbarWrapper = ({ children }: Props) => {
   return (
     <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
       <Navbar
@@ -38,7 +37,7 @@ export const NavbarWrapper = ({ children, currentTime }: Props) => {
         </NavbarContent>
 
         <NavbarContent justify="end" className="">
-          <Clock currentTime={currentTime} />
+          <Clock />
         </NavbarContent>
 
         <NavbarContent

@@ -1,32 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@nextui-org/react";
 import TimeModifierClient from "@/components/timemachine/content";
-import {
-  changeCurrentTime,
-  resetTime,
-} from "@/actions/setTime";
+import { changeCurrentTime, resetTime } from "@/actions/setTime";
 
-interface ClockProps {
-  currentTime: Date;
-}
+import { useTime } from "../contexts/TimeContext";
 
-export const Clock = ({ currentTime }: ClockProps) => {
-  const [time, setTime] = useState<Date | null>(new Date(currentTime));
+export const Clock = () => {
+  const { currentTime: time, setCurrentTime } = useTime();
   const [isOpen, setIsOpen] = useState(false);
 
   // Update the timer every second
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime((prevTime) => {
-        if (prevTime) {
-          return new Date(prevTime.getTime() + 1000);
-        }
-        return prevTime;
-      });
+      setCurrentTime((prevTime: Date) => new Date(prevTime.getTime() + 1000));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen]);
+  }, []);
 
   if (!time) {
     return <div>Loading...</div>;
@@ -36,7 +26,7 @@ export const Clock = ({ currentTime }: ClockProps) => {
     const time = formData.get("time") as string;
     try {
       await changeCurrentTime(new Date(time));
-      setTime(new Date(time));
+      setCurrentTime(new Date(time));
       return { success: true };
     } catch (error: any) {
       console.log(error);
@@ -47,7 +37,7 @@ export const Clock = ({ currentTime }: ClockProps) => {
   const handleTimeReset = async () => {
     try {
       await resetTime();
-      setTime(new Date());
+      setCurrentTime(new Date());
       return { success: true };
     } catch (error: any) {
       console.log(error);
