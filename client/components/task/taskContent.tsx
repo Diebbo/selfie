@@ -114,15 +114,17 @@ const Content = (props: TaskContentProps) => {
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [formTask, setFormTask] = useState<Partial<TaskModel>>({
+  const defaultState = {
     name: "",
     dueDate: props.currentDate || new Date(),
     completed: false,
-  });
+  };
+  const [formTask, setFormTask] = useState<Partial<TaskModel>>(defaultState);
 
   const resetForm = () => {
     setSelectedTask(null);
     setSelectedParentTask(null);
+    setFormTask(defaultState);
   };
 
   const handleCloseModal = () => {
@@ -188,14 +190,16 @@ const Content = (props: TaskContentProps) => {
   const handleAddTask = async (newTask: Partial<TaskModel>) => {
     setError(null);
     let fetchedTask: TaskResponse;
+
     try {
-      // Perform the actual server update
-      startTransition(async () => {
-        if (selectedParentTask) {
-          fetchedTask = await addTaskToParent(newTask, selectedParentTask);
-          if (!fetchedTask.success) {
-            throw new Error(fetchedTask.message);
-          }
+      // Wrap the state updates in startTransition, but keep the async operations outside
+      if (selectedParentTask) {
+        fetchedTask = await addTaskToParent(newTask, selectedParentTask);
+        if (!fetchedTask.success) {
+          throw new Error(fetchedTask.message);
+        }
+
+        startTransition(() => {
           setTasks((prevTasks) => {
             return prevTasks.map((task) => {
               if (task._id === selectedParentTask._id) {
@@ -204,16 +208,17 @@ const Content = (props: TaskContentProps) => {
               return task;
             });
           });
-        } else {
-          fetchedTask = await addTask(newTask);
-          if (!fetchedTask.success) {
-            throw new Error(fetchedTask.message);
-          }
-          setTasks((prevTasks) => [...prevTasks, fetchedTask.activity]);
+        });
+      } else {
+        fetchedTask = await addTask(newTask);
+        if (!fetchedTask.success) {
+          throw new Error(fetchedTask.message);
         }
-        
 
-      });
+        startTransition(() => {
+          setTasks((prevTasks) => [...prevTasks, fetchedTask.activity]);
+        });
+      }
 
       handleCloseModal();
       return true;
