@@ -2,9 +2,8 @@
 
 import { addTask, addTaskToParent, saveTask, saveTaskInParent } from "@/actions/tasks";
 import { useState, useTransition } from "react";
-import { Plus } from "lucide-react";
+import { Plus, ListTodo, ListChecks } from "lucide-react";
 import { People, Person, TaskModel } from "@/helpers/types";
-import { Circle, ChevronDown, ChevronRight, Edit } from "lucide-react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Checkbox, Button } from "@nextui-org/react";
 import { TaskResponse } from "@/helpers/api-types";
 import TaskItem from "./taskItem";
@@ -173,7 +172,12 @@ const Content = (props: TaskContentProps) => {
               <>
                 {tasks.filter((task) => task.completed).length > 0 && (
                   <div className="min-w-[200px] w-full border-2 rounded-lg border-solid border-primary p-3" id="done">
-                    <h2 className="text-lg font-semibold text-primary">Done</h2>
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="text-primary" />
+                      <h2 className="text-lg font-semibold text-primary">
+                        Done
+                      </h2>
+                    </div>
                     <div className="flex flex-col gap-2">
                       {tasks.filter((task) => task.completed).map((task) => (
                         <TaskItem
@@ -190,7 +194,10 @@ const Content = (props: TaskContentProps) => {
                 )}
                 {tasks.filter((task) => !task.completed).length > 0 && (
                   <div className="min-w-[200px] w-full border-2 rounded-lg border-solid border-warning p-3" id="todo">
-                    <h2 className="text-lg font-semibold text-warning">To Do</h2>
+                    <div className="flex items-center gap-2">
+                      <ListTodo className="text-warning" />
+                      <h2 className="text-lg font-semibold text-warning">To Do</h2>
+                    </div>
                     <div className="flex flex-col gap-2">
                       {tasks.filter((task) => !task.completed).map((task) => (
                         <TaskItem
