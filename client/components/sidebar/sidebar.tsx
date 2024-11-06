@@ -59,43 +59,43 @@ export const SidebarWrapper = () => {
                 isActive={pathname === "/notes"}
                 title="Notes"
                 icon={<NotesIcon />}
-                href="notes"
+                href="/notes"
               />
               <SidebarItem
                 isActive={pathname === "/pomodoro"}
                 title="Pomodoro"
                 icon={<PomodoroIcon />}
-                href="pomodoro"
+                href="/pomodoro"
               />
               <SidebarItem
                 icon={<ProjectsIcon />}
                 title="Projects"
                 isActive={pathname === "/projects"}
-                href="projects"
+                href="/projects"
               />
               <SidebarItem
                 isActive={pathname === "/chats"}
                 title="Chats"
                 icon={<ChatsIcon />}
-                href="chats"
+                href="/chats"
               />
               <SidebarItem
                 isActive={pathname === "/music-player"}
                 title="Music Player"
                 icon={<MusicalNoteIcon />}
-                href="music-player"
+                href="/music-player"
               />
               <SidebarItem
                 isActive={pathname === "/calendar"}
                 title="Calendar"
                 icon={<ReportsIcon />}
-                href="calendar"
+                href="/calendar"
               />
               <SidebarItem
                 isActive={pathname === "/task"}
                 title="Task"
                 icon={<ReportsIcon />}
-                href="task"
+                href="/task"
               />
             </SidebarMenu>
 
@@ -104,14 +104,14 @@ export const SidebarWrapper = () => {
                 isActive={pathname === "/maps"}
                 title="Maps"
                 icon={<DevIcon />}
-                href="maps"
+                href="/maps"
               />
 
               <SidebarItem
                 isActive={pathname === "/settings"}
                 title="Settings"
                 icon={<SettingsIcon />}
-                href="settings"
+                href="/settings"
               />
             </SidebarMenu>
 
