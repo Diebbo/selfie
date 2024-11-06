@@ -366,6 +366,20 @@ class ProjectCard extends HTMLElement {
 
         this._modal = this.shadowRoot.querySelector('modal-component');
 
+        const overlayGanttRows = this.shadowRoot.querySelector('.overlay-gantt');
+
+        // Restore the last scroll position from localStorage
+        const lastScrollLeft = localStorage.getItem('overlayGanttScrollTop');
+        console.log('Last scroll left:', lastScrollLeft);
+        if (lastScrollLeft) {
+            overlayGanttRows.scrollLeft = parseInt(lastScrollLeft, 10);
+        }
+
+        // Add an event listener to save the scroll position on scroll
+        overlayGanttRows.addEventListener('scroll', () => {
+            localStorage.setItem('overlayGanttScrollTop', overlayGanttRows.scrollLeft);
+        });
+
         // Event listeners per apertura modale
         this.addEventListeners(this.project);
     }
@@ -477,6 +491,17 @@ class ProjectCard extends HTMLElement {
             }
         });
 
+        let sidebar = document.querySelector(".sidebar");
+
+        let top = localStorage.getItem("sidebar-scroll");
+        if (top !== null) {
+            sidebar.scrollTop = parseInt(top, 10);
+        }
+
+        // add event listener to save current scroll position of lateral bar
+        window.addEventListener("beforeunload", () => {
+            localStorage.setItem("sidebar-scroll", sidebar.scrollTop);
+        });
         this.setupTooltips();
     }
 
