@@ -12,13 +12,13 @@ interface TaskItemProps {
   currentDate?: Date;
 }
 
-export default function TaskItem ({ task, level, onAddSubtask, onEditTask, onTaskUpdate, currentDate }: TaskItemProps) {
+export default function TaskItem({ task, level, onAddSubtask, onEditTask, onTaskUpdate, currentDate }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasSubTasks = task.subActivities && task.subActivities.length > 0;
 
   const handleStatusChange = () => {
     onTaskUpdate({ ...task, completed: !task.completed });
-  };
+  }
 
   const formatDate = (date: Date) => {
     date = new Date(date);
@@ -30,35 +30,37 @@ export default function TaskItem ({ task, level, onAddSubtask, onEditTask, onTas
   };
 
   const getColorDate = (date: Date) => {
-      if (!currentDate) {
-        return "content4";
-      }
-      if (new Date(date) < new Date(currentDate)) {
-        return "danger";
-      } else if (new Date(date).getDate() === new Date(currentDate).getDate()) {
-        return "warning";
-      } 
+    if (!currentDate) {
       return "content4";
+    }
+    if (new Date(date) < new Date(currentDate)) {
+      return "danger";
+    } else if (new Date(date).getDate() === new Date(currentDate).getDate()) {
+      return "warning";
+    }
+    return "content4";
   }
 
 
   return (
     <div className="w-full">
       <div
-        className="flex items-center gap-2 p-2 hover:bg-primary rounded-lg group"
+        className="flex items-center gap-2 p-2 hover:bg-primary-100 rounded-lg group"
         style={{ paddingLeft: `${level * 1.5}rem` }}
       >
         {hasSubTasks ? (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-gray-200 rounded-full"
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            onPress={() => setIsExpanded(!isExpanded)}
             aria-label={isExpanded ? "Collapse task" : "Expand task"}
           >
             {isExpanded ?
               <ChevronDown className="w-4 h-4 text-gray-500" /> :
               <ChevronRight className="w-4 h-4 text-gray-500" />
             }
-          </button>
+          </Button>
         ) : (
           <div className="w-6" aria-hidden="true" />
         )}
@@ -93,6 +95,7 @@ export default function TaskItem ({ task, level, onAddSubtask, onEditTask, onTas
             isIconOnly
             size="sm"
             variant="light"
+            isDisabled={onAddSubtask === null}
             onPress={() => { if (onAddSubtask) onAddSubtask(task) }}
             aria-label="Add subtask"
           >
@@ -103,12 +106,12 @@ export default function TaskItem ({ task, level, onAddSubtask, onEditTask, onTas
 
       {hasSubTasks && isExpanded && (
         <div className="w-full">
-          {task.subActivities.map((subtask) => (
+          {task.subActivities.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).map((subtask) => (
             <TaskItem
               key={subtask._id}
               task={subtask}
               level={level + 1}
-              onAddSubtask={onAddSubtask}
+              onAddSubtask={null}
               onEditTask={onEditTask}
               onTaskUpdate={onTaskUpdate}
             />

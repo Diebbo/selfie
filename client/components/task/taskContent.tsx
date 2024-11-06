@@ -52,10 +52,15 @@ const Content = (props: TaskContentProps) => {
   const handleTaskUpdate = async (updatedTask: TaskModel) => {
     setError(null);
     let fetchedTask: TaskResponse;
+    const isParent: boolean = tasks.some((task) => task._id === updatedTask._id);
 
     try {
-      if (selectedParentTask) {
-        fetchedTask = await saveTaskInParent(updatedTask, selectedParentTask);
+      if (!isParent) { // Check if the task is a subactivity
+        const parentTask = tasks.find((task) => task.subActivities?.some((subtask) => subtask._id === updatedTask._id));
+        if (!parentTask) {
+          throw new Error("Parent task not found");
+        }
+        fetchedTask = await saveTaskInParent(updatedTask, parentTask);
 
         if (!fetchedTask.success) {
           throw new Error(fetchedTask.message);
@@ -64,7 +69,7 @@ const Content = (props: TaskContentProps) => {
         startTransition(() => {
           setTasks((prevTasks) => {
             return prevTasks.map((task) => {
-              if (task._id === selectedParentTask._id) {
+              if (task._id === parentTask?._id) {
                 return fetchedTask.activity;
               }
               return task;
@@ -158,14 +163,12 @@ const Content = (props: TaskContentProps) => {
 
   return (
     <>
-      <div className="flex items-center justify-between m-4 p-4 bg-primary-50 rounded-lg">
-        {error && (
-          <div className="bg-red-50 text-danger p-2 mb-4 rounded">
+      {error && (
+          <div className="bg-red-50 text-danger p-2 mb-4 rounded m-4">
             {error}
           </div>
-        )}
-
-
+      )}
+      <div className="flex items-center justify-between m-4 p-4 bg-primary-50 rounded-lg">
         <div className="flex items-start flex-col gap-2 w-full">
           {
             tasks.length > 0 ? (
@@ -179,7 +182,7 @@ const Content = (props: TaskContentProps) => {
                       </h2>
                     </div>
                     <div className="flex flex-col gap-2">
-                      {tasks.filter((task) => task.completed).map((task) => (
+                      {tasks.filter((task) => task.completed).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).map((task) => (
                         <TaskItem
                           key={task._id}
                           task={task}
@@ -199,7 +202,7 @@ const Content = (props: TaskContentProps) => {
                       <h2 className="text-lg font-semibold text-warning">To Do</h2>
                     </div>
                     <div className="flex flex-col gap-2">
-                      {tasks.filter((task) => !task.completed).map((task) => (
+                      {tasks.filter((task) => !task.completed).sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).map((task) => (
                         <TaskItem
                           key={task._id}
                           task={task}
