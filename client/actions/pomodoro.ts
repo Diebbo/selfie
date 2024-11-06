@@ -1,3 +1,4 @@
+"use server";
 import { PomodoroSettings } from "@/helpers/types";
 import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
