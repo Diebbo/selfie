@@ -21,11 +21,6 @@ export const Login = () => {
 
   const redirect = searchParams.get("redirect");
 
-  const initialValues: LoginFormType = {
-    email: "die.barbieri03@gmail.com",
-    password: "",
-  };
-
   const handleLogin = useCallback(
     async (values: LoginFormType) => {
       try {
@@ -51,7 +46,7 @@ export const Login = () => {
       <div className="text-center text-[25px] font-bold mb-6">Login</div>
 
       <Formik
-        initialValues={initialValues}
+        initialValues={{ email: "", password: "" }}
         validationSchema={LoginSchema}
         onSubmit={handleLogin}
       >
@@ -86,7 +81,8 @@ export const Login = () => {
               <Button
                 variant="flat"
                 color="success"
-                onPress={() => router.push("/register")}
+                as={Link}
+                href="/register"
               >
                 Register
               </Button>
