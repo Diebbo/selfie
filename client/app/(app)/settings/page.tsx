@@ -4,19 +4,22 @@ import {
   getNotificationStatus,
 } from "@/actions/auth.action";
 import { getUser } from "@/actions/user";
+import { getEvents } from "@/actions/events";
 
 const Page = async () => {
   try {
-    const [user,notifications]  = await Promise.all([
+    const [user, events, notifications] = await Promise.all([
       getUser(),
+      getEvents(),
       getNotificationStatus(),
     ]);
 
-    console.log("miao", user);
+    //console.log("miao", user);
 
     return (
       <Content
         username={user.username}
+        events={events}
         email={user.email}
         pushNotifications={notifications?.pushOn}
         emailNotifications={notifications?.emailOn}
@@ -28,6 +31,7 @@ const Page = async () => {
       <Content
         avatar=""
         username=""
+        events={null}
         email=""
         pushNotifications={false}
         emailNotifications={false}
