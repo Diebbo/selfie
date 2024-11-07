@@ -14,7 +14,7 @@ const Page = async () => {
       getNotificationStatus(),
     ]);
 
-    console.log("miao", user);
+    //console.log("miao", user);
 
     return (
       <Content

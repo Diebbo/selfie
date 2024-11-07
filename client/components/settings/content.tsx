@@ -3,10 +3,7 @@
 import React, { useState } from "react";
 import {
   Card,
-  Tab,
-  Tabs,
   Input,
-  Chip,
   Button,
   Switch,
   Spacer,
@@ -23,11 +20,12 @@ import { PassLockIcon } from "../auth/PassLockIcon";
 import NotificationSettings from "../auth/NotificationSettings";
 import { useRouter } from "next/navigation";
 import { SelfieEvent } from "@/helpers/types";
+import ImportExportCal from "./importExportCal"
 
 interface SettingsPageProps {
   username: string;
   email: string;
-  events: SelfieEvent | null;
+  events: SelfieEvent[] | null;
   pushNotifications: boolean;
   emailNotifications: boolean;
   avatar: string;
@@ -364,20 +362,9 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
         </div>
 
-        <div className="flex align-center ">
-          <div className="gap-4 flex-row mr-4 mb-4">
-            <Tabs key="import-export-tabs" variant="solid" aria-label="Tabs variants">
-              <Tab key="import" title="Import" />
-              <Tab key="export" title="Export" />
-            </Tabs>
-          </div>
-          <Chip color="primary" size="lg" radius="sm" className="mr-3 py-5 gap-4">
-            Your Calendar
-          </Chip>
-        </div>
-        <div className="mb-4">
-          <Input placeholder="paste your URL || copy URL" className="text-gray-400" />
-        </div>
+        <ImportExportCal
+          events={props.events}
+        />
 
         <Button color="danger" onPress={onOpen} className="w-full">
           Elimina Account

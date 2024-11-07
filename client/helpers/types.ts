@@ -100,7 +100,7 @@ export interface RRule {
 export interface SelfieEvent {
   title: String;
   summary: String;
-  uid: String;
+  uid: String | Number;
   sequence: Number;
   status: String;
   transp: String;
