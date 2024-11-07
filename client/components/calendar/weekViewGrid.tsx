@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { useRouter } from "next/navigation";
 import { SelfieEvent, ProjectModel, TaskModel } from "@/helpers/types";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure, Chip, Input } from "@nextui-org/react";
+import { useTime } from "../contexts/TimeContext";
 
 interface CombinedAppointment {
-  type: 'event' | 'project';
+  type: 'event' | 'project' | 'task';
   event?: SelfieEvent;
   project?: ProjectModel;
+  task?: TaskModel;
 }
 
 const generateHours = () => {
@@ -25,15 +27,16 @@ export const WeekViewGrid: React.FC<{
   events?: SelfieEvent[],
   isMobile: boolean,
   projects: ProjectModel[],
-}> = ({ date, events = [], isMobile, projects = [] }) => {
+  tasks: TaskModel[] | undefined,
+}> = ({ date, events = [], isMobile, projects = [], tasks }) => {
+  const { currentTime } = useTime();
   const hours = generateHours();
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [selectedHourAppointments, setSelectedHourAppointments] = useState<CombinedAppointment[]>([]);
   const router = useRouter();
-  const currentHour = new Date().getHours();
-  const isToday = date.toDateString() === new Date().toDateString();
+  const [isToday, setToday] = useState(currentTime);
 
-  // Combine events and project tasks for the specific date
+  // Combine events, project tasks and tasks for the specific date
   const getDayAppointments = (): CombinedAppointment[] => {
     const appointments: CombinedAppointment[] = [];
 
@@ -64,6 +67,19 @@ export const WeekViewGrid: React.FC<{
       });
     });
 
+    // Add individual tasks
+    if (tasks) {
+      tasks.forEach(task => {
+        const taskDate = new Date(task.dueDate);
+        if (taskDate.toDateString() === date.toDateString()) {
+          appointments.push({
+            type: 'task',
+            task
+          });
+        }
+      });
+    }
+
     return appointments;
   };
 
@@ -71,7 +87,9 @@ export const WeekViewGrid: React.FC<{
     const appointmentsForHour = getDayAppointments().filter(appointment => {
       const appointmentDate = appointment.type === 'event'
         ? new Date(appointment.event!.dtstart)
-        : new Date(appointment.project!.activities[0].dueDate);
+        : appointment.type === 'project'
+          ? new Date(appointment.project!.activities[0].dueDate)
+          : new Date(appointment.task!.dueDate);
       return appointmentDate.getHours() === hourIndex;
     });
 
@@ -83,7 +101,9 @@ export const WeekViewGrid: React.FC<{
     return getDayAppointments().filter(appointment => {
       const appointmentDate = appointment.type === 'event'
         ? new Date(appointment.event!.dtstart)
-        : new Date(appointment.project!.activities[0].dueDate);
+        : appointment.type === 'project'
+          ? new Date(appointment.project!.activities[0].dueDate)
+          : new Date(appointment.task!.dueDate);
       return appointmentDate.getHours() === hourIndex;
     });
   };
@@ -92,21 +112,36 @@ export const WeekViewGrid: React.FC<{
     const count = appointments.length;
     const hasEvents = appointments.some(a => a.type === 'event');
     const hasProjects = appointments.some(a => a.type === 'project');
+    const hasTasks = appointments.some(a => a.type === 'task');
+
+    function handleColor() {
+      if (hasProjects && hasTasks && hasEvents) {
+        return "bg-secondary-400";
+      } else if (hasEvents) {
+        return "bg-primary-400";
+      } else {
+        return "bg-warning-400";
+      }
+    }
 
     return (
       <Button
         size="sm"
         variant="light"
-        className={`${isMobile ? "w-[calc(95vw/7)] min-w-0" : "sm:w-full md:w-16"}  ${count > 1 ? "bg-danger-300" : "bg-primary-300"} text-10 mx-auto flex justify-center items-center gap-1
-          ${hasEvents && hasProjects ? 'bg-purple-200' :
-            hasProjects ? 'bg-warning-200' :
-              'bg-default-200'}`}
+        className={`${isMobile ? "w-[calc(95vw/7)] min-w-0" : "sm:w-full md:w-16"} 
+          ${count > 2 ? "bg-danger-300" : "bg-warning-300"} text-10 mx-auto flex justify-center items-center gap-1
+          ${handleColor}`}
+
+        aria-label={count > 2 ? "tooManyAppoinments" : ""}
         onPress={() => handleOpenAppointmentModal(parseInt(appointments[0].type === 'event'
           ? new Date(appointments[0].event!.dtstart).getHours().toString()
-          : new Date(appointments[0].project!.activities[0].dueDate).getHours().toString()))}
+          : appointments[0].type === 'project'
+            ? new Date(appointments[0].project!.activities[0].dueDate).getHours().toString()
+            : new Date(appointments[0].task!.dueDate).getHours().toString()))}
       >
-        {hasEvents && "📋"}
-        {hasProjects && "📁"}
+        {(hasEvents || hasTasks || hasProjects) &&
+          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e8eaed"><path d="M600-80v-80h160v-400H200v160h-80v-320q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H600ZM320 0l-56-56 103-104H40v-80h327L264-344l56-56 200 200L320 0ZM200-640h560v-80H200v80Zm0 0v-80 80Z" /></svg>
+        }
       </Button>
     );
   };
@@ -137,16 +172,16 @@ export const WeekViewGrid: React.FC<{
       {hours.map((hour, index) => {
         const appointmentsForHour = getAppointmentsForHour(index);
         const hasAppointments = appointmentsForHour.length > 0;
-        const isCurrentHour = isToday && currentHour === index;
+        const isCurrentHour = isToday.getDate() && isToday.getDay() === index;
 
         return (
           <div
             key={hour}
-            className={`border-b border-gray-200 dark:border-gray-700 h-10 relative flex items-center justify-between
+            className={`relative border-b border-gray-200 dark:border-gray-700 h-10 relative flex items-center justify-between
               ${isCurrentHour ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
           >
-            <div className={`z-10 left-2 w-2 text-xs pr-2 text-left
-              ${isCurrentHour ? 'text-primary-500 font-bold' : 'text-gray-500'}`}>
+            <div className={`absolute z-10 left-0 w-2 rounded-[40px] w-4 text-xs pr-2 text-left
+              ${isCurrentHour ? 'text-primary-500 font-bold' : 'text-gray-500 font-semibold'}`}>
               {hour}
             </div>
             {hasAppointments && renderAppointmentButton(appointmentsForHour)}
@@ -164,7 +199,9 @@ export const WeekViewGrid: React.FC<{
                     Appuntamenti alle {new Date(
                       selectedHourAppointments[0].type === 'event'
                         ? selectedHourAppointments[0].event!.dtstart
-                        : selectedHourAppointments[0].project!.activities[0].dueDate
+                        : selectedHourAppointments[0].type === 'project'
+                          ? selectedHourAppointments[0].project!.activities[0].dueDate
+                          : selectedHourAppointments[0].task!.dueDate
                     ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
@@ -178,17 +215,19 @@ export const WeekViewGrid: React.FC<{
                         onClick={() => router.push(
                           appointment.type === 'event'
                             ? `/calendar/${appointment.event!._id}`
-                            : `/projects/${appointment.project!._id}`
+                            : appointment.type === 'project'
+                              ? `/projects/${appointment.project!._id}`
+                              : `/task`
                         )}
                       >
                         <div className="flex flex-row items-start w-full">
                           <div className="flex items-center gap-2">
                             <Chip
                               size="sm"
-                              color={appointment.type === 'event' ? 'primary' : 'warning'}
+                              color={appointment.type === 'event' ? 'primary' : appointment.type === 'project' ? 'warning' : 'secondary'}
                               variant="flat"
                             >
-                              {appointment.type === 'event' ? 'Evento' : 'Progetto'}
+                              {appointment.type === 'event' ? 'Evento' : appointment.type === 'project' ? 'Progetto' : 'Task'}
                             </Chip>
                             <p className="font-semibold">
                               {appointment.type === 'event'
@@ -199,7 +238,9 @@ export const WeekViewGrid: React.FC<{
                               {new Date(
                                 appointment.type === 'event'
                                   ? appointment.event!.dtstart
-                                  : appointment.project!.activities[0].dueDate
+                                  : appointment.type === 'project'
+                                    ? appointment.project!.activities[0].dueDate
+                                    : appointment.task!.dueDate
                               ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
