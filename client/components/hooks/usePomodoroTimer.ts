@@ -23,14 +23,13 @@ const usePomodoroTimer = (settings: PomodoroSettings) => {
     sessionType: "focus",
     sessionCount: 0,
     percentage: 100,
-    waveHeight: 0
+    waveHeight: 0,
   };
   const [state, setState] = useState<TimerState>(initialState);
   const initialHeight = useRef(0);
-
+  const lastMinuteSent = useRef<number>(Math.floor(state.timeLeft / 60));
   const [height, setHeight] = useState(window.innerHeight);
 
-  
   useEffect(() => {
     initialHeight.current = height - 130;
     const totalTime = getTotalTime();
@@ -38,14 +37,14 @@ const usePomodoroTimer = (settings: PomodoroSettings) => {
 
     // update percentage every 1% for circular progress bar
     if (Math.abs(state.percentage - progress * 100) >= 1) {
-      setState(prev => ({
-      ...prev,
-      percentage: progress * 100
+      setState((prev) => ({
+        ...prev,
+        percentage: progress * 100,
       }));
     }
 
     // update wave height for wave animation
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       waveHeight: initialHeight.current * progress,
     }));
@@ -54,12 +53,13 @@ const usePomodoroTimer = (settings: PomodoroSettings) => {
     let interval: NodeJS.Timeout;
     if (state.isRunning && state.timeLeft > 0) {
       interval = setInterval(() => {
-        setState(prev => ({ ...prev, timeLeft: prev.timeLeft - 0.03 }));
+        setState((prev) => ({ ...prev, timeLeft: prev.timeLeft - 0.03 }));
       }, 30);
     } else if (state.timeLeft <= 0) {
+      updateStats();
       handleToggleSession();
     }
-    
+
     window.onresize = () => setHeight(window.innerHeight);
 
     return () => {
@@ -68,19 +68,19 @@ const usePomodoroTimer = (settings: PomodoroSettings) => {
     };
   }, [state.isRunning, state.timeLeft, height]);
 
-  // get the total time of current session 
+  // get the total time of current session
   const getTotalTime = () => {
     const { sessionType, focusTime, breakTime, longBreakTime } = state;
-    return sessionType === "focus" 
-      ? focusTime * 60 
-      : sessionType === "shortBreak" 
-        ? breakTime * 60 
+    return sessionType === "focus"
+      ? focusTime * 60
+      : sessionType === "shortBreak"
+        ? breakTime * 60
         : longBreakTime * 60;
   };
 
   // Toggle between focus, short break, and long break
   const handleToggleSession = () => {
-    setState(prev => {
+    setState((prev) => {
       const newState = { ...prev };
       if (prev.sessionType === "focus") {
         const newCount = prev.sessionCount + 1;
@@ -98,12 +98,35 @@ const usePomodoroTimer = (settings: PomodoroSettings) => {
         newState.timeLeft = prev.focusTime * 60;
       }
       newState.waveHeight = initialHeight.current;
+
       return newState;
     });
   };
 
+  const updateStats = () => {
+    const statsData = {
+      pomodoro: {
+        incStudyTime: state.sessionType === "focus" ? state.focusTime : 0,
+        incBreakTime:
+          state.sessionType === "focus"
+            ? 0
+            : state.sessionType === "shortBreak"
+              ? state.breakTime
+              : state.longBreakTime,
+      },
+    };
+
+    fetch("/api/pomodoro/update", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(statsData),
+    });
+  };
+
   const toggleRunning = () => {
-    setState(prev => ({ ...prev, isRunning: !prev.isRunning }));
+    setState((prev) => ({ ...prev, isRunning: !prev.isRunning }));
   };
 
   const handleReset = (newSettings: PomodoroSettings) => {
@@ -119,10 +142,9 @@ const usePomodoroTimer = (settings: PomodoroSettings) => {
 
   return {
     state,
-    setState,
     toggleRunning: toggleRunning,
     toggleSession: handleToggleSession,
-    reset: handleReset
+    reset: handleReset,
   };
 };
 

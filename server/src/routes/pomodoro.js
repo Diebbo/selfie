@@ -6,7 +6,7 @@ function createPomodoroRouter(db) {
 
   router.post("/settings", cookieJwtAuth, async (req, res) => {
     const uid = req.user._id;
-    console.log("uid", uid)
+    console.log("uid", uid);
     const settings = req.body.settings;
 
     try {
@@ -16,7 +16,7 @@ function createPomodoroRouter(db) {
         settings: updatedSettings,
       });
     } catch (err) {
-      console.log("bomba")
+      console.log("bomba");
       res.status(400).json({ message: err.message });
     }
   });
@@ -34,17 +34,18 @@ function createPomodoroRouter(db) {
 
   router.patch("/update", cookieJwtAuth, async (req, res) => {
     const uid = req.user._id;
-    const incStudyTime = req.body.pomodoro.totalStudyTime;
-    const incBreakTime = req.body.pomodoro.totalBreakTime;
+    const incStudyTime = req.body.pomodoro.incStudyTime;
+    const incBreakTime = req.body.pomodoro.incBreakTime;
 
     try {
       const user = await db.getUserById(uid);
-      if (!user.pomodoro){
+      if (!user.pomodoro) {
         user.pomodoro = {
-          totalStudyTime: 0,
-          totalBreakTime: 0
+          totalStudyTime: incStudyTime,
+          totalBreakTime: incBreakTime,
+        };
       }
-      }
+      console.log("test user");
       let studyTime = user.pomodoro.totalStudyTime;
       let breakTime = user.pomodoro.totalBreakTime;
 
@@ -75,7 +76,6 @@ function createPomodoroRouter(db) {
       res.status(400).json({ message: err.message });
     }
   });
-
 
   return router;
 }
