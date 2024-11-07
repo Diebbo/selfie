@@ -706,6 +706,7 @@ export async function createDataBase(uri) {
         throw new Error("Event replace failed");
       }
 
+      console.log(replacedEvent);
       return { replacedEvent };
     } catch (e) {
       throw new Error("Event did not get changed: " + e.message);
@@ -797,19 +798,157 @@ export async function createDataBase(uri) {
     }
   };
 
-  const getUsrernameForActivity = async (activity) => {
-    if (!activity.participants || activity.participants.length === 0) {
-      return activity;
+  const importEvents = async (events, userId) => {
+    const importedEvents = [];
+
+    // Validazione iniziale dell'utente
+    const user = await userModel.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    for (const event of Object.values(events)) {
+      if (event.type !== 'VEVENT') continue;
+
+      try {
+        // Converti l'evento iCal nel formato del tuo schema
+        const eventData = {
+          title: event.summary || '',
+          summary: event.summary || '',
+          uid: userId,
+          sequence: event.sequence || 0,
+          status: mapStatus(event.status),
+          transp: event.transparency || 'OPAQUE',
+          dtstart: event.start,
+          dtend: event.end,
+          dtstamp: event.dtstamp?.toISOString() || new Date().toISOString(),
+          allDay: event.allDay || false,
+          categories: event.categories || [],
+          location: event.location || '',
+          description: event.description || '',
+          URL: event.url || '',
+          participants: [],
+        };
+
+        // Aggiungi le coordinate geografiche se presenti
+        if (event.geo) {
+          eventData.geo = {
+            lat: event.geo.lat,
+            lon: event.geo.lon
+          };
+        }
+
+        // Gestisci le regole di ricorrenza se presenti
+        if (event.rrule) {
+          eventData.rrule = parseRRule(event.rrule);
+        }
+
+        // Salva l'evento nel database
+        const newEvent = new eventModel(eventData);
+        // Con .save() aggiungo _id nell'oggetto
+        const savedEvent = await newEvent.save();
+        if (!savedEvent) throw new Error("Failed to save event");
+
+        // Aggiungi l'evento all'array importedEvents
+        importedEvents.push(savedEvent);
+
+      } catch (error) {
+        console.error('Error importing event:', error);
+        // Continua con il prossimo evento anche se questo fallisce
+        continue;
+      }
     }
 
-    // Fetch the user details for all participants based on their IDs
-    await activity.populate("participants", "username");
-    activity = activity.toObject(); // Convert Mongoose document to plain object
+    try {
+      // Aggiorna l'array events dell'utente con tutti gli eventi importati
+      if (importedEvents.length > 0) {
+        await userModel.findByIdAndUpdate(
+          userId,
+          {
+            $push: {
+              events: {
+                $each: importedEvents.map(event => event._id)
+              }
+            }
+          },
+          { new: true }
+        );
+      }
 
-    activity.participants = activity.participants.map(
-      (participant) => participant.username,
-    );
-    return activity;
+      const importedTitles = importedEvents
+        .map(event => event.title)
+        .filter(title => title !== undefined && title !== null);
+
+      return importedTitles;
+
+    } catch (error) {
+      console.error('Error updating user events:', error);
+      throw new Error('Failed to update user events');
+    }
+  };
+
+  // Helper function per mappare lo status dell'evento
+  const mapStatus = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'CONFIRMED':
+        return 'confirmed';
+      case 'TENTATIVE':
+        return 'tentative';
+      case 'CANCELLED':
+        return 'cancelled';
+      default:
+        return 'confirmed';
+    }
+  };
+
+  // Helper function per parsare le regole di ricorrenza
+  const parseRRule = (rrule) => {
+    const ruleObj = {};
+
+    if (rrule.freq) {
+      ruleObj.freq = rrule.freq.toLowerCase();
+    }
+
+    if (rrule.interval) {
+      ruleObj.interval = rrule.interval;
+    }
+
+    if (rrule.until) {
+      ruleObj.until = new Date(rrule.until);
+    }
+
+    if (rrule.count) {
+      ruleObj.count = rrule.count;
+    }
+
+    if (rrule.bymonth) {
+      ruleObj.bymonth = rrule.bymonth;
+    }
+
+    if (rrule.bymonthday) {
+      ruleObj.bymonthday = rrule.bymonthday;
+    }
+
+    if (rrule.byday) {
+      ruleObj.byday = rrule.byday.map(day => {
+        if (typeof day === 'string') {
+          return { day: day };
+        }
+        return {
+          day: day.day,
+          position: day.pos || 1
+        };
+      });
+    }
+
+    if (rrule.bysetpos) {
+      ruleObj.bysetpos = Array.isArray(rrule.bysetpos) ?
+        rrule.bysetpos : [rrule.bysetpos];
+    }
+
+    if (rrule.wkst) {
+      ruleObj.wkst = rrule.wkst;
+    }
+
+    return ruleObj;
   };
 
   const getUsernameForActivities = async (activities) => {
@@ -817,7 +956,7 @@ export async function createDataBase(uri) {
 
     for (let i = 0; i < activities.length; i++) {
       // Process the participants for the current (father) activity
-      activities[i] = await getUsrernameForActivity(activities[i]);
+      activities[i] = await getUsernameForActivity(activities[i]);
     }
 
     return activities;
@@ -1575,11 +1714,11 @@ export async function createDataBase(uri) {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: { ...msg, sender: sender.username },
-                avatar: otherUser.avatar,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: { ...msg, sender: sender.username },
+              avatar: otherUser.avatar,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1713,6 +1852,7 @@ export async function createDataBase(uri) {
     getDateTime,
   });
 
+
   return {
     login,
     register,
@@ -1736,6 +1876,7 @@ export async function createDataBase(uri) {
     participateEvent,
     rejectEvent,
     getParticipantsUsernames,
+    importEvents,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,
@@ -1769,5 +1910,6 @@ export async function createDataBase(uri) {
     enableNotifications,
     getAllUserEvents,
     projectService,
+    getUsernameForActivities,
   };
 }

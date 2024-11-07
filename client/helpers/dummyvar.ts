@@ -109,6 +109,7 @@ const dummyEvents: SelfieEvent[] = [
     URL: "https://example.com/beach-party",
     categories: ["party"],
     transp: "OPAQUE",
+    isRrule: false,
     rrule: {
       freq: "weekly",
       interval: 1,
@@ -147,6 +148,7 @@ const dummyEvents: SelfieEvent[] = [
     URL: "https://example.com/movie-night",
     categories: ["movie"],
     transp: "OPAQUE",
+    isRrule: false,
     rrule: {
       freq: "weekly",
       interval: 1,
@@ -185,6 +187,7 @@ const dummyEvents: SelfieEvent[] = [
     URL: "https://example.com/picnic",
     categories: ["picnic"],
     transp: "OPAQUE",
+    isRrule: false,
     rrule: {
       freq: "weekly",
       interval: 1,
