@@ -4,14 +4,21 @@ import { isVerified } from "./actions/auth.action";
 
 // 1. Specify protected and public routes
 // const protectedRoutes = ['/dashboard', '/', '/timemachine']
-const publicRoutes = ["/login", "/register", "/verifyemail", "/verification"];
+const publicRoutes = [
+  "/login",
+  "/register",
+  "/verifyemail",
+  "/verification",
+  "/lost-password",
+  "/resetpassword",
+];
 
 export default async function middleware(req: NextRequest) {
   // 2. Check if the current route is protected or public
   const path = req.nextUrl.pathname;
   const isPublicRoute = publicRoutes.includes(path);
   const isProtectedRoute = !isPublicRoute;
-  // to make manifest file public 
+  // to make manifest file public
   if (path === "/manifest.webmanifest") {
     return NextResponse.next();
   }
@@ -19,7 +26,7 @@ export default async function middleware(req: NextRequest) {
   // 3. Decrypt the session from the cookie
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const token = cookieStore.get("token")?.value;
     if (token) {
       try {
         const res = await isVerified();

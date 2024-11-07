@@ -34,11 +34,11 @@ export const Login = () => {
         router.replace(redirect || "/");
       } catch (err: any) {
         setError(
-          err.message ? err.message.toString() : "An unknown error occurred"
+          err.message ? err.message.toString() : "An unknown error occurred",
         );
       }
     },
-    [router]
+    [router],
   );
 
   return (
@@ -74,16 +74,19 @@ export const Login = () => {
                 onChange={handleChange("password")}
               />
             </div>
+            <div className="flex justify-center mb-4">
+              <Link
+                href="/lost-password"
+                className="text-sm text-slate-400 hover:text-blue-300 font-light"
+              >
+                Password dimenticata?
+              </Link>
+            </div>
             <div className="flex justify-center flex-wrap flex-row gap-4">
               <Button type="submit" variant="flat" color="primary">
                 Login
               </Button>
-              <Button
-                variant="flat"
-                color="success"
-                as={Link}
-                href="/register"
-              >
+              <Button variant="flat" color="success" as={Link} href="/register">
                 Register
               </Button>
             </div>

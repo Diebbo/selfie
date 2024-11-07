@@ -10,13 +10,10 @@ import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
 
-
 // services import
 import createProjectService from "./services/projects.mjs";
 
 export async function createDataBase(uri) {
-
-
   // creating a model
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
@@ -56,7 +53,10 @@ export async function createDataBase(uri) {
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
 
-    let res = await userModel.create({ ...user, avatar: `https://api.dicebear.com/9.x/open-peeps/svg?seed=${user.username}` });
+    let res = await userModel.create({
+      ...user,
+      avatar: `https://api.dicebear.com/9.x/open-peeps/svg?seed=${user.username}`,
+    });
 
     // OLD send verification email
     /*addNotification(res, {
@@ -100,6 +100,23 @@ export async function createDataBase(uri) {
     return user;
   };
 
+  const lostPassword = async (email, resetToken) => {
+    const user = await userModel.findOne({ email: email });
+    if (!user) throw new Error("User not found");
+
+    user.resetToken = resetToken;
+    await user.save();
+    return user;
+  };
+
+  const verifyResetToken = async (resetToken) => {
+    console.log(resetToken);
+    const user = await userModel.findOne({ resetToken: resetToken });
+    if (!user) throw new Error("Invalid token");
+
+    return user;
+  };
+
   const isVerified = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -134,6 +151,8 @@ export async function createDataBase(uri) {
     if (!user) throw new Error("User not found");
 
     user.password = hashedPassword;
+    user.isVerified = true;
+    if (user.resetToken) user.resetToken = "";
     await user.save();
     return user;
   };
@@ -756,19 +775,21 @@ export async function createDataBase(uri) {
     return user.invitedEvents;
   };
 
-
   const getParticipantsUsernames = async (eventId) => {
     try {
       const event = await eventModel.findById(eventId);
       if (!event) throw new Error("Event not found");
 
       // Trova tutti gli utenti che hanno questo eventId nel loro array events
-      const users = await userModel.find({
-        invitedEvents: eventId  // Cerca l'eventId nell'array events
-      }, 'username'); // Proietta solo il campo username
+      const users = await userModel.find(
+        {
+          invitedEvents: eventId, // Cerca l'eventId nell'array events
+        },
+        "username",
+      ); // Proietta solo il campo username
 
       // Estrai gli username dal risultato
-      const usernames = users.map(user => user.username);
+      const usernames = users.map((user) => user.username);
 
       return usernames;
     } catch (error) {
@@ -784,8 +805,10 @@ export async function createDataBase(uri) {
     // Fetch the user details for all participants based on their IDs
     await activity.populate("participants", "username");
     activity = activity.toObject(); // Convert Mongoose document to plain object
-    
-    activity.participants = activity.participants.map((participant) => participant.username);
+
+    activity.participants = activity.participants.map(
+      (participant) => participant.username,
+    );
     return activity;
   };
 
@@ -849,36 +872,33 @@ export async function createDataBase(uri) {
 
     if (!activity.title || !activity.startDate || !activity.dueDate) {
       throw new Error(
-        `Activity must have a title, start date, and due date: ${JSON.stringify(activity)}`
+        `Activity must have a title, start date, and due date: ${JSON.stringify(activity)}`,
       );
     }
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
-    if (
-      startDate &&
-      new Date(activity.dueDate) < new Date(startDate)
-    ) {
+    if (startDate && new Date(activity.dueDate) < new Date(startDate)) {
       throw new Error(
-        `Activity due date must be after the project start date: ${startDate}`
+        `Activity due date must be after the project start date: ${startDate}`,
       );
     }
 
     if (new Date(activity.dueDate) > new Date(deadline)) {
       throw new Error(
-        `Activity due date must be on or before the project deadline: ${deadline}`
+        `Activity due date must be on or before the project deadline: ${deadline}`,
       );
     }
 
     if (new Date(activity.startDate) < new Date(startDate)) {
       throw new Error(
-        `Activity start date must be after the project start date: ${startDate}`
+        `Activity start date must be after the project start date: ${startDate}`,
       );
     }
 
     // Ensure activity's start date is before its due date
     if (new Date(activity.startDate) > new Date(activity.dueDate)) {
       throw new Error(
-        `Activity start date must be before its due date: ${activity.dueDate}`
+        `Activity start date must be before its due date: ${activity.dueDate}`,
       );
     }
 
@@ -888,7 +908,10 @@ export async function createDataBase(uri) {
     }
 
     activity.subActivities?.forEach((subActivity) => {
-      checkActivityFit({ startDate: activity.startDate, deadline: activity.dueDate }, subActivity);
+      checkActivityFit(
+        { startDate: activity.startDate, deadline: activity.dueDate },
+        subActivity,
+      );
     });
   };
 
@@ -1314,7 +1337,7 @@ export async function createDataBase(uri) {
     }
 
     if (!parentActivity.subActivities) parentActivity.subActivities = [];
-    
+
     parentActivity.subActivities.push({
       ...activity,
       uid: uid,
@@ -1331,16 +1354,20 @@ export async function createDataBase(uri) {
     if (!activity.participants || activity.participants.length === 0) {
       return activity;
     }
-    
+
     await activity.populate("participants", "username");
     await activity.populate("subActivities.participants", "username");
 
     activity = activity.toObject();
 
-    activity.participants = activity.participants.map((participant) => participant.username);
+    activity.participants = activity.participants.map(
+      (participant) => participant.username,
+    );
 
-    for (let i=0; i<activity.subActivities?.length; i++) {
-      activity.subActivities[i].participants = activity.subActivities[i].participants.map((participant) => participant.username);
+    for (let i = 0; i < activity.subActivities?.length; i++) {
+      activity.subActivities[i].participants = activity.subActivities[
+        i
+      ].participants.map((participant) => participant.username);
     }
 
     return activity;
@@ -1548,11 +1575,11 @@ export async function createDataBase(uri) {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },
-              avatar: otherUser.avatar,
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: { ...msg, sender: sender.username },
+                avatar: otherUser.avatar,
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1601,7 +1628,11 @@ export async function createDataBase(uri) {
 
   const userService = {
     async changeAvatar(uid, avatar) {
-      return await userModel.findByIdAndUpdate(uid, { avatar: avatar }, { new: true });
+      return await userModel.findByIdAndUpdate(
+        uid,
+        { avatar: avatar },
+        { new: true },
+      );
     },
     async getAllUsernames() {
       return await userModel.find({}, { username: 1 });
@@ -1687,6 +1718,8 @@ export async function createDataBase(uri) {
     register,
     deleteAccount,
     updateUsername,
+    lostPassword,
+    verifyResetToken,
     updateEmail,
     updatePassword,
     changeDateTime,
