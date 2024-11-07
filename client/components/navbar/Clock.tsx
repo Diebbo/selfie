@@ -7,12 +7,13 @@ import { useTime } from "../contexts/TimeContext";
 
 export const Clock = () => {
   const { currentTime: time, setCurrentTime } = useTime();
+  const [currentTimerTime, setCurrentTimerTime] = useState(time.getTime() ? new Date(time) : new Date());
   const [isOpen, setIsOpen] = useState(false);
 
   // Update the timer every second
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime((prevTime: Date) => new Date(prevTime.getTime() + 1000));
+      setCurrentTimerTime((prevTime: Date) => new Date(prevTime.getTime() + 1000));
     }, 1000);
 
     return () => clearInterval(timer);
@@ -27,6 +28,7 @@ export const Clock = () => {
     try {
       await changeCurrentTime(new Date(time));
       setCurrentTime(new Date(time));
+      setCurrentTimerTime(new Date(time));
       return { success: true };
     } catch (error: any) {
       console.log(error);
@@ -38,6 +40,7 @@ export const Clock = () => {
     try {
       await resetTime();
       setCurrentTime(new Date());
+      setCurrentTimerTime(new Date());
       return { success: true };
     } catch (error: any) {
       console.log(error);
@@ -58,8 +61,8 @@ export const Clock = () => {
         className="text-md font-light flex flex-col items-center leading-tight cursor-pointer hover:opacity-80"
         onClick={() => setIsOpen(true)}
       >
-        <div>{formatDate(time)}</div>
-        <div>{time.toLocaleTimeString()}</div>
+        <div>{formatDate(currentTimerTime)}</div>
+        <div>{currentTimerTime.toLocaleTimeString()}</div>
       </div>
 
       <Modal
