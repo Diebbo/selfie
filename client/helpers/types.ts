@@ -166,8 +166,8 @@ export interface ProjectModel {
   title: string;
   description: string;
   activities: TaskModel[];
-  creator: string; // creator id
-  members: string[]; // particapants usernames
+  creator: Partial<Person>; // creator id
+  members: Partial<Person>[]; // particapants usernames
   creationDate: Date;
   deadline: Date;
 }
