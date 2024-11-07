@@ -9,6 +9,7 @@ import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
+import { resourceSchema } from "./models/event-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
@@ -18,6 +19,7 @@ export async function createDataBase(uri) {
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
+  const resourceModel = mongoose.model("Resource", resourceSchema);
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Project", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
@@ -562,6 +564,47 @@ export async function createDataBase(uri) {
       users,
     );
   }
+
+  const getRisorse = async () => {
+    try {
+      const risorse = await risorseModel.find();
+      return risorse;
+    } catch (error) {
+      throw new Error(error);
+    }
+  };
+
+  const modifyRisorsa = async (uid, id, startDate, endDate) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const risorsa = await risorseModel.findById(id);
+      if (!risorsa) throw new Error("Resource not found");
+
+      const isOverlapping = risorsa.used.some((period) => {
+        return (
+          (startDate >= period.startTime && startDate < period.endTime) ||
+          (endDate > period.startTime && endDate <= period.endTime) ||
+          (startDate <= period.startTime && endDate >= period.endTime)
+        );
+      });
+
+      if (isOverlapping) {
+        return false;
+      }
+
+      risorsa.used.push({
+        startTime: startDate,
+        endTime: endDate,
+      });
+
+      await risorsa.save();
+      return true;
+    } catch (error) {
+      throw new Error(error);
+    }
+  };
 
   const getEvents = async (uid) => {
     const user = await userModel.findById(uid);
@@ -1882,6 +1925,8 @@ export async function createDataBase(uri) {
     getNoteById,
     removeNoteById,
     createEvent,
+    getRisorse,
+    modifyRisorsa,
     getEvent,
     getEvents,
     deleteEvent,

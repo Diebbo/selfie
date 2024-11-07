@@ -127,4 +127,24 @@ const eventSchema = new mongoose.Schema({
   notification: notificationSchema,
 });
 
-export { eventSchema, activitySchema, notificationSchema };
+const resourceSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  type: String,
+  used: [
+    {
+      startTime: {
+        type: Date,
+        required: true,
+      },
+      endTime: {
+        type: Date,
+        required: true,
+      },
+    },
+  ],
+});
+
+export { eventSchema, activitySchema, notificationSchema, resourceSchema };
