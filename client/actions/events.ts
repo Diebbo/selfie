@@ -5,7 +5,7 @@ import getBaseUrl from '@/config/proxy';
 import { AuthenticationError, ServerError } from '@/helpers/errors';
 import { SelfieEvent } from '@/helpers/types';
 
-export async function getEvents(): Promise<SelfieEvent> {
+export async function getEvents(): Promise<SelfieEvent[]> {
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
 
