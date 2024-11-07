@@ -233,7 +233,7 @@ export function createAuthRouter(db, sendNotification) {
       const payload = {
         title: "Reset Password",
         body: `Click the link to reset your password:`,
-        link: `http://localhost:3000/resetpassword?resetToken=${emailToken}`,
+        link: `https://site232454.tw.cs.unibo.it/resetpassword?resetToken=${emailToken}`,
       };
       sendNotification(dbuser, payload);
       return res.status(200).json({ message: "Email sent" });
