@@ -1,10 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import {
-  useDisclosure,
-  Card,
-  CardBody,
-} from "@nextui-org/react";
+import { useDisclosure, Card, CardBody } from "@nextui-org/react";
 import Wave from "react-wavify";
 import { BookOpenIcon, BeakerIcon } from "@heroicons/react/24/solid";
 import usePomodoroTimer from "../hooks/usePomodoroTimer";
@@ -19,20 +15,17 @@ interface PomodoroProps {
 }
 
 const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
-  const {
-    state, 
-    setState, 
-    toggleRunning,
-    toggleSession,
-    reset
-  } = usePomodoroTimer(settings);
+  const { state, toggleRunning, toggleSession, reset } =
+    usePomodoroTimer(settings);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [focusTimeInput, setFocusTimeInput] = useState(settings.studyDuration);
-  const [breakTimeInput, setBreakTimeInput] = useState(settings.shortBreakDuration);
+  const [breakTimeInput, setBreakTimeInput] = useState(
+    settings.shortBreakDuration,
+  );
   const [longBreakTimeInput, setLongBreakTimeInput] = useState(
-    settings.longBreakDuration
+    settings.longBreakDuration,
   );
 
   const handleSkip = () => {
@@ -62,14 +55,7 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
     });
 
     if (now) {
-      setState((prevState) => ({
-        ...prevState,
-        settings: {
-          studyDuration: focusTimeInput,
-          shortBreakDuration: breakTimeInput,
-          longBreakDuration: longBreakTimeInput,
-        },
-      }));
+      reset(newSettings.settings);
     }
   };
 
@@ -150,7 +136,6 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
           amplitude: 30,
           speed: 0.16,
           points: 4,
-
         }}
       />
       <Card style={{ padding: "20px" }}>
@@ -176,7 +161,10 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
             {icon}
             <p className="text-black">{label}</p>
           </div>
-          <TimerDisplay percentage={state.percentage} timeLeft={state.timeLeft} />
+          <TimerDisplay
+            percentage={state.percentage}
+            timeLeft={state.timeLeft}
+          />
           <Controls
             isRunning={state.isRunning}
             toggleRunning={toggleRunning}
