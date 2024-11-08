@@ -3,7 +3,7 @@ export interface ChatModel {
   uid: string;
   username: string;
   lastMessage: MessageModel;
-  avatar: string
+  avatar: string;
 }
 
 export interface MessageModel {
@@ -69,7 +69,7 @@ export interface Person extends RegisterType {
   pomodoro: {
     totalStudyTime: number;
     totalBreakTime: number;
-  }
+  };
   position: {
     latitude: number;
     longitude: number;
@@ -135,10 +135,9 @@ export interface PomodoroStats {
 export interface Song {
   title: string;
   album: string;
-  duration: string;
-  progress: string;
+  duration: number;
   cover: string;
-  id?: string;
+  id: string;
   liked: boolean;
 }
 /*
