@@ -163,6 +163,13 @@ export interface Song {
       setBreakTime(data.shortBreakDuration);
 */
 
+interface Task {
+  _id: string;
+  title: string;
+  dueDate: Date;
+
+}
+
 export interface TaskModel {
   _id: string;
   name: string;
@@ -174,13 +181,26 @@ export interface TaskModel {
   parentId?: any; // You might want to define this more specifically based on your needs
 }
 
+export enum TaskStatus {
+  PENDING = "pending",
+  IN_PROGRESS = "in-progress",
+  COMPLETED = "completed",
+}
+
+interface ProjectTaskModel  extends Task {
+  description: string;
+  status: TaskStatus;
+  participants: string[]; // Usernames
+  subTasks: ProjectTaskModel[];
+}
+
 export interface ProjectModel {
   _id: string;
   title: string;
   description: string;
-  activities: TaskModel[];
-  creator: string; // creator id
-  members: string[]; // particapants usernames
+  activities: ProjectTaskModel[];
+  creator:Person; // creator id
+  members:Person[]; // particapants usernames
   creationDate: Date;
   deadline: Date;
 }
