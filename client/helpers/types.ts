@@ -80,19 +80,32 @@ export type People = Person[];
 
 export type FrequencyType = "daily" | "weekly" | "monthly" | "yearly";
 
+export type DayType = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
+
+export type PositionType = -1 | 1 | 2 | 3 | 4 | 5;
+
+export interface RRule {
+  freq: FrequencyType;
+  interval: number;
+  until?: Date;
+  count?: number;
+  bymonth?: number;
+  bymonthday?: number;
+  byday?: Array<{
+    day: DayType;
+    position?: PositionType;
+  }>;
+}
+
 export interface SelfieEvent {
   title: String;
   summary: String;
-  uid: String;
+  uid: String | Number;
   sequence: Number;
   status: String;
   transp: String;
-  rrule: {
-    freq: FrequencyType;
-    interval: Number;
-    bymonth: Number;
-    bymonthday: Number;
-  };
+  isRrule: boolean;
+  rrule: RRule;
   dtstart: Date;
   dtend: Date;
   dtstamp: String;
@@ -149,6 +162,13 @@ export interface Song {
       setBreakTime(data.shortBreakDuration);
 */
 
+interface Task {
+  _id: string;
+  title: string;
+  dueDate: Date;
+
+}
+
 export interface TaskModel {
   _id: string;
   name: string;
@@ -160,13 +180,26 @@ export interface TaskModel {
   parentId?: any; // You might want to define this more specifically based on your needs
 }
 
+export enum TaskStatus {
+  PENDING = "pending",
+  IN_PROGRESS = "in-progress",
+  COMPLETED = "completed",
+}
+
+interface ProjectTaskModel  extends Task {
+  description: string;
+  status: TaskStatus;
+  participants: string[]; // Usernames
+  subTasks: ProjectTaskModel[];
+}
+
 export interface ProjectModel {
   _id: string;
   title: string;
   description: string;
-  activities: TaskModel[];
-  creator: string; // creator id
-  members: string[]; // particapants usernames
+  activities: ProjectTaskModel[];
+  creator:Person; // creator id
+  members:Person[]; // particapants usernames
   creationDate: Date;
   deadline: Date;
 }

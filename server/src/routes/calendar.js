@@ -1,5 +1,6 @@
 import express from "express";
 import cookieJwtAuth from "./middleware/cookieJwtAuth.js";
+import ical from 'node-ical';
 
 //creo calendario
 function createCalendarRouter(db, sendNotification) {
@@ -118,6 +119,7 @@ function createCalendarRouter(db, sendNotification) {
 
     if (!isDodge) {
       var event = req.body.event;
+      console.log("event", event);
       if (!event)
         return res.status(400).json({ message: "Id dell'evento non fornito" });
     }
@@ -151,6 +153,35 @@ function createCalendarRouter(db, sendNotification) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }
 
+  });
+
+
+  router.post('/import', cookieJwtAuth, async function(req, res) {
+    try {
+      const { url, icalData } = req.body;
+
+      if (!url && !icalData) {
+        return res.status(400).json({ message: "No URL or iCal data provided" });
+      }
+
+      let events;
+      try {
+        if (url) {
+          events = await ical.fromURL(url);
+        } else {
+          events = ical.sync.parseICS(icalData);
+        }
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid iCal format" });
+      }
+
+      // Passa l'userId dall'auth middleware
+      const importedTitles = await db.importEvents(events, req.user._id);
+      return res.status(200).json({ message: "Events have been imported successfully", importedTitles: importedTitles });
+    } catch (error) {
+      console.error('Import error:', error);
+      return res.status(500).json({ message: "Server error: " + error.message });
+    }
   });
 
   return router;
