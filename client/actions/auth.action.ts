@@ -33,12 +33,12 @@ export async function login(user: LoginFormType) {
   if (!response.ok) {
     const error = await response.json();
     // WE need this to show the error message in the login page
-    // Doesn't work with throw new Error in production 
+    // Doesn't work with throw new Error in production
     if (response.status === 401) {
       const err = {
         message: error.message,
         success: false,
-      }
+      };
       return err;
     }
     throw new Error(error.message || "Login failed");
@@ -72,7 +72,7 @@ export async function verification(emailToken: string) {
       headers: {
         "Content-Type": "application/json",
       },
-    },
+    }
   );
 
   return await response.json();
