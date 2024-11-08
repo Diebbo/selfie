@@ -1575,11 +1575,11 @@ export async function createDataBase(uri) {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: { ...msg, sender: sender.username },
-                avatar: otherUser.avatar,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: { ...msg, sender: sender.username },
+              avatar: otherUser.avatar,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1665,6 +1665,20 @@ export async function createDataBase(uri) {
         .populate("participatingEvents")
         .populate("events") // convert  id to event object
         .populate("projects")
+        .populate({
+          path: "projects",
+          populate: {
+            path: "members",
+            select: "username _id"
+          }
+        })
+        .populate({
+          path: "projects",
+          populate: {
+            path: "creator",
+            select: "username _id avatar"
+          }
+        })
         .populate({
           path: "friends",
           model: "Users",
