@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { isVerified } from "./actions/auth.action";
+import { AuthLevel, isAuthenticated } from "./jose";
 
 // 1. Specify protected and public routes
 // const protectedRoutes = ['/dashboard', '/', '/timemachine']
@@ -29,23 +29,24 @@ export default async function middleware(req: NextRequest) {
     const token = cookieStore.get("token")?.value;
     if (token) {
       try {
-        const res = await isVerified();
+        const res = await isAuthenticated(token);
+        console.log(res);
         switch (res) {
-          case 200: // token is valid and email is verified
+          case AuthLevel.authenticated: // token is valid and email is verified
             if (isPublicRoute) {
               return NextResponse.redirect(
-                new URL("/change_account", req.nextUrl),
+                new URL("/change_account", req.nextUrl)
               );
             }
             return NextResponse.next();
-          case 403: // token is valid but email is not verified
+          case AuthLevel.notVerified: // token is valid but email is not verified
             if (path !== "/verifyemail" && path !== "/verification") {
               return NextResponse.redirect(
-                new URL("/verifyemail", req.nextUrl),
+                new URL("/verifyemail", req.nextUrl)
               );
             }
             return NextResponse.next();
-          case 401: // token is invalid
+          case AuthLevel.unauthenticated: // token is invalid
           default:
             if (
               path === "/login" ||

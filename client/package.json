@@ -27,7 +27,7 @@
     "formik": "^2.4.6",
     "framer-motion": "^10.18.0",
     "ical-generator": "^8.0.1",
-    "jose": "^5.9.3",
+    "jose": "^5.9.6",
     "jsonwebtoken": "^9.0.2",
     "leaflet": "^1.9.4",
     "leaflet-defaulticon-compatibility": "^0.1.2",
