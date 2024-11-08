@@ -231,7 +231,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 View All
               </Link>
             </div>
-            <ProjectTable projects={user.projects} creator={user} />
+            <ProjectTable projects={user.projects} />
           </div>
         </div>
 

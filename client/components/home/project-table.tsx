@@ -1,5 +1,5 @@
 import React from 'react';
-import { Person, ProjectModel } from '@/helpers/types';
+import { Person, ProjectModel, TaskStatus } from '@/helpers/types';
 import {
   Table,
   TableBody,
@@ -31,11 +31,10 @@ const columns: columnsModel[] = [
 interface RenderCellProps {
   project: ProjectModel;
   columnKey: string;
-  creator?: Person;
 }
 
 // Component to render different cell content based on column type
-const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) => {
+const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey }) => {
   switch (columnKey) {
     case "title":
       return (
@@ -61,10 +60,10 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
     case "creator":
       return (
         <User
-          name={creator?.username}
-          description={creator?.email}
+          name={project.creator.username}
+          description={project.creator.email}
           avatarProps={{
-            src: creator?.avatar
+            src: project.creator.avatar
           }}
         />
       );
@@ -78,8 +77,8 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
             content={
               <div className="px-1 py-2">
                 {project.members.map(participant => (
-                  <div key={participant} className="text-small">
-                    {participant}
+                  <div key={participant._id} className="text-small">
+                    {participant.username}
                   </div>
                 ))}
               </div>
@@ -97,7 +96,7 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
           <span>{""}</span>
           <Chip
             size="sm"
-            color={project.activities.filter(task => !task.completed).length === 0 ? "success" : "warning"}
+            color={project.activities.filter(task => task.status === TaskStatus.COMPLETED).length === 0 ? "success" : "warning"}
           >
             {new Date(project.deadline).toDateString()}
           </Chip>
@@ -105,7 +104,7 @@ const RenderCell: React.FC<RenderCellProps> = ({ project, columnKey, creator }) 
       );
 
     case "progress":
-      const completedTasks = project.activities.filter(task => task.completed).length;
+      const completedTasks = project.activities.filter(task => task.status === TaskStatus.COMPLETED).length;
       const progress = project.activities.length > 0 ? Math.round((completedTasks / project.activities.length) * 100) : 0;
       return (
         <Chip
@@ -129,7 +128,7 @@ interface ProjectComponentProps {
 }
 
 export const ProjectTable: React.FC<ProjectComponentProps> = ({ projects, creator }) => {
-  
+
   return (
     <div className="w-full flex flex-col gap-4">
       <Table aria-label="Project table with custom cells">
@@ -151,7 +150,6 @@ export const ProjectTable: React.FC<ProjectComponentProps> = ({ projects, creato
                   <RenderCell
                     project={item}
                     columnKey={columnKey.toString()}
-                    creator={creator}
                   />
                 </TableCell>
               )}

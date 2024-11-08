@@ -6,7 +6,7 @@ import { getEvent, getOwner } from '@/actions/events'
 const EventPage = async ({ params }: { params: Promise<{ eventid: string }> }) => {
   const event = await getEvent((await params).eventid);
   const user = await getUser();
-  const owner = await getOwner(event.uid);
+  const owner = await getOwner(String(event.uid));
 
   return (
     <ShowEvent
