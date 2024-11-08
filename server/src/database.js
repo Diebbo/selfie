@@ -1805,6 +1805,20 @@ export async function createDataBase(uri) {
         .populate("events") // convert  id to event object
         .populate("projects")
         .populate({
+          path: "projects",
+          populate: {
+            path: "members",
+            select: "username _id"
+          }
+        })
+        .populate({
+          path: "projects",
+          populate: {
+            path: "creator",
+            select: "username _id avatar"
+          }
+        })
+        .populate({
           path: "friends",
           model: "Users",
           // select mail e username
