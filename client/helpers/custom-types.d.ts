@@ -8,6 +8,7 @@ declare global {
     projects: ProjectModel[];
     _user?: Person;
     friends: String[];
+    time: Date;
   }
 
   // Update the tag name map

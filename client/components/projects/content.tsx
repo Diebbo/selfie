@@ -5,6 +5,7 @@ import { Person, ProjectModel } from '@/helpers/types';
 import './project-component.js';
 import './project-modal.js';
 import './project-card.js';
+import { useTime } from '../contexts/TimeContext';
 
 interface ContentProps {
   projects: ProjectModel[];
@@ -13,6 +14,7 @@ interface ContentProps {
 
 export default function Content({ projects, user }: ContentProps) {
   const projectComponentRef = useRef<HTMLProjectComponentElement | null>(null);
+  const { currentTime } = useTime();
 
   useEffect(() => {
     // Passa i progetti al custom element quando disponibile
@@ -20,10 +22,10 @@ export default function Content({ projects, user }: ContentProps) {
       projectComponentRef.current.projects = projects;
       projectComponentRef.current._user = user;
       projectComponentRef.current.friends = user.friends.map((friend) => friend.username);
-      console.log('Content: projects passed to custom element', projectComponentRef.current);
+      projectComponentRef.current.time = currentTime;
       // projectComponentRef.classList.add('font-sans', 'bg-gray-900', 'text-white');
     }
-  }, [user]);
+  }, [user, projects, currentTime]);
 
   return (
     <div className="m-3">

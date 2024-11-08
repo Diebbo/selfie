@@ -6,6 +6,7 @@ class ProjectCard extends HTMLElement {
         wrapper.setAttribute('class', 'project-card');
         this.user = null;
         this.project = null;
+        this.time = null;
 
         this.setupStyle();
         shadow.appendChild(wrapper);
@@ -55,6 +56,10 @@ class ProjectCard extends HTMLElement {
           align-items: center;
       }
 
+      .current-date {
+        background-color: hsl(var(--nextui-primary-100));
+      }
+
       .gantt-cell {
           flex-shrink: 0;
           border-right: 1px solid hsl(var(--nextui-default-400));
@@ -100,11 +105,16 @@ class ProjectCard extends HTMLElement {
           max-width: 150px;
           padding-right: 0.625rem;
           flex-shrink: 0;
+            justify-content: space-between;
           display: flex;
-          align-items: center; /* Center content vertically */
           overflow-y: hidden;
             overflow-x: hidden;
       }
+    .task-info span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
       .task-info:hover, .task-info:active {
           cursor: pointer; 
@@ -272,18 +282,21 @@ class ProjectCard extends HTMLElement {
 
     // Observe these attributes for changes
     static get observedAttributes() {
-        return ['project', 'user'];
+        return ['project', 'user', 'time'];
     }
 
     // Handle attribute changes
     attributeChangedCallback(name, oldValue, newValue) {
-        if ((name === 'project' || name === 'user') && oldValue !== newValue) {
+        if ((name === 'project' || name === 'user' || name === 'time') && oldValue !== newValue) {
             // Reset the stored data to force re-parsing
             if (name === 'project') {
                 this.project = undefined;
             }
             if (name === 'user') {
                 this.user = undefined;
+            }
+            if (name === 'time') {
+                this.time = undefined;
             }
             this.render();
         }
@@ -294,6 +307,7 @@ class ProjectCard extends HTMLElement {
             // Always parse fresh from attributes
             this.project = JSON.parse(this.getAttribute('project') || '{}');
             this.user = JSON.parse(this.getAttribute('user') || '{}');
+            this.time = this.getAttribute('time') ? new Date(this.getAttribute('time')) : new Date();
         } catch (error) {
             console.error("Error parsing 'project' or 'user' attributes:", error);
             return false;
@@ -370,7 +384,6 @@ class ProjectCard extends HTMLElement {
 
         // Restore the last scroll position from localStorage
         const lastScrollLeft = localStorage.getItem('overlayGanttScrollTop');
-        console.log('Last scroll left:', lastScrollLeft);
         if (lastScrollLeft) {
             overlayGanttRows.scrollLeft = parseInt(lastScrollLeft, 10);
         }
@@ -838,8 +851,14 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell start-date-column">Start Date</div>
         <div class="gantt-cell end-date-column">End Date</div>
         <div class="gantt-cell participants-column">Assignees</div>
-      ${days.map(day => `<div class="gantt-cell" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
+      ${days.map(day => `<div class="gantt-cell${this.areSameDate(day, this.time) ? ' current-date' : ''}" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
+    }
+
+    areSameDate(date1, date2) {
+        return date1.getDate() === date2.getDate() &&
+            date1.getMonth() === date2.getMonth() &&
+            date1.getFullYear() === date2.getFullYear();
     }
 
 
@@ -912,7 +931,9 @@ class ProjectCard extends HTMLElement {
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
             </svg>
           </button>
-          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.title}
+          <span>
+            ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.title}
+          </span>
         </div>
       </div>
               `,
