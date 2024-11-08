@@ -89,8 +89,27 @@ const eventSchema = new mongoose.Schema({
       enum: ["daily", "weekly", "monthly", "yearly"],
     },
     interval: Number,
+    until: Date,
+    count: Number,
     bymonth: Number,
     bymonthday: Number,
+    byday: [{
+      day: {
+        type: String,
+        enum: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
+      },
+      position: { // Posizione nel mese (-1 per ultimo, 1-5 per primo-quinto)
+        type: Number,
+        min: -1,
+        max: 5
+      }
+    }],
+    bysetpos: [Number], // bysetpos[15] = il 15 del mese
+    wkst: {
+      type: String,
+      enum: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"],
+      default: "MO"
+    }
   },
   dtstart: Date,
   dtend: Date,

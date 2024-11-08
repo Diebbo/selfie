@@ -8,7 +8,7 @@ const ParticipantPage = async ({
 }) => {
   const event = await getEvent((await params).eventid);
   const participantid = (await params).participant;
-  const owner = await getOwner(event.uid);
+  const owner = await getOwner(String(event.uid));
 
   return (
     <ParticipantContent
