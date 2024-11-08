@@ -1,4 +1,4 @@
-export const PauseCircleIcon = ({ size = 24, ...props }) => (
+export const PauseIcon = ({ size = 24, ...props }) => (
   <svg
     aria-hidden="true"
     fill="none"
