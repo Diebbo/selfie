@@ -5,15 +5,24 @@ import { changeCurrentTime, resetTime } from "@/actions/setTime";
 
 import { useTime } from "../contexts/TimeContext";
 
+const oneDayPassed = (date1: Date, date2: Date) : boolean => {
+  return date1.getDate() !== date2.getDate();
+};
+
 export const Clock = () => {
   const { currentTime: time, setCurrentTime } = useTime();
   const [currentTimerTime, setCurrentTimerTime] = useState(time.getTime() ? new Date(time) : new Date());
   const [isOpen, setIsOpen] = useState(false);
+  const ONE_HOUR = 3600000;
 
   // Update the timer every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTimerTime((prevTime: Date) => new Date(prevTime.getTime() + 1000));
+      // if the timer is greather than one hour from the current time, update it
+      if (currentTimerTime.getTime() - time.getTime() > ONE_HOUR || oneDayPassed(currentTimerTime, time)) {
+        setCurrentTime(currentTimerTime);
+      }
     }, 1000);
 
     return () => clearInterval(timer);

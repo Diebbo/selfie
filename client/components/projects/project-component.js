@@ -7,6 +7,7 @@ class ProjectComponent extends HTMLElement {
     this.currentIndex = 0;
     this._modal = null;
     this._friends = [];
+    this._time = null;
     this.addEventListener('delete-project', this.handleDeleteProject);
     this.addEventListener('update-project', this.handleSaveProject);
   }
@@ -152,6 +153,13 @@ class ProjectComponent extends HTMLElement {
     }
   }
 
+  set time(value) {
+    if (value instanceof Date) {
+      this._time = value;
+      this.render();
+    }
+  }
+
   populateSelectMembers(select) {
     this._friends.forEach(friend => {
       const option = document.createElement('option');
@@ -243,6 +251,7 @@ class ProjectComponent extends HTMLElement {
       const projectCard = document.createElement('project-card');
       projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
       projectCard.setAttribute('user', JSON.stringify(this._user));
+      projectCard.setAttribute('time', this._time?.toISOString());
       this.shadowRoot.appendChild(projectCard);
     } else {
       const noProjdiv = document.createElement('div');
