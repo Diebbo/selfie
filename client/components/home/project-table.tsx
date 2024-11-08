@@ -150,7 +150,6 @@ export const ProjectTable: React.FC<ProjectComponentProps> = ({ projects, creato
                   <RenderCell
                     project={item}
                     columnKey={columnKey.toString()}
-                    creator={creator}
                   />
                 </TableCell>
               )}

@@ -193,7 +193,7 @@ export const WeekViewGrid: React.FC<{
                             <p className="font-semibold">
                               {appointment.type === 'event'
                                 ? appointment.event!.title
-                                : `${appointment.project!.title} - ${appointment.project!.activities[0].name}`}
+                                : `${appointment.project!.title} - ${appointment.project!.activities[0].title}`}
                             </p>
                             <p className="text-small text-default-500 justify-end">
                               {new Date(
