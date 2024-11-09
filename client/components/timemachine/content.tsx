@@ -24,18 +24,16 @@ interface TimeModifierClientProps {
 const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
   onSubmit,
   onReset,
-
   onClose,
   initialTime,
 }) => {
   const [time, setTime] = React.useState(initialTime.toISOString());
   const [state, setState] = React.useState({ success: false, error: null });
-  const [currentTime, setCurrentTime] = React.useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Prevent the default form submission behavior
 
-    const formData = new FormData(event.currentTarget); // Create FormData from form
+    const formData = new FormData(event.currentTarget);
 
     // Invoke onSubmit with the form data
     const response = await onSubmit(formData);
@@ -49,7 +47,6 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
     setState(response as any);
 
     if (response.success) {
-      // Chiudi il modal dopo un breve delay per mostrare il messaggio di successo
       setTimeout(() => {
         onClose?.();
       }, 1000);
@@ -76,7 +73,6 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
           variant="bordered"
           hideTimeZone
           showMonthAndYearPickers
-          // Usa initialTime come valore di default
           defaultValue={convertToCalendarDateTime(initialTime)}
           onChange={(date) =>
             setTime(date.toDate(getLocalTimeZone()).toISOString())
