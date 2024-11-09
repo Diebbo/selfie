@@ -80,7 +80,10 @@ export const NotificationsDropdown = () => {
         console.log("id", user._id);
 
         // Inizializza la connessione socket
-        socketRef.current = io("https://site232454.tw.cs.unibo.it");
+        if (!process.env.NEXT_PUBLIC_SOCKET_URL) {
+          throw new Error("Socket URL not defined");
+        }
+        socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL as string);
         console.log("Connected to socket notification server");
 
         socketRef.current.on("connect", () => {
