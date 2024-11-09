@@ -23,6 +23,17 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  if (
+    process.env.NODE_ENV === "production" &&
+    req.headers.get("x-forwarded-proto") !== "https"
+  ) {
+    console.log("redirecting to https");
+    return NextResponse.redirect(
+      `https://${req.headers.get("host")}${req.nextUrl.pathname}`,
+      301,
+    );
+  }
+
   // 3. Decrypt the session from the cookie
   try {
     const cookieStore = await cookies();
@@ -35,14 +46,14 @@ export default async function middleware(req: NextRequest) {
           case AuthLevel.authenticated: // token is valid and email is verified
             if (isPublicRoute) {
               return NextResponse.redirect(
-                new URL("/change_account", req.nextUrl)
+                new URL("/change_account", req.nextUrl),
               );
             }
             return NextResponse.next();
           case AuthLevel.notVerified: // token is valid but email is not verified
             if (path !== "/verifyemail" && path !== "/verification") {
               return NextResponse.redirect(
-                new URL("/verifyemail", req.nextUrl)
+                new URL("/verifyemail", req.nextUrl),
               );
             }
             return NextResponse.next();
