@@ -3,6 +3,7 @@ import { PomodoroSettings } from "@/helpers/types";
 import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 import { AuthenticationError, ServerError } from "@/helpers/errors";
+import { tokenToId } from "@/jose";
 
 export async function getSettings() {
   const cookieStore = await cookies();
@@ -18,7 +19,10 @@ export async function getSettings() {
       "Content-Type": "application/json",
       Cookie: `token=${token.toString()}`,
     },
-    cache: "no-store", // This ensures fresh data on every request
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
 
   if (res.status === 401) {
@@ -46,7 +50,10 @@ export async function getStats() {
       "Content-Type": "application/json",
       Cookie: `token=${token.toString()}`,
     },
-    cache: "no-store", // This ensures fresh data on every request
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
 
   if (res.status === 401) {

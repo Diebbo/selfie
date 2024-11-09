@@ -1,52 +1,52 @@
-import { cookies } from 'next/headers';
-import getBaseUrl from '@/config/proxy';
+import { cookies } from "next/headers";
+import getBaseUrl from "@/config/proxy";
 
 async function getChats() {
-	const cookieStore = await cookies();
-	const token = cookieStore.get('token')?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
 
-	if (!token) {
-		throw new Error('Not authenticated');
-	}
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
 
-	const res = await fetch(`${getBaseUrl()}/api/chats`, {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			'Cookie': `token=${token.toString()}`,
-		},
-		cache: 'no-store' // This ensures fresh data on every request
-	});
+  const res = await fetch(`${getBaseUrl()}/api/chats`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+    cache: "force-cache",
+  });
 
-	if (!res.ok) {
-		throw new Error('Failed to fetch chats');
-	}
+  if (!res.ok) {
+    throw new Error("Failed to fetch chats");
+  }
 
-	return await res.json();
+  return await res.json();
 }
 
 async function getChatByUsername(username: string) {
-	const cookieStore = await cookies();
-	const token = cookieStore.get('token')?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
 
-	if (!token) {
-		throw new Error('Not authenticated');
-	}
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
 
-	const res = await fetch(`${getBaseUrl()}/api/chats/messages/${username}`, {
-		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			'Cookie': `token=${token.toString()}`,
-		},
-		cache: 'no-store' // This ensures fresh data on every request
-	});
+  const res = await fetch(`${getBaseUrl()}/api/chats/messages/${username}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+    cache: "no-store", // This ensures fresh data on every request
+  });
 
-	if (!res.ok) {
-		throw new Error('Failed to fetch chat');
-	}
+  if (!res.ok) {
+    throw new Error("Failed to fetch chat");
+  }
 
-	return await res.json();
+  return await res.json();
 }
 
 export { getChats, getChatByUsername };

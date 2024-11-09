@@ -15,12 +15,11 @@ import {
   Skeleton,
   DateRangePicker,
 } from "@nextui-org/react";
-import {
-  SelfieEvent, SelfieNotification,
-} from "@/helpers/types";
+import { SelfieEvent, SelfieNotification } from "@/helpers/types";
 import NotificationMenu from "@/components/calendar/notificationMenu";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { parseDateTime } from "@internationalized/date";
+import { customRevalidate } from "@/actions/user";
 
 const initialNotification = {
   title: "",
@@ -39,7 +38,11 @@ interface ParticipantContentProps {
   owner: string;
 }
 
-const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, participant }) => {
+const ParticipantContent: React.FC<ParticipantContentProps> = ({
+  owner,
+  event,
+  participant,
+}) => {
   const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
   const [participants, setParticipants] = useState<string[]>([""]);
@@ -97,19 +100,18 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
         },
       };
     });
-  }
+  };
 
   //da rivedere e mettere serverside, dopo il merge con develop
   useEffect(() => {
     async function fetchParticipantsUsername() {
-
       try {
         const res = await fetch(`${EVENTS_API_URL}/${eventid}/participants`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
-          cache: "no-store"
+          cache: "no-store",
         });
 
         if (res.status === 401) {
@@ -123,7 +125,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
         const participants = await res.json();
         // if you are not a participant you are redirected to calendar page
         if (!participants.uids.includes(participant)) {
-          router.refresh()
+          router.refresh();
           router.push("/calendar");
         }
         setTrueParticipant(true);
@@ -137,12 +139,10 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
     console.log("partecipants: ", participants);
   }, [event.participants]);
 
-
-  // TODO: controllare che esista ancora l'evento e lo user 
-  const handleResponse = async (response: 'accept' | 'decline') => {
+  // TODO: controllare che esista ancora l'evento e lo user
+  const handleResponse = async (response: "accept" | "decline") => {
     console.log("dentro handle response");
     try {
-      console.log("faccio la post");
       // Implementa la logica per inviare la risposta al server
       const res = await fetch(`/api/events/participate/${eventid}`, {
         method: "POST",
@@ -167,8 +167,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
         }),
       });
 
-      console.log(await res.json());
-
+      customRevalidate();
       handleReturnToCalendar();
     } catch (error) {
       console.error("Error sending response:", error);
@@ -182,15 +181,15 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       return {
-        start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(tomorrow.toISOString().split('T')[0])
+        start: parseDateTime(today.toISOString().split("T")[0]),
+        end: parseDateTime(tomorrow.toISOString().split("T")[0]),
       };
     } else {
       const nextHour = new Date(today);
       nextHour.setHours(today.getHours() + 1);
       return {
-        start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(nextHour.toISOString().split('T')[0])
+        start: parseDateTime(today.toISOString().split("T")[0]),
+        end: parseDateTime(nextHour.toISOString().split("T")[0]),
       };
     }
   };
@@ -198,7 +197,11 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
   //Skeleton di caricamento
   if (!trueParticipant) {
     return (
-      <Modal isOpen={true} className="w-[60%] h-[70%] space-y-5 p-4" radius="lg">
+      <Modal
+        isOpen={true}
+        className="w-[60%] h-[70%] space-y-5 p-4"
+        radius="lg"
+      >
         <ModalContent>
           <Skeleton className="w-2/5 rounded-lg">
             <div className="h-4 w-2/5 rounded-lg bg-default-300"></div>
@@ -261,22 +264,22 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
             <Skeleton className="w-2/5 rounded-lg">
               <Button />
             </Skeleton>
-
           </ModalFooter>
         </ModalContent>
       </Modal>
-    )
+    );
   }
   return (
     <Modal isOpen={isOpen} onClose={handleReturnToCalendar} size="2xl">
       <ModalContent>
         <ModalHeader>
-          <h2 className="text-xl font-semibold">Sei stato invitato da {owner}</h2>
+          <h2 className="text-xl font-semibold">
+            Sei stato invitato da {owner}
+          </h2>
         </ModalHeader>
         <ModalBody>
           <Card>
             <CardBody>
-
               <Input
                 className="text-gray-600 mb-4"
                 label="Titolo evento"
@@ -293,8 +296,8 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
                 hideTimeZone
                 defaultValue={getDateRange(event?.allDay as boolean)}
                 classNames={{
-                  selectorButton: "hidden",  // nasconde completamente il trigger
-                  base: "pointer-events-none" // disabilita le interazioni
+                  selectorButton: "hidden", // nasconde completamente il trigger
+                  base: "pointer-events-none", // disabilita le interazioni
                 }}
               />
 
@@ -320,7 +323,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
                   label="Partecipanti"
                   className="text-gray-600 mb-4"
                   isReadOnly={true}
-                  value={owner + ", ".concat(participants.join(', '))}
+                  value={owner + ", ".concat(participants.join(", "))}
                 />
               )}
 
@@ -349,8 +352,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
                 setNotificationError={setNotificationError}
                 isAllDay={event?.allDay as boolean}
               />
-
-
             </CardBody>
           </Card>
         </ModalBody>
@@ -360,14 +361,14 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
             color="danger"
             variant="light"
             className="border-1 border-red-700"
-            onPress={() => handleResponse('decline')}
+            onPress={() => handleResponse("decline")}
           >
             Rifiuta
           </Button>
           <Button
             color="success"
             className="hover:bg-green-600"
-            onPress={() => handleResponse('accept')}
+            onPress={() => handleResponse("accept")}
           >
             Accetta
           </Button>

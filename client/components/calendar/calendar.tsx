@@ -8,13 +8,11 @@ import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
 import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
-import { getCurrentTime } from "@/actions/setTime";
 import { useTime } from "../contexts/TimeContext";
 
 interface CalendarPageProps {
   createdEvents: SelfieEvent[];
   participatingEvents: SelfieEvent[];
-  dbdate: Date;
   friends: People;
   projects: ProjectModel[];
 }

@@ -15,9 +15,10 @@ import {
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
 import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { useReload } from "./contextStore";
 import { useDebouncedCallback } from "use-debounce";
+import { customRevalidate } from "@/actions/user";
 
 const EVENTS_API_URL = "/api/events";
 
@@ -33,87 +34,98 @@ type State = {
 };
 
 type Action =
-  | { type: 'START_EDITING'; payload: SelfieEvent }
-  | { type: 'CANCEL_EDITING'; payload: SelfieEvent }
-  | { type: 'UPDATE_FIELD'; payload: { field: keyof SelfieEvent; value: any } }
-  | { type: 'UPDATE_DATE_RANGE'; payload: { start: Date; end: Date } }
-  | { type: 'UPDATE_NOTIFICATION'; payload: { field: keyof SelfieNotification; value: any } }
-  | { type: 'UPDATE_GEO'; payload: Geo }
-  | { type: 'RESET_STATE' };
+  | { type: "START_EDITING"; payload: SelfieEvent }
+  | { type: "CANCEL_EDITING"; payload: SelfieEvent }
+  | { type: "UPDATE_FIELD"; payload: { field: keyof SelfieEvent; value: any } }
+  | { type: "UPDATE_DATE_RANGE"; payload: { start: Date; end: Date } }
+  | {
+      type: "UPDATE_NOTIFICATION";
+      payload: { field: keyof SelfieNotification; value: any };
+    }
+  | { type: "UPDATE_GEO"; payload: Geo }
+  | { type: "RESET_STATE" };
 
 function eventReducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'START_EDITING':
+    case "START_EDITING":
       return {
         ...state,
         isEditing: true,
         editedEvent: { ...action.payload },
         dateRange: {
           start: new Date(action.payload.dtstart),
-          end: new Date(action.payload.dtend)
-        }
+          end: new Date(action.payload.dtend),
+        },
       };
 
-    case 'CANCEL_EDITING':
+    case "CANCEL_EDITING":
       return {
         isEditing: false,
         editedEvent: { ...action.payload },
         dateRange: {
           start: new Date(action.payload.dtstart),
-          end: new Date(action.payload.dtend)
-        }
+          end: new Date(action.payload.dtend),
+        },
       };
 
-    case 'UPDATE_FIELD':
+    case "UPDATE_FIELD":
       return {
         ...state,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          [action.payload.field]: action.payload.value
-        } : null
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              [action.payload.field]: action.payload.value,
+            }
+          : null,
       };
 
-    case 'UPDATE_DATE_RANGE':
+    case "UPDATE_DATE_RANGE":
       return {
         ...state,
         dateRange: action.payload,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          dtstart: action.payload.start,
-          dtend: action.payload.end
-        } : null
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              dtstart: action.payload.start,
+              dtend: action.payload.end,
+            }
+          : null,
       };
 
-    case 'UPDATE_NOTIFICATION':
+    case "UPDATE_NOTIFICATION":
       return {
         ...state,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          notification: {
-            ...state.editedEvent.notification,
-            [action.payload.field]: action.payload.value
-          }
-        } : null
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              notification: {
+                ...state.editedEvent.notification,
+                [action.payload.field]: action.payload.value,
+              },
+            }
+          : null,
       };
 
-    case 'UPDATE_GEO':
+    case "UPDATE_GEO":
       console.log("update_geo action", action);
       return {
         ...state,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          geo: {
-            lat: action.payload.lat,
-            lon: action.payload.lon,
-          }
-        } : null
-      }
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              geo: {
+                lat: action.payload.lat,
+                lon: action.payload.lon,
+              },
+            }
+          : null,
+      };
 
-    case 'RESET_STATE':
+    case "RESET_STATE":
       return {
         isEditing: false,
         editedEvent: null,
-        dateRange: null
+        dateRange: null,
       };
 
     default:
@@ -128,7 +140,7 @@ async function fetchParticipants(eventid: string) {
       headers: {
         "Content-Type": "application/json",
       },
-      cache: "no-store"
+      cache: "no-store",
     });
 
     if (res.status === 401) {
@@ -176,16 +188,17 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   const eventid = event._id;
   const isOwner = user._id === event.uid ? true : false;
   const { reloadEvents, setReloadEvents } = useReload();
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
-
+  const [locationSuggestions, setLocationSuggestions] = useState<
+    LocationSuggestion[]
+  >([]);
 
   const handleLocationSelect = (value: string) => {
     const selectedItem = locationSuggestions.find((item) => item.id === value);
     if (selectedItem) {
-      handleInputChange('location', selectedItem.label);
+      handleInputChange("location", selectedItem.label);
       handleGeoChange({
         lat: selectedItem.lat,
-        lon: selectedItem.lon
+        lon: selectedItem.lon,
       });
     }
   };
@@ -200,9 +213,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
           setParticipants(result.usernames);
         }
       } catch (e: unknown) {
-        console.log("Error fetching participants", e)
+        console.log("Error fetching participants", e);
       }
-    }
+    };
 
     if (eventid) {
       getParticipants();
@@ -273,7 +286,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
 
   const handleEdit = () => {
     if (selectedEvent) {
-      dispatch({ type: 'START_EDITING', payload: selectedEvent });
+      dispatch({ type: "START_EDITING", payload: selectedEvent });
     }
   };
 
@@ -284,24 +297,27 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
 
   const handleReset = () => {
     if (selectedEvent) {
-      dispatch({ type: 'CANCEL_EDITING', payload: selectedEvent });
+      dispatch({ type: "CANCEL_EDITING", payload: selectedEvent });
     }
   };
 
   const handleInputChange = (field: keyof SelfieEvent, value: any) => {
-    dispatch({ type: 'UPDATE_FIELD', payload: { field, value } });
+    dispatch({ type: "UPDATE_FIELD", payload: { field, value } });
   };
 
   const handleGeoChange = (coordinates: Geo) => {
-    dispatch({ type: 'UPDATE_GEO', payload: coordinates });
-  }
-
-  const handleDateRangeChange = (range: { start: Date; end: Date }) => {
-    dispatch({ type: 'UPDATE_DATE_RANGE', payload: range });
+    dispatch({ type: "UPDATE_GEO", payload: coordinates });
   };
 
-  const handleNotificationChange = (field: keyof SelfieNotification, value: any) => {
-    dispatch({ type: 'UPDATE_NOTIFICATION', payload: { field, value } });
+  const handleDateRangeChange = (range: { start: Date; end: Date }) => {
+    dispatch({ type: "UPDATE_DATE_RANGE", payload: range });
+  };
+
+  const handleNotificationChange = (
+    field: keyof SelfieNotification,
+    value: any,
+  ) => {
+    dispatch({ type: "UPDATE_NOTIFICATION", payload: { field, value } });
   };
 
   async function modifyEvent() {
@@ -321,8 +337,8 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ event: updatedEvent }),
-        cache: "no-store",
       });
+      customRevalidate();
 
       if (!res.ok) {
         throw new Error(`Failed to modify event: ${res.statusText}`);
@@ -343,12 +359,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
           "Content-Type": "application/json",
         },
       });
+      customRevalidate();
 
       if (!res.ok) {
         throw new Error(`Failed to delete event: ${res.statusText}`);
       }
 
-      dispatch({ type: 'RESET_STATE' });
+      dispatch({ type: "RESET_STATE" });
       handleClose();
     } catch (e: unknown) {
       console.error(`Error during delete event: ${(e as Error).message}`);
@@ -358,18 +375,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
 
   async function dodgeEvent() {
     try {
-      const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}/?fields=true`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `${EVENTS_API_URL}/${selectedEvent?._id}/?fields=true`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!res.ok) {
         throw new Error(`Failed to delete event: ${res.statusText}`);
       }
 
-      dispatch({ type: 'RESET_STATE' });
+      dispatch({ type: "RESET_STATE" });
       handleClose();
     } catch (e: unknown) {
       console.error(`Error during delete event: ${(e as Error).message}`);
@@ -403,7 +423,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
               <Input
                 isReadOnly={!state.isEditing}
                 value={displayEvent?.title as string}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 className="max-w-xs"
               />
               <div className="justify-end">
@@ -414,7 +434,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                 >
                   Annulla
                 </Button>
-                {user._id === displayEvent.uid && !state.isEditing &&
+                {user._id === displayEvent.uid && !state.isEditing && (
                   <Button
                     className="mx-2 mr-4"
                     onClick={handleEdit}
@@ -422,8 +442,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                   >
                     Modifica
                   </Button>
-                }
-
+                )}
               </div>
             </ModalHeader>
             <ModalBody>
@@ -432,13 +451,23 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                 className="max-w-[430px] mb-4"
                 hideTimeZone
                 defaultValue={{
-                  start: parseDate(displayEvent.dtstart.toString().split('T')[0]),
-                  end: parseDate(displayEvent.dtend.toString().split('T')[0]),
+                  start: parseDate(
+                    displayEvent.dtstart.toString().split("T")[0],
+                  ),
+                  end: parseDate(displayEvent.dtend.toString().split("T")[0]),
                 }}
-                value={state.dateRange ? {
-                  start: parseDate(state.dateRange.start.toISOString().split('T')[0]),
-                  end: parseDate(state.dateRange.end.toISOString().split('T')[0])
-                } : undefined}
+                value={
+                  state.dateRange
+                    ? {
+                        start: parseDate(
+                          state.dateRange.start.toISOString().split("T")[0],
+                        ),
+                        end: parseDate(
+                          state.dateRange.end.toISOString().split("T")[0],
+                        ),
+                      }
+                    : undefined
+                }
                 onChange={handleDateRangeChange as any}
                 isDisabled={!state.isEditing}
                 visibleMonths={2}
@@ -453,12 +482,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                     handleInputChange("location", value);
                     fetchLocationSuggestions(value);
                   }}
-                  onSelectionChange={(value) => handleLocationSelect(value as string)}
+                  onSelectionChange={(value) =>
+                    handleLocationSelect(value as string)
+                  }
                   defaultFilter={(textValue, inputValue) => {
                     const lowerCaseInput = inputValue.toLowerCase().trim();
                     const searchWords = lowerCaseInput.split(/\s+/);
                     return searchWords.every((word) =>
-                      textValue.toLowerCase().includes(word)
+                      textValue.toLowerCase().includes(word),
                     );
                   }}
                 >
@@ -473,32 +504,37 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                 isReadOnly={!state.isEditing}
                 label="Description"
                 value={displayEvent.description as string}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 className="mb-4"
               />
 
-              {participants && participants.length > 0 &&
+              {participants && participants.length > 0 && (
                 <Input
                   isReadOnly={!state.isEditing}
                   label="Participants"
-                  value={[owner, ...participants.map(p => p.toString())].join(", ")}
-
-                  onChange={(e) => handleInputChange('URL', e.target.value)}
+                  value={[owner, ...participants.map((p) => p.toString())].join(
+                    ", ",
+                  )}
+                  onChange={(e) => handleInputChange("URL", e.target.value)}
                   className="mb-4"
                 />
-              }
+              )}
               <Input
                 isReadOnly={!state.isEditing}
                 label="URL"
                 value={displayEvent.URL as string}
-                onChange={(e) => handleInputChange('URL', e.target.value)}
+                onChange={(e) => handleInputChange("URL", e.target.value)}
                 className="mb-4"
               />
               <Input
                 isReadOnly={!state.isEditing}
                 label="Categories"
                 value={displayEvent.categories?.join(", ")}
-                onChange={(e) => handleInputChange('categories', e.target.value.split(", "))}
+                onChange={(e) =>
+                  handleInputChange("categories", e.target.value.split(", "))
+                }
                 className="mb-4"
               />
               {displayEvent.notification && (
@@ -507,20 +543,23 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                     isReadOnly={!state.isEditing}
                     label="Notification Title"
                     value={displayEvent.notification.title as string}
-                    onChange={(e) => handleNotificationChange('title', e.target.value)}
+                    onChange={(e) =>
+                      handleNotificationChange("title", e.target.value)
+                    }
                     className="mb-4"
                   />
                   <DatePicker
                     isReadOnly={!state.isEditing}
                     label="Notification Start Date"
-                    onChange={(date) => handleNotificationChange('fromDate', date)}
+                    onChange={(date) =>
+                      handleNotificationChange("fromDate", date)
+                    }
                     className="mb-4"
                   />
                 </>
               )}
             </ModalBody>
             <ModalFooter className="justify-end">
-
               {isOwner && (
                 <div>
                   <Button
@@ -543,22 +582,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
 
               {!isOwner && (
                 <div>
-                  <Button
-                    color="danger"
-                    variant="light"
-                    onPress={dodgeEvent}
-                  >
+                  <Button color="danger" variant="light" onPress={dodgeEvent}>
                     Non Partecipare
                   </Button>
-                  <Button
-                    color="primary"
-                    onPress={handleClose}
-                  >
+                  <Button color="primary" onPress={handleClose}>
                     Chiudi
                   </Button>
                 </div>
               )}
-
             </ModalFooter>
           </>
         ) : (

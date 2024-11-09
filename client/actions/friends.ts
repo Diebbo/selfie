@@ -1,10 +1,10 @@
 import getBaseUrl from "@/config/proxy";
+import { tokenToId } from "@/jose";
 import { cookies } from "next/headers";
 
 async function getFriends() {
-
   const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
+  const token = cookieStore.get("token")?.value;
   if (!token) {
     throw new Error("Not authenticated");
   }
@@ -13,9 +13,12 @@ async function getFriends() {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      'Cookie': `token=${token.toString()}`,
+      Cookie: `token=${token.toString()}`,
     },
-    cache: "no-store",
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
   return await res.json();
 }

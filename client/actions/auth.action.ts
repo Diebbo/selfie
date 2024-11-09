@@ -3,6 +3,7 @@
 import { LoginFormType, RegisterType } from "@/helpers/types";
 import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
+import { tokenToId } from "@/jose";
 
 export const createAuthCookie = async (token: string) => {
   const cookieStore = await cookies();
@@ -72,7 +73,7 @@ export async function verification(emailToken: string) {
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   return await response.json();
@@ -138,7 +139,10 @@ export async function getUsername() {
       "Content-Type": "application/json",
       Cookie: `token=${token.toString()}`,
     },
-    credentials: "include",
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
 
   if (!response.ok) {
@@ -163,8 +167,10 @@ export async function getNotificationStatus() {
       "Content-Type": "application/json",
       Cookie: `token=${token.toString()}`,
     },
-    cache: "no-store",
-    credentials: "include",
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
 
   if (!response.ok) {

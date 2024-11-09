@@ -35,6 +35,7 @@ import {
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
+import { customRevalidate } from "@/actions/user";
 
 async function createEvent(event: SelfieEvent): Promise<boolean> {
   try {
@@ -46,6 +47,7 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
       body: JSON.stringify({ event: event }),
       cache: "no-store",
     });
+    customRevalidate();
 
     if (res.status === 401) {
       throw new Error("Unauthorized, please login.");
@@ -104,17 +106,15 @@ const initialEvent = {
 interface EventAdderProps {
   friends: People;
   isMobile: Boolean;
-
 }
 
-const EventAdder: React.FC<EventAdderProps> = ({
-  friends,
-  isMobile,
-}) => {
+const EventAdder: React.FC<EventAdderProps> = ({ friends, isMobile }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<
+    LocationSuggestion[]
+  >([]);
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -122,7 +122,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useReload();
   const availableFriends = friends.filter(
-    (friend) => !eventData.participants?.includes(friend._id)
+    (friend) => !eventData.participants?.includes(friend._id),
   );
 
   useEffect(() => {
@@ -314,12 +314,11 @@ const EventAdder: React.FC<EventAdderProps> = ({
     console.log(eventData.participants);
   };
 
-
   const handleRemoveParticipant = (friendToRemove: Person) => {
     setEventData((prev) => ({
       ...prev,
       participants: (prev.participants || []).filter(
-        (participantId) => participantId !== friendToRemove._id
+        (participantId) => participantId !== friendToRemove._id,
       ),
     }));
   };
@@ -365,7 +364,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
     if (rrule.freq === "monthly") {
       // Must have either bymonthday or byday with position, not both
       if (rrule.bymonthday && rrule.byday) return false;
-      if (!rrule.bymonthday && (!rrule.byday || !rrule.byday[0].position)) return false;
+      if (!rrule.bymonthday && (!rrule.byday || !rrule.byday[0].position))
+        return false;
     }
 
     return true;
@@ -418,7 +418,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
         <span className="text-2xl font-bold text-white">+</span>
       </Button>
 
-
       <Modal
         isOpen={isOpen}
         onClose={handleExit}
@@ -443,7 +442,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 className={`${isMobile ? "" : "mb-4"}`}
               />
 
-              {isMobile &&
+              {isMobile && (
                 <Switch
                   isSelected={allDayEvent}
                   onValueChange={setAllDayEvent}
@@ -454,7 +453,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       "justify-between rounded-lg gap-2 p-2 border-2 border-transparent",
                     ),
                     wrapper: "p-0 h-4 overflow-visible",
-                    thumb: cn("w-5 h-5 border-2 shadow-lg",
+                    thumb: cn(
+                      "w-5 h-5 border-2 shadow-lg",
                       "group-data-[hover=true]:border-secondary",
                       //selected
                       "group-data-[selected=true]:ml-6",
@@ -465,12 +465,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   }}
                 >
                   <div className="flex flex-col gap-1">
-                    <p className="text-medium">
-                      Tutto il giorno
-                    </p>
+                    <p className="text-medium">Tutto il giorno</p>
                   </div>
                 </Switch>
-              }
+              )}
 
               <div className={`${isMobile ? "max-w-fit" : "flex gap-4 mb-4 "}`}>
                 <EventDatePicker
@@ -480,14 +478,14 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   onChange={handleDateChange}
                 />
 
-                {!isMobile && <Switch
-                  isSelected={allDayEvent}
-                  onValueChange={setAllDayEvent}
-                >
-                  Tutto il giorno
-                </Switch>
-                }
-
+                {!isMobile && (
+                  <Switch
+                    isSelected={allDayEvent}
+                    onValueChange={setAllDayEvent}
+                  >
+                    Tutto il giorno
+                  </Switch>
+                )}
               </div>
               <div className="flex flex-wrap gap-4 ">
                 <div className="flex items-center gap-4 w-full md:w-auto max-h-[50px]">
@@ -496,9 +494,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     isSelected={repeatEvent}
                     onValueChange={handleRepeatChange}
                   >
-                    <span className="pl-2">
-                      Repeat
-                    </span>
+                    <span className="pl-2">Repeat</span>
                   </Switch>
                   <RepetitionMenu
                     value={repeatEvent}
@@ -586,7 +582,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 <div className="flex gap-2 w-full">
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button variant="flat" className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}>
+                      <Button
+                        variant="flat"
+                        className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}
+                      >
                         Invitati ({eventData.participants?.length || 0})
                       </Button>
                     </DropdownTrigger>
@@ -597,7 +596,9 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       {eventData.participants?.length ? (
                         eventData.participants
                           .map((participantId) => {
-                            const participant = friends.find(friend => friend._id === participantId);
+                            const participant = friends.find(
+                              (friend) => friend._id === participantId,
+                            );
                             if (!participant) return null;
 
                             return (
@@ -609,7 +610,9 @@ const EventAdder: React.FC<EventAdderProps> = ({
                                     size="sm"
                                     color="danger"
                                     variant="light"
-                                    onPress={() => handleRemoveParticipant(participant)}
+                                    onPress={() =>
+                                      handleRemoveParticipant(participant)
+                                    }
                                   >
                                     Rimuovi
                                   </Button>

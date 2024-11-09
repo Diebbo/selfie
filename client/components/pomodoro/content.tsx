@@ -9,6 +9,7 @@ import Controls from "./Controls";
 import SettingsModal from "./SettingsModal";
 import { PomodoroSettings } from "@/helpers/types";
 import { getSettings } from "@/actions/pomodoro";
+import { customRevalidate } from "@/actions/user";
 
 interface PomodoroProps {
   settings: PomodoroSettings;
@@ -53,6 +54,7 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
       },
       body: JSON.stringify(newSettings),
     });
+    customRevalidate();
 
     if (now) {
       reset(newSettings.settings);

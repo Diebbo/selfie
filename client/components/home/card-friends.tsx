@@ -16,6 +16,7 @@ import {
 import React from "react";
 import { People, Person } from "@/helpers/types";
 import { TrashIcon } from "../icons/accounts/trash-icon";
+import { customRevalidate } from "@/actions/user";
 interface peopleProp {
   username: string;
   _id: string;
@@ -39,6 +40,7 @@ const fetchNewFriend = async (newFriendUsername: string): Promise<Person> => {
       "Content-Type": "application/json",
     },
   });
+  customRevalidate();
 
   if (!response.ok) {
     throw new Error("Failed to add new friend");
@@ -52,6 +54,7 @@ const fetchDeleteFriend = async (id: string) => {
   const response = await fetch(`/api/friends/${id}`, {
     method: "DELETE",
   });
+  customRevalidate();
 
   if (!response.ok) {
     throw new Error("Failed to delete friend");
@@ -150,10 +153,7 @@ export const CardFriends = ({
                 color="default"
               >
                 <PopoverTrigger>
-                  <Avatar
-                    src={item.avatar}
-                    className="min-w-[40px]"
-                  />
+                  <Avatar src={item.avatar} className="min-w-[40px]" />
                 </PopoverTrigger>
                 <PopoverContent className="p-3 border-solid">
                   <div className="flex flex-col gap-2">

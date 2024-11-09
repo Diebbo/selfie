@@ -3,6 +3,8 @@
 import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 import { Person, TaskModel } from "@/helpers/types";
+import { revalidateTag } from "next/cache";
+import { tokenToId } from "@/jose";
 
 export async function getUser(): Promise<Person> {
   const cookieStore = await cookies();
@@ -17,6 +19,10 @@ export async function getUser(): Promise<Person> {
     headers: {
       "Content-Type": "application/json",
       Cookie: `token=${token.toString()}`,
+    },
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
     },
   });
 
@@ -40,7 +46,6 @@ export async function getUser(): Promise<Person> {
   return person;
 }
 
-
 export async function getEmail(): Promise<string> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
@@ -56,6 +61,10 @@ export async function getEmail(): Promise<string> {
       Cookie: `token=${token.toString()}`,
     },
     credentials: "include",
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
 
   if (!response.ok) {
@@ -65,7 +74,6 @@ export async function getEmail(): Promise<string> {
 
   return await response.json();
 }
-
 
 export async function getUserTasks(): Promise<TaskModel> {
   const cookieStore = await cookies();
@@ -82,6 +90,10 @@ export async function getUserTasks(): Promise<TaskModel> {
       Cookie: `token=${token.toString()}`,
     },
     credentials: "include",
+    cache: "force-cache",
+    next: {
+      tags: [await tokenToId(token)],
+    },
   });
 
   if (!response.ok) {
@@ -92,7 +104,10 @@ export async function getUserTasks(): Promise<TaskModel> {
   return await response.json();
 }
 
-export async function updateGPS(position: { latitude: number; longitude: number }) {
+export async function updateGPS(position: {
+  latitude: number;
+  longitude: number;
+}) {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -109,8 +124,17 @@ export async function updateGPS(position: { latitude: number; longitude: number 
     body: JSON.stringify(position),
   });
 
-
   if (!response.ok) {
     throw new Error("Failed to update position");
+  }
+}
+
+export async function customRevalidate() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  // prendi gli ultimi 10 caratteri di token string
+  if (token) {
+    const id = await tokenToId(token);
+    revalidateTag(id);
   }
 }

@@ -18,6 +18,7 @@ export async function changeCurrentTime(time: Date) {
       "Content-Type": "application/json",
       Cookie: `token=${token.toString()}`,
     },
+
     body: JSON.stringify({ date: time.toISOString() }),
   });
 

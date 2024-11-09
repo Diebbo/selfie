@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import getBaseUrl from "@/config/proxy";
 import { AuthenticationError, ServerError } from "@/helpers/errors";
 import { NoteModel } from "@/helpers/types";
+import { tokenToId } from "@/jose";
+import { customRevalidate } from "./user";
 
 export async function getNotes() {
   const cookieStore = await cookies();
@@ -21,7 +23,10 @@ export async function getNotes() {
         "Content-Type": "application/json",
         Cookie: `token=${token.toString()}`,
       },
-      cache: "no-store", // This ensures fresh data on every request
+      cache: "force-cache",
+      next: {
+        tags: [await tokenToId(token)],
+      },
     },
   );
 
@@ -55,7 +60,10 @@ export const getNoteById = async (id: string): Promise<NoteModel | null> => {
         "Content-Type": "application/json",
         Cookie: `token=${token.toString()}`,
       },
-      cache: "no-store", // This ensures fresh data on every request
+      cache: "force-cache",
+      next: {
+        tags: [await tokenToId(token)],
+      },
     });
     if (response.ok) {
       return await response.json();
@@ -95,6 +103,8 @@ export const saveNote = async (
       });
     }
 
+    customRevalidate();
+
     if (response.ok) {
       return true;
     } else {
@@ -113,7 +123,7 @@ export const deleteNote = async (id: string): Promise<boolean> => {
     const response = await fetch(`${NOTES_API_URL}/${id}`, {
       method: "DELETE",
     });
-
+    customRevalidate();
     if (response.ok) {
       return true;
     } else {

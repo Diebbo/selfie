@@ -14,6 +14,7 @@ import EventIcon from "../icons/EventIcon";
 import CalendarIcon from "../icons/CalendarIcon";
 import FriendsIcon from "../icons/FriendsIcon";
 import { updateGPS } from "@/actions/user";
+import { tokenToId } from "@/jose";
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -33,48 +34,45 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
   >(undefined);
 
   useEffect(() => {
-    if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            ({ coords }) => {
-                console.log("updating gps");
-                const { latitude, longitude } = coords;
-                setCenterOn({ lat: latitude, lng: longitude });
-                updateGPS({ latitude, longitude });
-            },
-            (error) => {
-                fetchUserPosition();
-            } 
-        );
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          console.log("updating gps");
+          const { latitude, longitude } = coords;
+          setCenterOn({ lat: latitude, lng: longitude });
+          updateGPS({ latitude, longitude });
+        },
+        (error) => {
+          fetchUserPosition();
+        },
+      );
     } else {
-        fetchUserPosition();
+      fetchUserPosition();
     }
   }, []);
 
   // Get user position from db when loading the page to center the map
-  
-    const fetchUserPosition = async () => {
-      try {
-        console.log("fetching user position");
-        const response = await fetch("/api/users/gps", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch user position");
-        }
+  const fetchUserPosition = async () => {
+    try {
+      console.log("fetching user position");
+      const response = await fetch("/api/users/gps", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-        const data = await response.json();
-        setCenterOn({ lat: data.latitude, lng: data.longitude });
-      } catch (error) {
-        console.error("Error fetching user position:", error);
+      if (!response.ok) {
+        throw new Error("Failed to fetch user position");
       }
-    };
 
-
-
+      const data = await response.json();
+      setCenterOn({ lat: data.latitude, lng: data.longitude });
+    } catch (error) {
+      console.error("Error fetching user position:", error);
+    }
+  };
 
   // Center map on event position when clicked on the event in the list
   const handleItemClick = (item: MapEvent | MapFriend) => {

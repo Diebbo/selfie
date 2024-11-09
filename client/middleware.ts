@@ -24,7 +24,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (
-    process.env.NODE_ENV === "production" &&
+    process.env.REDIRECT === "true" &&
     req.headers.get("x-forwarded-proto") !== "https"
   ) {
     console.log("redirecting to https");
@@ -41,7 +41,6 @@ export default async function middleware(req: NextRequest) {
     if (token) {
       try {
         const res = await isAuthenticated(token);
-        console.log(res);
         switch (res) {
           case AuthLevel.authenticated: // token is valid and email is verified
             if (isPublicRoute) {
