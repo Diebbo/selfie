@@ -105,7 +105,8 @@ class ProjectCard extends HTMLElement {
           max-width: 150px;
           padding-right: 0.625rem;
           flex-shrink: 0;
-            justify-content: space-between;
+            justify-content: start;
+        align-items: center;
           display: flex;
           overflow-y: hidden;
             overflow-x: hidden;
@@ -396,8 +397,9 @@ class ProjectCard extends HTMLElement {
             localStorage.setItem('overlayGanttScrollTop', overlayGanttRows.scrollLeft);
         });
 
-        // Event listeners per apertura modale
-        this.addEventListeners(this.project);
+        // Event listeners per apertura modale 
+        // deep clone project to avoid modifying the original
+        this.addEventListeners(JSON.parse(JSON.stringify(this.project)));
     }
 
     toggleActivityCompletion(activityId, project) {
@@ -447,7 +449,7 @@ class ProjectCard extends HTMLElement {
             button.addEventListener('click', (e) => {
                 e.stopPropagation(); // Previene il bubbling dell'evento
                 const activityId = button.parentElement.parentElement.dataset.activityId;
-                this.openModal(activityId, project, false);
+                this.openModal(activityId, this.project, false);
             });
         });
 
@@ -613,7 +615,6 @@ class ProjectCard extends HTMLElement {
         }).catch((error) => {
             this.addError(`Failed to delete activity: ${error.message}`);
             // Revert the deletion
-            this.addActivityToProject(project, removedActivity, null);
         });
     }
 
