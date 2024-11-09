@@ -67,8 +67,8 @@ class ProjectCard extends HTMLElement {
           padding: 0.5rem; 
           font-size: 0.75rem;
           color: hsl(var(--nextui-text-color));
-          min-width: 30px; 
-            max-width: 30px;
+          min-width: 35px; 
+          max-width: 35px;
           height: 20px; 
           transition: background-color 0.3s ease; 
       }
@@ -354,8 +354,11 @@ class ProjectCard extends HTMLElement {
         <modal-component id="activityModal">
           <form id="activityForm">
             <input type="text" id="activityTitle" placeholder="Activity Title" required>
-            <input type="date" id="activityStartDate" placeholder="Start Date" required>
-            <input type="date" id="activityDueDate" placeholder="Due Date" required>
+            <label for="activityStartDate">From - To Date</label>
+            <div class="header-inline">
+                <input type="date" id="activityStartDate" placeholder="Start Date" required>
+                <input type="date" id="activityDueDate" placeholder="Due Date" required>
+            </div>
             <label for="activityAssignees">Assignees</label>
             <select id="activityAssignees" multiple>
             </select>
@@ -851,7 +854,7 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell start-date-column">Start Date</div>
         <div class="gantt-cell end-date-column">End Date</div>
         <div class="gantt-cell participants-column">Assignees</div>
-      ${days.map(day => `<div class="gantt-cell${this.areSameDate(day, this.time) ? ' current-date' : ''}" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
+      ${days.map(day => `<div class="gantt-cell${this.areSameDate(day, this.time) ? ' current-date' : ''}">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
     }
 

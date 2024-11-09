@@ -29,7 +29,7 @@ class Modal extends HTMLElement {
 .modal {
   position: fixed;
   inset: 0; /* Imposta top, right, bottom, left a 0 */
-  z-index: 10;
+  z-index: 9000;
   background-color: rgba(0, 0, 0, 0.4); /* bg-black bg-opacity-40 */
   display: flex;
   align-items: center; /* items-center */
