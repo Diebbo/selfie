@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MessageModel, StatusEnum, Person } from "@/helpers/types";
 import {
@@ -32,9 +32,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername }) => {
   const socketRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
   const getChatByUsername = async (
     username: string
@@ -83,7 +83,10 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername }) => {
   useEffect(() => {
     if (!currentUser) return;
     // Initialize socket connection
-    socketRef.current = io("https://site232454.tw.cs.unibo.it");
+    if (!process.env.NEXT_PUBLIC_SOCKET_URL) {
+      throw new Error("Socket URL not found");
+    }
+    socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL as string);
 
     // Join the chat
     socketRef.current.emit("join", {
