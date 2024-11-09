@@ -216,7 +216,15 @@ export default function createProjectService(models, lib) {
         { $addToSet: { projects: newProject._id } }
       );
 
-      return await populateMembers(newProject);
+      const populatedProject = await populateMembers(newProject);
+
+      const notificationPayload = {
+        title: "New project created by " + user.username,
+        body: `Click here to view the new project: ${newProject.title}`,
+        link: `https://site232454.tw.cs.unibo.it/projects/${newProject._id}`
+      };
+
+      return { project: populatedProject, notificationPayload, users: members };
     },
     /**
      * Toggles an activity's status within a project, searching both top-level activities
