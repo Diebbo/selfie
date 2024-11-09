@@ -76,6 +76,10 @@ class Modal extends HTMLElement {
   text-align: center;
   font-weight: 600; /* font-semibold */
 }
+
+#modalError {
+  color: hsl(var(--nextui-danger));
+}
       </style>
 `;
   }
@@ -122,6 +126,7 @@ class Modal extends HTMLElement {
   }
 
   closeModal() {
+    this.setError('');
     this.modal.style.display = 'none';
 
     if (this.onclose) {
