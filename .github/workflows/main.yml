@@ -21,6 +21,7 @@ jobs:
         run: |
           cd client
           echo "WEATHER_API=${{secrets.WEATHER_API}}" >> .env.production
+          echo "NEXT_PUBLIC_SOCKET_URL=${{secrets.SOCKET_URL}}" >> .env.production
           npm install
           npm run build
           cd ..
