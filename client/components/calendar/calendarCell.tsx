@@ -239,7 +239,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     <Modal isOpen={isAllEventsOpen} onClose={() => setIsAllEventsOpen(false)} size="md">
       <ModalContent>
         <ModalHeader>Eventi, Progetti e Attività del {day} {monthNames[date.getMonth()]} </ModalHeader>
-        <ModalBody className="p-4">
+        <ModalBody className="p-4 max-h-[80vh] overflow-y-auto">
           <div className="space-y-3">
             {todayAppointments.map((item, index) => (
               <div
