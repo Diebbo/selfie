@@ -155,7 +155,6 @@ function createCalendarRouter(db, sendNotification) {
 
   // se metto /resourse non funziona, sta cosa non ha senso
   router.get("/resource/all", cookieJwtAuth, async function(req, res) {
-    console.log("capiamo");
     const uid = req.user._id;
     try {
       const result = await db.getResource(uid);

@@ -19,7 +19,7 @@ import { DarkModeSwitch } from "../navbar/darkmodeswitch";
 import { PassLockIcon } from "../auth/PassLockIcon";
 import NotificationSettings from "../auth/NotificationSettings";
 import { useRouter } from "next/navigation";
-import { SelfieEvent } from "@/helpers/types";
+import { ResourceModel, SelfieEvent } from "@/helpers/types";
 import ImportExportCal from "./importExportCal"
 
 interface SettingsPageProps {
@@ -29,6 +29,8 @@ interface SettingsPageProps {
   pushNotifications: boolean;
   emailNotifications: boolean;
   avatar: string;
+  resource: ResourceModel | null;
+  isAdmin: boolean;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
