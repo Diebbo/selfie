@@ -569,6 +569,7 @@ export async function createDataBase(uri) {
   const getResource = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
+    if (user.role !== 'admin') return 
     try {
       const risorse = await resourceModel.find();
       return risorse;

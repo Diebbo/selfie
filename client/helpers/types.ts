@@ -186,7 +186,7 @@ export enum TaskStatus {
   COMPLETED = "completed",
 }
 
-interface ProjectTaskModel  extends Task {
+interface ProjectTaskModel extends Task {
   description: string;
   status: TaskStatus;
   participants: string[]; // Usernames
@@ -198,8 +198,18 @@ export interface ProjectModel {
   title: string;
   description: string;
   activities: ProjectTaskModel[];
-  creator:Person; // creator id
-  members:Person[]; // particapants usernames
+  creator: Person; // creator id
+  members: Person[]; // particapants usernames
   creationDate: Date;
   deadline: Date;
 }
+
+export interface ResourceModel {
+  name: string;
+  used: [{
+    startTime: Date,
+    endTime: Date,
+    claimant: string,
+  }];
+}
+
