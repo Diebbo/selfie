@@ -508,7 +508,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   />
                 </div>
               </div>
-              <div className={`${isMobile ? "" : "mb-4"}`}>
+              <div>
                 <Autocomplete
                   label="Luogo"
                   placeholder="Inserisci il luogo"
@@ -534,6 +534,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     </AutocompleteItem>
                   )}
                 </Autocomplete>
+              </div>
+              <div>
+                <Dropdown aria-label="risorse">
+                </Dropdown>
               </div>
               <Textarea
                 label="Descrizione"

@@ -6,7 +6,7 @@ import ical from 'node-ical';
 function createCalendarRouter(db, sendNotification) {
   const router = express.Router();
 
-  router.put("/", cookieJwtAuth, async function (req, res) {
+  router.put("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const event = req.body.event;
     if (!event) return res.status(400).json({ message: "Evento non fornito" });
@@ -30,7 +30,7 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
-  router.get("/", cookieJwtAuth, async function (req, res) {
+  router.get("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     console.log(uid);
     try {
@@ -46,7 +46,7 @@ function createCalendarRouter(db, sendNotification) {
     return res.status(200).json(result);
   });
 
-  router.get("/:id", cookieJwtAuth, async function (req, res) {
+  router.get("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventid = req.params.id;
     console.log(uid);
@@ -72,7 +72,7 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
-  router.delete("/:id", cookieJwtAuth, async function (req, res) {
+  router.delete("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     try {
@@ -86,7 +86,7 @@ function createCalendarRouter(db, sendNotification) {
       .json({ message: "evento eliminato correttamente", eventId });
   });
 
-  router.post("/participate/:id", cookieJwtAuth, async function (req, res) {
+  router.post("/participate/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     const response = req.body.response === "accept" ? true : false;
@@ -109,7 +109,7 @@ function createCalendarRouter(db, sendNotification) {
   // per togliere il partecipante dall'evento faccio una query parametrica dove
   // metto l'id del partecipante
   // /api/events/:id/?fields=[true/false]
-  router.patch("/:id", cookieJwtAuth, async function (req, res) {
+  router.patch("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     //user to remove
@@ -142,7 +142,7 @@ function createCalendarRouter(db, sendNotification) {
   });
 
   // ritorna gli username, forse implementerò un query param per gli ids
-  router.get("/:id/participants", cookieJwtAuth, async function (req, res) {
+  router.get("/:id/participants", cookieJwtAuth, async function(req, res) {
     try {
       const eventid = req.params.id;
       const usernames = await db.getParticipantsUsernames(eventid);
@@ -153,27 +153,40 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
-  router.get("/risorse", cookieJwtAuth, async function (req, res) {
+  // se metto /resourse non funziona, sta cosa non ha senso
+  router.get("/resource/all", cookieJwtAuth, async function(req, res) {
+    console.log("capiamo");
+    const uid = req.user._id;
     try {
-      const result = await db.getRisorse();
-      res.status(200).json(result);
+      const result = await db.getResource(uid);
+      return res.status(200).json(result);
     } catch (e) {
-      return res.status(400).json({ message: "Server error, " + e.message });
+      return res.status(500).json({ message: "Server error, " + e.message });
     }
   });
 
-  router.patch("/risorse/:id", cookieJwtAuth, async function (req, res) {
+  router.put("/resource", cookieJwtAuth, async function(req, res) {
+    try {
+      const newResource = req.body.resource;
+      const result = await db.addResource(newResource, req.user._id);
+      return res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server error, " + e.message });
+    }
+  });
+
+  router.patch("/resource/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const startDate = req.body.startDate;
     const endDate = req.body.endDate;
     try {
       const id = req.params.id;
-      const result = await db.modifyRisorsa(uid, id, startDate, endDate);
-      if (result === true) {
-        res.status(200).json(result);
+      const result = await db.bookResource(uid, id, startDate, endDate);
+      if (result) {
+        return res.status(200).json(result);
       }
       else {
-        res.status(400).json({message: "Resource not available"}
+        return res.status(400).json({ message: "Resource not available" });
       }
     } catch (e) {
       return res.status(400).json({ message: "Server error, " + e.message });

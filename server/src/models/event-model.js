@@ -132,7 +132,6 @@ const resourceSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  type: String,
   used: [
     {
       startTime: {
@@ -141,6 +140,11 @@ const resourceSchema = new mongoose.Schema({
       },
       endTime: {
         type: Date,
+        required: true,
+      },
+      claimant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
         required: true,
       },
     },
