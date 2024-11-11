@@ -33,6 +33,7 @@ export async function createDataBase(uri) {
     projectModel,
     activityModel,
     chatModel,
+    resourceModel,
   };
 
   await mongoose.connect(uri, { dbName: "test" });
@@ -565,22 +566,38 @@ export async function createDataBase(uri) {
     );
   }
 
-  const getRisorse = async () => {
+  const getResource = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
     try {
-      const risorse = await risorseModel.find();
+      const risorse = await resourceModel.find();
       return risorse;
     } catch (error) {
       throw new Error(error);
     }
   };
 
-  const modifyRisorsa = async (uid, id, startDate, endDate) => {
+  const addResource = async (resource, uid) => {
+    const user = await userModel.findById(uid);
+    console.log(uid);
+    if (!user) throw new Error("User not found");
+    if (user.role === 'user') throw new Error("Not Authorized");
+
+    try {
+      const addedResource = resourceModel.create({ ...resource, creator: uid });
+      return addedResource;
+    } catch (e) {
+      throw new Error(e);
+    }
+  };
+
+  const bookResource = async (uid, id, startDate, endDate) => {
     try {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      const risorsa = await risorseModel.findById(id);
-      if (!risorsa) throw new Error("Resource not found");
+      const resource = await resourceModel.findById(id);
+      if (!resource) throw new Error("Resource not found");
 
       const isOverlapping = risorsa.used.some((period) => {
         return (
@@ -594,12 +611,12 @@ export async function createDataBase(uri) {
         return false;
       }
 
-      risorsa.used.push({
+      resource.used.push({
         startTime: startDate,
         endTime: endDate,
       });
 
-      await risorsa.save();
+      await resource.save();
       return true;
     } catch (error) {
       throw new Error(error);
@@ -1925,8 +1942,9 @@ export async function createDataBase(uri) {
     getNoteById,
     removeNoteById,
     createEvent,
-    getRisorse,
-    modifyRisorsa,
+    getResource,
+    bookResource,
+    addResource,
     getEvent,
     getEvents,
     deleteEvent,

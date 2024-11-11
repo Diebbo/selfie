@@ -102,22 +102,11 @@ export const userSchema = new mongoose.Schema({
   activities: [
     {
       activityId: {
-        type: mongoose.Schema.Types.ObjectId, //chi ha prenotato risorsa
+        type: mongoose.Schema.Types.ObjectId,
         ref: "Activity",
       },
     },
   ],
-
-  //campi per risorse
-  resource: {
-    maxPartecipants: Number, //numero massimo di partecipanti
-    claimant: {
-      type: mongoose.Schema.Types.ObjectId, //chi ha prenotato risorsa
-      ref: "User",
-    },
-    booked: Boolean,
-    date: [Date], //date in cui la risorsa è prenotata
-  },
 
   //campi per amici
   friends: [
@@ -169,7 +158,7 @@ export const userSchema = new mongoose.Schema({
   ],
 
   isOnline: Boolean,
-  lasteSeen: Date,
+  lastSeen: Date,
 
   // url dell'immagine profilo
   avatar: String,
