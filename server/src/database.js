@@ -569,7 +569,7 @@ export async function createDataBase(uri) {
   const getResource = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-    if (user.role !== 'admin') return 
+    if (user.role !== 'admin') return
     try {
       const risorse = await resourceModel.find();
       return risorse;
@@ -580,14 +580,16 @@ export async function createDataBase(uri) {
 
   const addResource = async (resource, uid) => {
     const user = await userModel.findById(uid);
-    console.log(uid);
     if (!user) throw new Error("User not found");
     if (user.role === 'user') throw new Error("Not Authorized");
 
+    console.log("boh 1");
     try {
       const addedResource = resourceModel.create({ ...resource, creator: uid });
+      console.log("boh 2");
       return addedResource;
     } catch (e) {
+      console.log("boh 3");
       throw new Error(e);
     }
   };
@@ -622,6 +624,27 @@ export async function createDataBase(uri) {
     } catch (error) {
       throw new Error(error);
     }
+  };
+
+  const deleteResource = async (uid, resourceName) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // Verifica che l'utente sia admin
+    if (user.role !== 'admin') throw new Error("User is not authorized to delete resources");
+
+    // Trova la risorsa tramite il nome
+    const resource = await resourceModel.findOne({ name: resourceName });
+    if (!resource) throw new Error("Resource not found");
+
+    // Elimina la risorsa dal modello delle risorse
+    await resourceModel.deleteOne({ _id: resource._id });
+
+    return {
+      success: true,
+      message: `Resource ${resourceName} successfully deleted`,
+      deletedResource: resource
+    };
   };
 
   const getEvents = async (uid) => {
@@ -1946,6 +1969,7 @@ export async function createDataBase(uri) {
     getResource,
     bookResource,
     addResource,
+    deleteResource,
     getEvent,
     getEvents,
     deleteEvent,
