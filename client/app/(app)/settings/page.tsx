@@ -16,9 +16,9 @@ const Page = async () => {
       isAdmin(),
     ]);
 
-    //console.log("miao", user);
-    //console.log("events page", events);
-    console.log("risorse", resource);
+    // console.log("miao", user);
+    // console.log("events page", events);
+    // console.log("risorse", resource);
 
     return (
       <Content

@@ -35,7 +35,6 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
-  console.log("events", props.events);
   const router = useRouter();
   const [resourceResponse, setResourceResponse] = useState("");
   const [avatar, setAvatar] = useState(props.avatar);

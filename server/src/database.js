@@ -569,7 +569,7 @@ export async function createDataBase(uri) {
   const getResource = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-    if (user.role !== 'admin') return
+    if (user.role !== 'admin') return {}
     try {
       const risorse = await resourceModel.find();
       return risorse;
@@ -583,13 +583,10 @@ export async function createDataBase(uri) {
     if (!user) throw new Error("User not found");
     if (user.role === 'user') throw new Error("Not Authorized");
 
-    console.log("boh 1");
     try {
       const addedResource = resourceModel.create({ ...resource, creator: uid });
-      console.log("boh 2");
       return addedResource;
     } catch (e) {
-      console.log("boh 3");
       throw new Error(e);
     }
   };
@@ -631,7 +628,7 @@ export async function createDataBase(uri) {
     if (!user) throw new Error("User not found");
 
     // Verifica che l'utente sia admin
-    if (user.role !== 'admin') throw new Error("User is not authorized to delete resources");
+    if (!isAdmin(uid)) throw new Error("User is not authorized to delete resources");
 
     // Trova la risorsa tramite il nome
     const resource = await resourceModel.findOne({ name: resourceName });
@@ -1951,6 +1948,14 @@ export async function createDataBase(uri) {
   });
 
 
+  const isAdmin = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (user.role === 'admin') return true;
+    else return false;
+  };
+
   return {
     login,
     register,
@@ -2013,5 +2018,6 @@ export async function createDataBase(uri) {
     getAllUserEvents,
     projectService,
     getUsernameForActivities,
+    isAdmin,
   };
 }

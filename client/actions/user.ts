@@ -133,6 +133,7 @@ export async function isAdmin(): Promise<Boolean> {
   });
 
   const isAdmin = await response.json()
+  console.log(isAdmin);
 
   return isAdmin
 }
