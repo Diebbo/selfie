@@ -41,6 +41,34 @@ export async function getUser(): Promise<Person | Error> {
   }
 }
 
+export async function getUserByUsername(username: string): Promise<Person | Error> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const response = await fetchWithErrorHandling(`${getBaseUrl()}/api/users/usernames/${username}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: `token=${token?.toString()}`,
+      },
+    });
+
+    const userData = await response.json();
+
+    const person: Person = {
+      ...userData,
+      events: {
+        created: userData.events,
+        participating: userData.participatingEvents,
+      },
+    };
+
+    return person;
+  } catch (error) {
+    return new Error("Failed to fetch user data");
+  }
+}
+
 
 export async function getEmail(): Promise<string> {
   const cookieStore = await cookies();
