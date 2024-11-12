@@ -158,6 +158,7 @@ function createCalendarRouter(db, sendNotification) {
     const uid = req.user._id;
     try {
       const result = await db.getResource(uid);
+      if (result == null) return res.status(401);
       return res.status(200).json(result);
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
@@ -193,12 +194,12 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
-  router.delete("/resource", cookieJwtAuth, async function(req, res) {
+  router.delete("/resource/delete", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const resourceName = req.body.name;
 
     try {
-      const result = db.deleteResource(uid, resourceName);
+      const result = await db.deleteResource(uid, resourceName);
       return res.status(200).json(result);
     } catch (e) {
       return res.status(500).json({ message: "Server Error" + e })
