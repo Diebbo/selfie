@@ -145,7 +145,6 @@ const resourceSchema = new mongoose.Schema({
       claimant: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true,
       },
     },
   ],

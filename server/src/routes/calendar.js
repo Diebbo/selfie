@@ -166,9 +166,10 @@ function createCalendarRouter(db, sendNotification) {
 
   router.put("/resource", cookieJwtAuth, async function(req, res) {
     try {
+      console.log("capiamo");
       const newResource = req.body.resource;
       const result = await db.addResource(newResource, req.user._id);
-      return res.status(200).json(result);
+      return res.status(201).json(result);
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }
@@ -189,6 +190,18 @@ function createCalendarRouter(db, sendNotification) {
       }
     } catch (e) {
       return res.status(400).json({ message: "Server error, " + e.message });
+    }
+  });
+
+  router.delete("/resource", cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const resourceName = req.body.name;
+
+    try {
+      const result = db.deleteResource(uid, resourceName);
+      return res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server Error" + e })
     }
   });
 

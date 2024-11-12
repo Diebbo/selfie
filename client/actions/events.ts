@@ -92,7 +92,7 @@ export async function getOwner(ownerid: String): Promise<string> {
 }
 
 
-export async function getResource(): Promise<ResourceModel> {
+export async function getResource(): Promise<ResourceModel[]> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 

@@ -21,6 +21,7 @@ import NotificationSettings from "../auth/NotificationSettings";
 import { useRouter } from "next/navigation";
 import { ResourceModel, SelfieEvent } from "@/helpers/types";
 import ImportExportCal from "./importExportCal"
+import ResourceHandler from './resourceHandler'
 
 interface SettingsPageProps {
   username: string;
@@ -29,13 +30,14 @@ interface SettingsPageProps {
   pushNotifications: boolean;
   emailNotifications: boolean;
   avatar: string;
-  resource: ResourceModel | null;
-  isAdmin: boolean;
+  resource: ResourceModel[] | null;
+  isAdmin: Boolean;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
+  console.log("events", props.events);
   const router = useRouter();
-  console.log("avatar", props.avatar);
+  const [resourceResponse, setResourceResponse] = useState("");
   const [avatar, setAvatar] = useState(props.avatar);
   const [username, setUsername] = useState(props.username);
   const [usernameEdit, setUsernameEdit] = useState(false);
@@ -158,13 +160,32 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       return;
     }
 
-    const res = await fetch("/api/auth/notifications/" + type, {
+    await fetch("/api/auth/notifications/" + type, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
+  };
+
+  const handleNewResource = async (name: string) => {
+    const res = await fetch("/api/events/resource", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        resource: {
+          name: name,
+          used: [{
+            startTime: new Date(),
+            endTime: new Date(),
+          }],
+        }
+      }),
+    })
+    setResourceResponse(await res.json());
   };
 
   return (
@@ -356,17 +377,25 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
         <NotificationSettings />
         <Spacer y={4} />
-        <div className="flex flex-row mb-7 gap-10">
+        <div className="flex flex-row mb-4 gap-10">
           <div className="flex flex-col w-[150px]">
             <h3 className="mb-3">Change Theme</h3>
             <DarkModeSwitch />
           </div>
-
         </div>
 
         <ImportExportCal
           events={props.events}
         />
+
+        <div>
+          <ResourceHandler
+            isAdmin={props.isAdmin}
+            handleNewResource={handleNewResource}
+            allResources={props.resource}
+          />
+          <span> {resourceResponse} </span>
+        </div>
 
         <Button color="danger" onPress={onOpen} className="w-full">
           Elimina Account
