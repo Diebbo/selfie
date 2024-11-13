@@ -2,29 +2,31 @@
 
 import React, { useState, useContext } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
-import { SelfieEvent, ProjectModel, TaskModel } from "@/helpers/types";
+import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { WeekViewGrid } from './weekViewGrid';
 import { mobileContext } from "./contextStore"
 import { TaskMutiResponse } from "@/helpers/api-types";
 
-const areSameDay = (date1: Date, date2: Date): boolean => {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-};
+const isInBeetween = (date: Date, startDate: Date, endDate: Date): boolean => {
+  return date.getTime() >= startDate.getTime() && date.getTime() <= endDate.getTime();
+}
+
+const areSameDay = (dateA: Date, dateB: Date): boolean => {
+  return dateA.getFullYear() === dateB.getFullYear() && dateA.getMonth() === dateB.getMonth() && dateA.getDate() === dateB.getDate();
+}
 
 const isAM = (date: Date): boolean => {
   return date.getHours() < 12;
 };
 
 interface CombinedAppointment {
-  type: 'event' | 'project' | 'task';
+  type: 'event' | 'project' | 'task' | 'project-task';
   event?: SelfieEvent;
   project?: ProjectModel;
   task?: TaskModel;
+  projectTask?: ProjectTaskModel;
+  projectId?: string;
 }
 
 const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: ProjectModel[], tasks: TaskMutiResponse | undefined, date: Date): CombinedAppointment[] => {
@@ -36,8 +38,7 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
       const eventDateStart = new Date(event.dtstart);
       const eventDateEnd = new Date(event.dtend);
       if (
-        (date.getTime() <= eventDateEnd.getTime() && date.getTime() >= eventDateStart.getTime()) ||
-        areSameDay(date, eventDateStart)
+        isInBeetween(date, eventDateStart, eventDateEnd)
       ) {
         appointments.push({
           type: 'event',
@@ -53,18 +54,22 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
       const projectDeadline = new Date(project.deadline);
       const projectStartDate = new Date(project.creationDate);
 
-      if (areSameDay(date, projectStartDate)) {
+      if (isInBeetween(date, projectStartDate, projectDeadline)) {
         appointments.push({
           type: 'project',
           project: project
         });
       }
-      else if (areSameDay(date, projectDeadline)) {
-        appointments.push({
-          type: 'project',
-          project: project
-        });
-      }
+      project.activities.forEach(task => {
+        const taskDueDate = new Date(task.dueDate);
+        if (areSameDay(date, taskDueDate)) {
+          appointments.push({
+            type: 'project-task',
+            projectTask: task,
+            projectId: project._id,
+          });
+        }
+      });
     });
   }
 
@@ -82,8 +87,35 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
   }
 
   return appointments.sort((a, b) => {
-    const dateA = new Date(a.type === 'event' ? a.event!.dtstart : a.project ? a.project.deadline : a.task!.dueDate);
-    const dateB = new Date(b.type === 'event' ? b.event!.dtstart : b.project ? b.project.deadline : b.task!.dueDate);
+    let dateA: Date, dateB: Date;
+    switch (a.type) {
+      case 'event':
+        dateA = new Date(a.event!.dtstart);
+        break;
+      case 'project':
+        dateA = new Date(a.project!.startDate);
+        break;
+      case 'task':
+        dateA = new Date(a.task!.dueDate);
+        break;
+      case 'project-task':
+        dateA = new Date(a.projectTask!.startDate);
+        break;
+    }
+    switch (b.type) {
+      case 'event':
+        dateB = new Date(b.event!.dtstart);
+        break;
+      case 'project':
+        dateB = new Date(b.project!.startDate);
+        break;
+      case 'task':
+        dateB = new Date(b.task!.dueDate);
+        break;
+      case 'project-task':
+        dateB = new Date(b.projectTask!.startDate);
+        break;
+    }
     const aIsAM = isAM(dateA);
     const bIsAM = isAM(dateB);
     if (aIsAM && !bIsAM) return -1;
@@ -172,7 +204,13 @@ const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthV
               {" - "}
             </>
           )}
-          {item.type === 'event' ? item.event?.title : item.project?.title || item.task?.name}
+          {(!isMobile && item.type === 'project-task') && (
+            <>
+              <span className="font-medium">📝</span>
+              {" - "}
+            </>
+          )}
+          {item.event?.title || item.project?.title || item.task?.name || item.projectTask?.title}
         </button>
       ))}
       {hasMoreAppointments && isMonthView && (
@@ -226,8 +264,10 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
       router.push(`/projects/${item.project?._id}`);
     } else if (item.type === 'event') {
       router.push(`/calendar/${item.event?._id}`);
-    } else {
+    } else if (item.type === 'task'){
       router.push(`/task`);
+    } else if (item.type === 'project-task') {
+      router.push(`/projects/${item.projectId}`);
     }
   };
 
@@ -256,9 +296,14 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                       <span className="text-warning">📋 Progetto</span>
                       {" - "}
                     </>
-                  ) : item.type === 'task' ? (
+                  ) : (item.type === 'task') ? (
                     <>
                       <span className="text-warning">📝 Attività</span>
+                      {" - "}
+                    </>
+                  ) : (item.type === 'project-task') ? (
+                    <>
+                      <span className="text-warning">📝 Attività Progetto</span>
                       {" - "}
                     </>
                   ) : (
@@ -269,12 +314,12 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                       {!item.event?.allDay && " - "}
                     </>
                   )}
-                  <b>{item.type === 'event' ? item.event?.title : item.project?.title || item.task?.name}</b>
+                  <b>{item.event?.title || item.project?.title || item.task?.name || item.projectTask?.title}</b>
                 </p>
                 <p className="text-sm text-gray-500">
                   {item.type === 'project' ? (
                     <>Scadenza Progetto</>
-                  ) : item.type === 'task' ? (
+                  ) : item.type === 'task' || item.type === 'project-task' ? (
                     <>Scadenza Attività</>
                   ) : (
                     <>
