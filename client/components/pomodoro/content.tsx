@@ -117,10 +117,10 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        height: "calc(100vh - 4rem)",
         backgroundColor: backgroundColor,
         position: "relative",
       }}
+      className="h-full"
     >
       <Wave
         fill="#ff6363"
