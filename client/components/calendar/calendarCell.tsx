@@ -278,7 +278,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   const AppointmentsModal = () => (
     <Modal isOpen={isAllEventsOpen} onClose={() => setIsAllEventsOpen(false)} size="md">
       <ModalContent>
-        <ModalHeader>Eventi, Progetti e Attività del {day} {monthNames[date.getMonth()]} </ModalHeader>
+        <ModalHeader>Events, Projects and Activity {day} {monthNames[date.getMonth()]} </ModalHeader>
         <ModalBody className="p-4 max-h-[80vh] overflow-y-auto">
           <div className="space-y-3">
             {todayAppointments.map((item, index) => (
@@ -293,17 +293,17 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                 <p className="font-medium">
                   {item.type === 'project' ? (
                     <>
-                      <span className="text-warning">📋 Progetto</span>
+                      <span className="text-warning">📋 Project</span>
                       {" - "}
                     </>
                   ) : (item.type === 'task') ? (
                     <>
-                      <span className="text-warning">📝 Attività</span>
+                      <span className="text-warning">📝 Activity</span>
                       {" - "}
                     </>
                   ) : (item.type === 'project-task') ? (
                     <>
-                      <span className="text-warning">📝 Attività Progetto</span>
+                      <span className="text-danger">📝 Close Project Activity</span>
                       {" - "}
                     </>
                   ) : (
