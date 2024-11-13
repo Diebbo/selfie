@@ -19,7 +19,9 @@ export default function createNotificationWorker(db) {
 
       for (const user of users) {
         if (!user?.notifications) {
-          console.log(`Skipping user ${user.username}: no notifications config`);
+          console.log(
+            `Skipping user ${user.username}: no notifications config`,
+          );
           continue;
         }
 
@@ -31,15 +33,20 @@ export default function createNotificationWorker(db) {
               await sendNotification(user, notification);
               user.inbox.shift();
             } catch (error) {
-              console.error(`Error sending notification to user ${user.username}:`, error);
+              console.error(
+                `Error sending notification to user ${user.username}:`,
+                error,
+              );
               // Continue with next notification
             }
           }
         }
 
-        for (const event of (user.events || [])) {
+        for (const event of user.events || []) {
           if (!event?.notification) {
-            console.log(`Skipping event ${event?.title}: no notification config`);
+            console.log(
+              `Skipping event ${event?.title}: no notification config`,
+            );
             continue;
           }
 
@@ -51,23 +58,32 @@ export default function createNotificationWorker(db) {
                 event.notification.type === "push" &&
                 user.notifications.pushOn
               ) {
-                console.log(`Sending push notification for event: ${event.title}`);
+                console.log(
+                  `Sending push notification for event: ${event.title}`,
+                );
                 await sendPushNotifications(
                   user.notifications.subscriptions,
-                  payload
+                  payload,
                 );
               } else if (
                 event.notification.type === "email" &&
                 user.notifications.emailOn
               ) {
-                console.log(`Sending email notification for event: ${event.title}`);
+                console.log(
+                  `Sending email notification for event: ${event.title}`,
+                );
                 payload.email = user.email;
                 await sendEmailNotification(payload);
               }
-              console.log(`Successfully sent notification to ${user.username} for event ${event.title}`);
+              console.log(
+                `Successfully sent notification to ${user.username} for event ${event.title}`,
+              );
             }
           } catch (eventError) {
-            console.error(`Error processing event ${event?.title} for user ${user.username}:`, eventError);
+            console.error(
+              `Error processing event ${event?.title} for user ${user.username}:`,
+              eventError,
+            );
             // Continue with next event
           }
         }
@@ -111,7 +127,9 @@ export default function createNotificationWorker(db) {
           unitInMilliseconds = 365 * 24 * 60 * 60 * 1000;
           break;
         default:
-          console.error(`Unsupported frequency: ${freq} for event ${event.title}`);
+          console.error(
+            `Unsupported frequency: ${freq} for event ${event.title}`,
+          );
           return false;
       }
 
@@ -127,10 +145,10 @@ export default function createNotificationWorker(db) {
 
   function createNotificationPayload(event) {
     if (!event?.dtstart) {
-      console.error('Missing dtstart for event:', event);
+      console.error("Missing dtstart for event:", event);
       return {
-        title: 'Event Reminder',
-        body: 'You have an upcoming event',
+        title: "Event Reminder",
+        body: "You have an upcoming event",
       };
     }
 
@@ -151,7 +169,7 @@ export default function createNotificationWorker(db) {
 
   async function sendPushNotifications(subscriptions, payload) {
     if (!Array.isArray(subscriptions)) {
-      console.error('Invalid subscriptions:', subscriptions);
+      console.error("Invalid subscriptions:", subscriptions);
       return;
     }
 
@@ -161,7 +179,7 @@ export default function createNotificationWorker(db) {
       } catch (error) {
         console.error(
           `Error sending push notification to device ${subscription?.deviceName}:`,
-          error
+          error,
         );
         if (error.statusCode === 401) {
           console.error("Authorization error. Check VAPID configuration.");
@@ -172,7 +190,7 @@ export default function createNotificationWorker(db) {
 
   async function sendEmailNotification(payload) {
     if (!payload?.email) {
-      console.error('Missing email in payload:', payload);
+      console.error("Missing email in payload:", payload);
       return;
     }
 
@@ -235,7 +253,10 @@ export default function createNotificationWorker(db) {
         };
 
         // Send to all subscriptions in one batch
-        await sendPushNotifications(user.notifications.subscriptions, pushPayload);
+        await sendPushNotifications(
+          user.notifications.subscriptions,
+          pushPayload,
+        );
       }
 
       // Add email notification if enabled
@@ -249,9 +270,14 @@ export default function createNotificationWorker(db) {
         await sendEmailNotification(emailPayload);
       }
 
+      db.addNotificationToInbox(user._id, payload);
+
       console.log(`Successfully sent all notifications to ${user.username}`);
     } catch (error) {
-      console.error(`Failed to send notifications to user ${user.username}:`, error);
+      console.error(
+        `Failed to send notifications to user ${user.username}:`,
+        error,
+      );
       throw new Error(`Notification delivery failed: ${error.message}`);
     }
   }
@@ -275,7 +301,9 @@ export default function createNotificationWorker(db) {
       console.error("Error scheduling notification check job:", error);
     }
   } else {
-    console.log("Notifications are disabled via NOTIFICATION environment variable");
+    console.log(
+      "Notifications are disabled via NOTIFICATION environment variable",
+    );
   }
 
   return sendNotification;

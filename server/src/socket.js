@@ -103,8 +103,6 @@ export function createWebSocket(io, database, sendNotification) {
           message,
         );
 
-        // Create notification TODO:
-
         // Format message for sending
         const messageToSend = {
           _id: savedMessage._id,

@@ -435,8 +435,8 @@ export async function createDataBase(uri) {
   };
 
   const addNotification = async (user, notification) => {
-    if (!user.inobxNotifications) user.inboxNotifications = [];
-    user.inboxNotifications.push(notification);
+    if (!user.inbox) user.inbox = [];
+    user.inbox.push(notification);
     await user.save();
   };
   /* Explanation of the generateNotifications function:
@@ -806,25 +806,25 @@ export async function createDataBase(uri) {
     if (!user) throw new Error("User not found");
 
     for (const event of Object.values(events)) {
-      if (event.type !== 'VEVENT') continue;
+      if (event.type !== "VEVENT") continue;
 
       try {
         // Converti l'evento iCal nel formato del tuo schema
         const eventData = {
-          title: event.summary || '',
-          summary: event.summary || '',
+          title: event.summary || "",
+          summary: event.summary || "",
           uid: userId,
           sequence: event.sequence || 0,
           status: mapStatus(event.status),
-          transp: event.transparency || 'OPAQUE',
+          transp: event.transparency || "OPAQUE",
           dtstart: event.start,
           dtend: event.end,
           dtstamp: event.dtstamp?.toISOString() || new Date().toISOString(),
           allDay: event.allDay || false,
           categories: event.categories || [],
-          location: event.location || '',
-          description: event.description || '',
-          URL: event.url || '',
+          location: event.location || "",
+          description: event.description || "",
+          URL: event.url || "",
           participants: [],
         };
 
@@ -832,7 +832,7 @@ export async function createDataBase(uri) {
         if (event.geo) {
           eventData.geo = {
             lat: event.geo.lat,
-            lon: event.geo.lon
+            lon: event.geo.lon,
           };
         }
 
@@ -849,9 +849,8 @@ export async function createDataBase(uri) {
 
         // Aggiungi l'evento all'array importedEvents
         importedEvents.push(savedEvent);
-
       } catch (error) {
-        console.error('Error importing event:', error);
+        console.error("Error importing event:", error);
         // Continua con il prossimo evento anche se questo fallisce
         continue;
       }
@@ -865,37 +864,36 @@ export async function createDataBase(uri) {
           {
             $push: {
               events: {
-                $each: importedEvents.map(event => event._id)
-              }
-            }
+                $each: importedEvents.map((event) => event._id),
+              },
+            },
           },
-          { new: true }
+          { new: true },
         );
       }
 
       const importedTitles = importedEvents
-        .map(event => event.title)
-        .filter(title => title !== undefined && title !== null);
+        .map((event) => event.title)
+        .filter((title) => title !== undefined && title !== null);
 
       return importedTitles;
-
     } catch (error) {
-      console.error('Error updating user events:', error);
-      throw new Error('Failed to update user events');
+      console.error("Error updating user events:", error);
+      throw new Error("Failed to update user events");
     }
   };
 
   // Helper function per mappare lo status dell'evento
   const mapStatus = (status) => {
     switch (status?.toUpperCase()) {
-      case 'CONFIRMED':
-        return 'confirmed';
-      case 'TENTATIVE':
-        return 'tentative';
-      case 'CANCELLED':
-        return 'cancelled';
+      case "CONFIRMED":
+        return "confirmed";
+      case "TENTATIVE":
+        return "tentative";
+      case "CANCELLED":
+        return "cancelled";
       default:
-        return 'confirmed';
+        return "confirmed";
     }
   };
 
@@ -928,20 +926,21 @@ export async function createDataBase(uri) {
     }
 
     if (rrule.byday) {
-      ruleObj.byday = rrule.byday.map(day => {
-        if (typeof day === 'string') {
+      ruleObj.byday = rrule.byday.map((day) => {
+        if (typeof day === "string") {
           return { day: day };
         }
         return {
           day: day.day,
-          position: day.pos || 1
+          position: day.pos || 1,
         };
       });
     }
 
     if (rrule.bysetpos) {
-      ruleObj.bysetpos = Array.isArray(rrule.bysetpos) ?
-        rrule.bysetpos : [rrule.bysetpos];
+      ruleObj.bysetpos = Array.isArray(rrule.bysetpos)
+        ? rrule.bysetpos
+        : [rrule.bysetpos];
     }
 
     if (rrule.wkst) {
@@ -1602,16 +1601,6 @@ export async function createDataBase(uri) {
         status: "sent",
       });
 
-      // send notification
-      const newNotification = {
-        title: "New message",
-        description: message,
-        fromMessage: newMessage._id,
-        when: now,
-        method: "email",
-      };
-      await addNotification(receiver, newNotification);
-
       return {
         createdAt: newMessage.createdAt,
         message: newMessage.message,
@@ -1714,11 +1703,11 @@ export async function createDataBase(uri) {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },
-              avatar: otherUser.avatar,
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: { ...msg, sender: sender.username },
+                avatar: otherUser.avatar,
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1808,15 +1797,15 @@ export async function createDataBase(uri) {
           path: "projects",
           populate: {
             path: "members",
-            select: "username _id"
-          }
+            select: "username _id",
+          },
         })
         .populate({
           path: "projects",
           populate: {
             path: "creator",
-            select: "username _id avatar"
-          }
+            select: "username _id avatar",
+          },
         })
         .populate({
           path: "friends",
@@ -1865,7 +1854,6 @@ export async function createDataBase(uri) {
     addActivityToProject,
     getDateTime,
   });
-
 
   return {
     login,
