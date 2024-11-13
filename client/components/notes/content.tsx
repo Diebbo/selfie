@@ -35,9 +35,9 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     const noteId = searchParams.get("id");
     const newNote = searchParams.has("new");
     const listNote = searchParams.has("list");
-  
+
     if (noteId) {
-      const foundNote = notes.find(note => note._id === noteId);
+      const foundNote = notes.find((note) => note._id === noteId);
       if (foundNote) {
         setNoteState({
           selectedNote: foundNote,
@@ -46,14 +46,14 @@ const NotePage: React.FC<NotePageProps> = (props) => {
           tags: foundNote.tags.join(", "),
           showMarkdown: false,
         });
-        setUiState(prev => ({
+        setUiState((prev) => ({
           ...prev,
           showNoteList: false,
           showNoteForm: true,
         }));
       }
     } else if (newNote) {
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         showNoteList: false,
         showNoteForm: true,
@@ -66,13 +66,13 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         showMarkdown: false,
       });
     } else if (listNote) {
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         showNoteList: true,
         showNoteForm: false,
       }));
     } else {
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         showNoteList: false,
         showNoteForm: !prev.isMobileView,
@@ -83,7 +83,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   useEffect(() => {
     const handleResize = () => {
       const isMobileView = window.innerWidth < 768;
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         isMobileView: isMobileView,
       }));
@@ -96,7 +96,6 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
-
 
   const saveNote = async (note: NoteModel, id?: string) => {
     console.log(id);
@@ -123,7 +122,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUiState((prev) => ({
       ...prev,
-      searchQuery: e.target.value
+      searchQuery: e.target.value,
     }));
   };
 
@@ -136,20 +135,21 @@ const NotePage: React.FC<NotePageProps> = (props) => {
 
     const success = await saveNote(note, noteState.selectedNote?._id);
     if (success) {
-    
       const updatedNotes = await getNotes();
       setNotes(updatedNotes);
 
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"✅ Nota salvata"}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"✅ Nota salvata"}
+            </h4>
           </div>
         </div>,
         {
-          duration: 2000  ,
-          position: 'top-right',
-        }
+          duration: 2000,
+          position: "top-right",
+        },
       );
 
       if (uiState.isMobileView) {
@@ -163,13 +163,15 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"❌ Errore durante il salvataggio"}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"❌ Errore durante il salvataggio"}
+            </h4>
           </div>
         </div>,
         {
-          duration: 2000  ,
-          position: 'top-right',
-        }
+          duration: 2000,
+          position: "top-right",
+        },
       );
     }
   };
@@ -186,17 +188,19 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         content: "",
         tags: "",
         showMarkdown: false,
-      }); 
+      });
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"✅ Nota eliminata"}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"✅ Nota eliminata"}
+            </h4>
           </div>
         </div>,
         {
-          duration: 2000  ,
-          position: 'top-right',
-        }
+          duration: 2000,
+          position: "top-right",
+        },
       );
     }
   };
@@ -230,11 +234,13 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   };
 
   return (
-    <div className="flex" style={{ height: "calc(100vh - 4rem)" }}>
+    <div className="flex h-full">
       {/* Sidebar */}
       {(!uiState.isMobileView ||
         (!uiState.showNoteList && !uiState.showNoteForm)) && (
-        <div className={`${uiState.isMobileView ? "w-full" : "w-64"} overflow-scroll`}>
+        <div
+          className={`${uiState.isMobileView ? "w-full" : "w-64"} overflow-scroll`}
+        >
           <NotesSidebar
             notes={notes}
             searchQuery={uiState.searchQuery}
@@ -251,7 +257,9 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       {(!uiState.isMobileView ||
         uiState.showNoteList ||
         uiState.showNoteForm) && (
-        <div className={`${uiState.isMobileView ? "w-full" : "flex-1"} p-4 overflow-scroll`}>
+        <div
+          className={`${uiState.isMobileView ? "w-full" : "flex-1"} p-4 overflow-scroll`}
+        >
           {uiState.showNoteList ? (
             <NotesList
               notes={notes}
