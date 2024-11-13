@@ -19,6 +19,8 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
 import { useDebouncedCallback } from "use-debounce";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
@@ -31,6 +33,7 @@ import {
   Person,
   DayType,
   RRule,
+  ResourceModel,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
@@ -38,6 +41,7 @@ import { useReload } from "./contextStore";
 
 async function createEvent(event: SelfieEvent): Promise<boolean> {
   try {
+    console.log("evento aggiunto", event);
     const res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
@@ -99,19 +103,22 @@ const initialEvent = {
     },
     fromDate: new Date(),
   },
+  resources: "",
 };
 
 interface EventAdderProps {
   friends: People;
   isMobile: Boolean;
-
+  resource: ResourceModel[];
 }
 
 const EventAdder: React.FC<EventAdderProps> = ({
   friends,
   isMobile,
+  resource,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [availableResources, setAvailableResources] = useState<ResourceModel[]>([]);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
@@ -141,6 +148,40 @@ const EventAdder: React.FC<EventAdderProps> = ({
       },
     }));
   }, [eventData.dtstart, eventData.dtend]);
+
+  // Aggiorna le risorse disponibili quando cambiano le date dell'evento
+  useEffect(() => {
+    if (!resource || !Array.isArray(resource)) {
+      setAvailableResources([]);
+      return;
+    }
+
+    const available = resource.filter(r =>
+      checkResourceAvailability(r, eventData.dtstart as Date, eventData.dtend as Date)
+    );
+    setAvailableResources(available);
+  }, [eventData.dtstart, eventData.dtend, resource]);
+
+  // Risorsa è disponibile nel periodo selezionato
+  const checkResourceAvailability = (resource: ResourceModel, startDate: Date, endDate: Date): boolean => {
+    return !resource.used.some(usage => {
+      const usageStart = new Date(usage.startTime);
+      const usageEnd = new Date(usage.endTime);
+      return (
+        (startDate >= usageStart && startDate < usageEnd) ||
+        (endDate > usageStart && endDate <= usageEnd) ||
+        (startDate <= usageStart && endDate >= usageEnd)
+      );
+    });
+  };
+
+  // Gestore per il cambio della risorsa selezionata
+  const handleResourceChange = (resourceName: string) => {
+    setEventData(prev => ({
+      ...prev,
+      resources: resourceName
+    }));
+  };
 
   const fetchLocationSuggestions = useDebouncedCallback(
     async (query: string) => {
@@ -274,11 +315,30 @@ const EventAdder: React.FC<EventAdderProps> = ({
   };
 
   const handleDateChange = (start: Date | string, end: Date | string) => {
-    setEventData((prev) => ({
-      ...prev,
-      dtstart: new Date(start),
-      dtend: new Date(end),
-    }));
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    setEventData((prev) => {
+      //keep resource if possible
+      if (prev.resources) {
+        const selectedResource = resource.find(r => r.name === prev.resources);
+        if (selectedResource && !checkResourceAvailability(selectedResource, startDate, endDate)) {
+          //remove old resource
+          return {
+            ...prev,
+            dtstart: startDate,
+            dtend: endDate,
+            resources: ""
+          };
+        }
+      }
+
+      return {
+        ...prev,
+        dtstart: startDate,
+        dtend: endDate
+      };
+    });
   };
 
   const handleRepeatChange = (value: boolean) => {
@@ -535,10 +595,34 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   )}
                 </Autocomplete>
               </div>
+
               <div>
-                <Dropdown aria-label="risorse">
-                </Dropdown>
+                <Select
+                  label="Risorsa"
+                  placeholder="Seleziona una risorsa"
+                  selectedKeys={eventData.resources ? new Set([eventData.resources.toString()]) : new Set()}
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0]?.toString() || "";
+                    setEventData(prev => ({
+                      ...prev,
+                      resources: selectedKey
+                    }));
+                  }}
+                  className={`${isMobile ? "" : "mb-4"}`}
+                >
+                  {availableResources.map((res) => (
+                    <SelectItem key={res.name.toString()} value={res.name.toString()}>
+                      {res.name.toString()}
+                    </SelectItem>
+                  ))}
+                </Select>
+                {availableResources.length === 0 && (
+                  <p className="text-warning text-sm mt-1">
+                    Nessuna risorsa disponibile per il periodo selezionato
+                  </p>
+                )}
               </div>
+
               <Textarea
                 label="Descrizione"
                 name="description"

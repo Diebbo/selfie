@@ -121,6 +121,7 @@ export interface SelfieEvent {
   participants: string[];
   notification: SelfieNotification;
   _id: string;
+  resources: ResourceModel;
 }
 
 export interface SelfieNotification {

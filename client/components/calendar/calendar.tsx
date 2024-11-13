@@ -5,10 +5,9 @@ import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
 import React, { useState, useEffect, useRef } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
+import { SelfieEvent, People, ProjectModel, ResourceModel } from "@/helpers/types";
 import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
-import { getCurrentTime } from "@/actions/setTime";
 import { useTime } from "../contexts/TimeContext";
 
 interface CalendarPageProps {
@@ -17,6 +16,7 @@ interface CalendarPageProps {
   dbdate: Date;
   friends: People;
   projects: ProjectModel[];
+  resource: ResourceModel[];
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -51,7 +51,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     // Calcola la differenza in ore tra il nuovo currentTime e il precedente
     const hoursDifference = Math.abs(
       (currentTime.getTime() - prevTimeRef.current.getTime()) /
-        (1000 * 60 * 60),
+      (1000 * 60 * 60),
     );
 
     // Aggiorna currentDate solo se la differenza è maggiore di 24 ore
@@ -221,6 +221,7 @@ const CalendarPage = (props: CalendarPageProps) => {
               <EventAdder
                 friends={props.friends}
                 isMobile={isMobile}
+                resource={props.resource}
                 aria-label="Event Adder Button"
               />
 
