@@ -18,18 +18,18 @@ export const Register = () => {
   const steps = ["Account", "Personal Info", "Address"];
 
   const initialValues: RegisterFormType = {
-    name: "",
-    surname: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+    name: "miao",
+    surname: "miao",
+    email: "prova@prova",
+    username: "paopdokapdk",
+    password: "123",
+    confirmPassword: "123",
     country: "Italia",
     zip: "40133",
     city: "Bologna",
     state: "Emilia Romagna",
-    address: "",
+    address: "asidjaodjsoad",
     phoneNumber: "",
-    username: "",
     birthDate: new Date(),
   };
 
@@ -37,10 +37,15 @@ export const Register = () => {
     async (values: RegisterFormType) => {
       try {
         const response = await register(values as RegisterType);
+        if (response instanceof Error) {
+          throw response;
+        }
         await createAuthCookie(response.token);
         router.replace("/");
-      } catch (err: Error | any) {
-        setError(err?.response?.data?.message || err.message);
+      } catch (err: any) {
+        setError(
+          err.message ? err.message.toString() : "An unknown error occurred",
+        );
       }
     },
     [router],
