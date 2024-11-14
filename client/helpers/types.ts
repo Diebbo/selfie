@@ -121,7 +121,7 @@ export interface SelfieEvent {
   participants: string[];
   notification: SelfieNotification;
   _id: string;
-  resources: ResourceModel;
+  resource: string;
 }
 
 export interface SelfieNotification {
@@ -206,6 +206,7 @@ export interface ProjectModel {
 }
 
 export interface ResourceModel {
+  _id: string;
   name: string;
   used: [{
     startTime: Date,

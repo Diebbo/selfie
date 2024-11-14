@@ -569,7 +569,6 @@ export async function createDataBase(uri) {
   const getResource = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-    if (user.role !== 'admin') return {}
     try {
       const risorse = await resourceModel.find();
       return risorse;
@@ -599,7 +598,7 @@ export async function createDataBase(uri) {
       const resource = await resourceModel.findById(id);
       if (!resource) throw new Error("Resource not found");
 
-      const isOverlapping = risorsa.used.some((period) => {
+      const isOverlapping = resource.used.some((period) => {
         return (
           (startDate >= period.startTime && startDate < period.endTime) ||
           (endDate > period.startTime && endDate <= period.endTime) ||

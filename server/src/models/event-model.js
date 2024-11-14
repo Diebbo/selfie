@@ -136,11 +136,9 @@ const resourceSchema = new mongoose.Schema({
     {
       startTime: {
         type: Date,
-        required: true,
       },
       endTime: {
         type: Date,
-        required: true,
       },
       claimant: {
         type: mongoose.Schema.Types.ObjectId,
