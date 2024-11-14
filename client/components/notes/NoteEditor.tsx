@@ -6,10 +6,12 @@ interface NoteEditorProps {
   content: string;
   tags: string;
   showMarkdown: boolean;
+  isPublic: boolean;
+  onIsPublicChange: (value: boolean) => void;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
   onTagsChange: (value: string) => void;
-  onSave: () => void;
+  onSave: (isPublic: boolean) => void;
   onToggleMarkdown: () => void;
   onBack: () => void;
   isEditing: boolean;
@@ -21,6 +23,8 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   content,
   tags,
   showMarkdown,
+  isPublic,
+  onIsPublicChange,
   onTitleChange,
   onContentChange,
   onTagsChange,
@@ -31,6 +35,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   isMobileView,
 }) => {
   const [copyStatus, setCopyStatus] = useState<string>("");
+
   const handleCopyContent = async () => {
     try {
       await navigator.clipboard.writeText(content);
@@ -75,9 +80,26 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         onChange={(e) => onTagsChange(e.target.value)}
         className="w-full p-2 border rounded"
       />
+
+      {/* Toggle per nota pubblica/privata */}
+      {!isEditing && (
+        <div className="flex items-center gap-2">
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => onIsPublicChange(e.target.checked)}
+              className="form-checkbox h-5 w-5 text-blue-600"
+            />
+            <span className="ml-2 text-gray-700 dark:text-gray-300">
+              Nota Pubblica
+            </span>
+          </label>
+        </div>
+      )}
       <div className="flex gap-2">
         <button
-          onClick={onSave}
+          onClick={() => onSave(isPublic)}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           {isEditing ? "Aggiorna Nota" : "Salva Nota"}
