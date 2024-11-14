@@ -39,10 +39,10 @@ import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
 
-async function createEvent(event: SelfieEvent): Promise<boolean> {
+async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
     console.log("evento aggiunto", event);
-    const res = await fetch(`${EVENTS_API_URL}`, {
+    var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -58,6 +58,19 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
     } else if (!res.ok) {
       throw new Error("Failed to create events");
     }
+
+    console.log("aggiungo la risorsa con Id: ", resourceId);
+    if (resourceId !== undefined) {
+      res = await fetch(`${EVENTS_API_URL}/resource/${resourceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ startDate: event.dtstart, endDate: event.dtend }),
+        cache: "no-store",
+      });
+    }
+
   } catch (e) {
     throw new Error(`Error during modify event: ${(e as Error).message}`);
   }
@@ -103,7 +116,7 @@ const initialEvent = {
     },
     fromDate: new Date(),
   },
-  resources: "",
+  resource: "" as string,
 };
 
 interface EventAdderProps {
@@ -117,8 +130,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
   isMobile,
   resource,
 }) => {
+  console.log("risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
   const [availableResources, setAvailableResources] = useState<ResourceModel[]>([]);
+  const [selectedResource, setSelectedResource] = useState<ResourceModel | undefined>(undefined);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
@@ -126,6 +141,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [dateError, setDateError] = useState(false);
   const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useReload();
   const availableFriends = friends.filter(
@@ -159,6 +175,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
     const available = resource.filter(r =>
       checkResourceAvailability(r, eventData.dtstart as Date, eventData.dtend as Date)
     );
+    console.log("available: ", available);
     setAvailableResources(available);
   }, [eventData.dtstart, eventData.dtend, resource]);
 
@@ -173,14 +190,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
         (startDate <= usageStart && endDate >= usageEnd)
       );
     });
-  };
-
-  // Gestore per il cambio della risorsa selezionata
-  const handleResourceChange = (resourceName: string) => {
-    setEventData(prev => ({
-      ...prev,
-      resources: resourceName
-    }));
   };
 
   const fetchLocationSuggestions = useDebouncedCallback(
@@ -320,15 +329,15 @@ const EventAdder: React.FC<EventAdderProps> = ({
 
     setEventData((prev) => {
       //keep resource if possible
-      if (prev.resources) {
-        const selectedResource = resource.find(r => r.name === prev.resources);
+      if (prev.resource) {
+        const selectedResource = resource.find(r => r.name === prev.resource);
         if (selectedResource && !checkResourceAvailability(selectedResource, startDate, endDate)) {
           //remove old resource
           return {
             ...prev,
             dtstart: startDate,
             dtend: endDate,
-            resources: ""
+            resource: ""
           };
         }
       }
@@ -439,7 +448,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
       return;
     }
 
-    if (!isError && !notificationError) {
+    console.log("isError", isError, "dateError", dateError);
+    if (!isError && !notificationError && !dateError) {
       const newEvent: SelfieEvent = {
         ...eventData,
         sequence: 0,
@@ -452,7 +462,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
 
       try {
         console.log("Saving event with rrule:", newEvent.rrule);
-        const success = await createEvent(newEvent);
+        const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
           console.log("Event created successfully");
           handleExit();
@@ -538,11 +548,14 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   startDate={eventData.dtstart as Date}
                   endDate={eventData.dtend as Date}
                   onChange={handleDateChange}
+                  setDateError={setDateError}
                 />
 
                 {!isMobile && <Switch
                   isSelected={allDayEvent}
-                  onValueChange={setAllDayEvent}
+                  onValueChange={() => {
+                    setAllDayEvent(!allDayEvent);
+                  }}
                 >
                   Tutto il giorno
                 </Switch>
@@ -570,8 +583,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
               </div>
               <div>
                 <Autocomplete
-                  label="Luogo"
-                  placeholder="Inserisci il luogo"
+                  label="Event Location"
+                  placeholder="Search where the event will take place"
                   defaultItems={locationSuggestions}
                   onInputChange={(value) => {
                     handleInputChange({ target: { name: "location", value } });
@@ -598,14 +611,15 @@ const EventAdder: React.FC<EventAdderProps> = ({
 
               <div>
                 <Select
-                  label="Risorsa"
-                  placeholder="Seleziona una risorsa"
-                  selectedKeys={eventData.resources ? new Set([eventData.resources.toString()]) : new Set()}
+                  label="Resources Avaiable"
+                  placeholder="Select a resource"
+                  selectedKeys={eventData.resource ? new Set([eventData.resource.toString()]) : new Set()}
                   onSelectionChange={(keys) => {
                     const selectedKey = Array.from(keys)[0]?.toString() || "";
+                    setSelectedResource(availableResources.find(res => res.name === selectedKey));
                     setEventData(prev => ({
                       ...prev,
-                      resources: selectedKey
+                      resource: selectedKey
                     }));
                   }}
                   className={`${isMobile ? "" : "mb-4"}`}

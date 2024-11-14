@@ -177,10 +177,6 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       body: JSON.stringify({
         resource: {
           name: name,
-          used: [{
-            startTime: new Date(),
-            endTime: new Date(),
-          }],
         }
       }),
     })

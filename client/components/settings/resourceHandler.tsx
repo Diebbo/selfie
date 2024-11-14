@@ -1,8 +1,6 @@
-'use clinet';
-
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Input, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@nextui-org/react';
 import { ResourceModel } from '@/helpers/types';
 
@@ -13,12 +11,11 @@ interface ResourceHandlerProps {
 }
 
 const ResourceHandler: React.FC<ResourceHandlerProps> = ({ isAdmin, handleNewResource, allResources }) => {
-  const [resourceName, setResourceName] = React.useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-  const [resources, setResources] = React.useState<ResourceModel[] | null>(allResources);
+  const [resourceName, setResourceName] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [resources, setResources] = useState<ResourceModel[] | null>(allResources);
 
-  // Aggiorna lo state locale quando cambiano le props
-  React.useEffect(() => {
+  useEffect(() => {
     setResources(allResources);
   }, [allResources]);
 
@@ -59,6 +56,7 @@ const ResourceHandler: React.FC<ResourceHandlerProps> = ({ isAdmin, handleNewRes
       console.error("Errore durante l'eliminazione della risorsa:", error);
     }
   }
+  console.log("allResources", allResources);
 
   return (
     <div>
@@ -94,14 +92,15 @@ const ResourceHandler: React.FC<ResourceHandlerProps> = ({ isAdmin, handleNewRes
                       Show Resources
                     </Button>
                   </DropdownTrigger>
+
                   <DropdownMenu
                     aria-label="Resources list"
                     className="max-h-[300px] overflow-y-auto"
                   >
-                    {resources && resources.length > 0 ? (
-                      resources.map((resource, index) => (
+                    {Array.isArray(resources) && resources.length > 0 ? (
+                      resources.map((resource) => (
                         <DropdownItem
-                          key={index}
+                          key={resource._id}
                           className="flex justify-between items-center"
                         >
                           <span>{resource.name}</span>
@@ -124,6 +123,7 @@ const ResourceHandler: React.FC<ResourceHandlerProps> = ({ isAdmin, handleNewRes
                       <DropdownItem>No resources available</DropdownItem>
                     )}
                   </DropdownMenu>
+
                 </Dropdown>
               </div>
             </>

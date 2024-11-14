@@ -92,7 +92,7 @@ export async function getOwner(ownerid: String): Promise<string> {
 }
 
 
-export async function getResource(): Promise<ResourceModel[] | null> {
+export async function getResource(): Promise<ResourceModel[]> {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
 
@@ -108,8 +108,7 @@ export async function getResource(): Promise<ResourceModel[] | null> {
     },
   });
 
-  if (response.status === 401) return null;
-  else if (response.status !== 200) {
+  if (response.status !== 200) {
     const errorText = await response.text();
     throw new Error(
       `HTTP error! status: ${response.status}, message: ${errorText}`,

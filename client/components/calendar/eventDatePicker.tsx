@@ -6,7 +6,7 @@ import {
   RangeValue,
   DateValue,
 } from "@nextui-org/react";
-import { mobileContext } from "./contextStore"
+import { mobileContext } from "./contextStore";
 import { parseDateTime } from "@internationalized/date";
 
 interface EventDatePickerProps {
@@ -14,17 +14,38 @@ interface EventDatePickerProps {
   startDate: Date | undefined;
   endDate: Date | undefined;
   onChange: (start: Date | string, end: Date | string) => void;
+  setDateError: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const EventDatePicker: React.FC<EventDatePickerProps> = ({
   isAllDay,
   onChange,
+  setDateError,
 }) => {
-  const { isMobile, setIsMobile } = useContext(mobileContext) as any;
+  const { isMobile } = useContext(mobileContext) as any;
 
   const handleDateRangeChange = (value: RangeValue<DateValue>) => {
     if (value?.start && value?.end) {
-      onChange(value.start.toString(), value.end.toString());
+      let startDate: string, endDate: string;
+
+      if (isAllDay) {
+        startDate = `${value.start.toString().split('T')[0]}T00:00:00`;
+        endDate = `${value.end.toString().split('T')[0]}T23:59:59`;
+      } else {
+        startDate = value.start.toString();
+        endDate = value.end.toString();
+      }
+
+      const startDateObj = new Date(startDate);
+      const endDateObj = new Date(endDate);
+
+      if (startDateObj > endDateObj) {
+        setDateError(true);
+        return;
+      } else {
+        setDateError(false);
+        onChange(startDate, endDate);
+      }
     }
   };
 
@@ -36,14 +57,15 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
       tomorrow.setDate(tomorrow.getDate() + 1);
       return {
         start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(tomorrow.toISOString().split('T')[0])
+        end: parseDateTime(tomorrow.toISOString().split('T')[0]),
       };
     } else {
+      const currentHour = new Date(today);
       const nextHour = new Date(today);
       nextHour.setHours(today.getHours() + 1);
       return {
-        start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(nextHour.toISOString().split('T')[0])
+        start: parseDateTime(currentHour.toISOString().split('T')[0]),
+        end: parseDateTime(nextHour.toISOString().split('T')[0]),
       };
     }
   };
@@ -62,9 +84,8 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
       granularity={isAllDay ? "day" : "minute"}
       defaultValue={getDefaultDateRange(isAllDay)}
     />
-
-
   );
 };
 
 export default EventDatePicker;
+

@@ -132,6 +132,7 @@ const dummyEvents: SelfieEvent[] = [
       fromDate: new Date("2024-08-10T00:00:00"),
     },
     _id: "",
+    resource: "",
   },
   {
     title: "Movie Night",
@@ -171,6 +172,7 @@ const dummyEvents: SelfieEvent[] = [
       fromDate: new Date("2024-08-10T00:00:00"),
     },
     _id: "",
+    resource: "",
   },
   {
     title: "Picnic in the Park",
@@ -210,6 +212,7 @@ const dummyEvents: SelfieEvent[] = [
       fromDate: new Date("2024-08-10T00:00:00"),
     },
     _id: "",
+    resource: "",
   },
 ];
 

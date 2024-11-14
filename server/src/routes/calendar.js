@@ -158,7 +158,6 @@ function createCalendarRouter(db, sendNotification) {
     const uid = req.user._id;
     try {
       const result = await db.getResource(uid);
-      if (result == null) return res.status(401);
       return res.status(200).json(result);
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
@@ -167,21 +166,21 @@ function createCalendarRouter(db, sendNotification) {
 
   router.put("/resource", cookieJwtAuth, async function(req, res) {
     try {
-      console.log("capiamo");
       const newResource = req.body.resource;
       const result = await db.addResource(newResource, req.user._id);
-      return res.status(201).json(result);
+      return res.status(201).json({ message: "Resource added succesfully" + result });
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }
   });
 
   router.patch("/resource/:id", cookieJwtAuth, async function(req, res) {
+    const id = req.params.id;
     const uid = req.user._id;
-    const startDate = req.body.startDate;
     const endDate = req.body.endDate;
+    const startDate = req.body.startDate;
+    console.log("bookResource: ", startDate, endDate, id);
     try {
-      const id = req.params.id;
       const result = await db.bookResource(uid, id, startDate, endDate);
       if (result) {
         return res.status(200).json(result);
