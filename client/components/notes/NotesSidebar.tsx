@@ -1,4 +1,5 @@
 import { NoteModel } from "@/helpers/types";
+import { useState } from "react";
 
 interface NotesSidebarProps {
   notes: NoteModel[];
@@ -9,6 +10,8 @@ interface NotesSidebarProps {
   onNoteSelect: (note: NoteModel) => void;
   onDuplicate: (note: NoteModel) => void;
   onDelete: (id: string) => void;
+  showPublic: boolean;
+  onTogglePublic: () => void;
 }
 
 const NotesSidebar: React.FC<NotesSidebarProps> = ({
@@ -20,7 +23,10 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onNoteSelect,
   onDuplicate,
   onDelete,
+  showPublic,
+  onTogglePublic,
 }) => {
+  // Filtra prima per pubblico/privato, poi per la ricerca
   const filteredNotes = notes.filter(
     (note) =>
       note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -32,10 +38,9 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
 
   return (
     <div className="h-full bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
-      {" "}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-2">
         <h2 className="text-xl font-bold">Le tue note</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={onNewNote}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
@@ -47,6 +52,16 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
             className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
           >
             Lista Note
+          </button>
+          <button
+            onClick={onTogglePublic}
+            className={`px-4 py-2 rounded transition-colors ${
+              showPublic
+                ? "bg-green-500 hover:bg-green-600"
+                : "bg-yellow-500 hover:bg-yellow-600"
+            } text-white`}
+          >
+            {showPublic ? "Note Pubbliche" : "Note Private"}
           </button>
         </div>
         <input
@@ -72,7 +87,11 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDuplicate({ ...note, _id: undefined });
+                    onDuplicate({
+                      ...note,
+                      _id: undefined,
+                      isPublic: note.isPublic,
+                    });
                   }}
                   className="text-gray-600 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400"
                   title="Duplica nota"
