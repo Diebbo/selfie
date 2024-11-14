@@ -9,9 +9,10 @@ import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
-
+import { noteSchema } from "./models/note-model.js";
 // services import
 import createProjectService from "./services/projects.mjs";
+import e from "express";
 
 export async function createDataBase(uri) {
   // creating a model
@@ -22,6 +23,7 @@ export async function createDataBase(uri) {
   const projectModel = mongoose.model("Project", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
+  const noteModel = mongoose.model("Note", noteSchema);
 
   const models = {
     timeModel,
@@ -345,21 +347,44 @@ export async function createDataBase(uri) {
 
       if (id) {
         // Modify existing note
-        const noteId = new mongoose.Types.ObjectId(id); // convert _id field from a string to ObjectID to compare with ids in the db
-        const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
-        if (noteIndex !== -1) {
-          // Update existing note
-          user.notes[noteIndex] = {
-            ...user.notes[noteIndex].toObject(),
-            ...note,
-            _id: noteId, // Ensure we keep the original ObjectId
-          };
+        const noteId = new mongoose.Types.ObjectId(id);
+        if (note.isPublic) {
+          // Modifica nota pubblica
+          const publicNote = await noteModel.findById(noteId);
+          if (publicNote) {
+            await noteModel.findByIdAndUpdate(noteId, {
+              ...note,
+              userId: uid,
+              _id: noteId,
+            });
+          } else {
+            throw new Error("Public note with provided ID not found");
+          }
         } else {
-          throw new Error("Note with provided ID not found");
+          // Modifica nota privata
+          const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
+          if (noteIndex !== -1) {
+            user.notes[noteIndex] = {
+              ...user.notes[noteIndex].toObject(),
+              ...note,
+              _id: noteId,
+            };
+          } else {
+            throw new Error("Note with provided ID not found");
+          }
         }
       } else {
         // New note
-        user.notes.push(note);
+        if (note.isPublic) {
+          // Crea nota pubblica
+          await noteModel.create({
+            ...note,
+            userId: uid,
+          });
+        } else {
+          // Crea nota privata
+          user.notes.push(note);
+        }
       }
 
       await user.save();
@@ -370,33 +395,15 @@ export async function createDataBase(uri) {
     }
   };
 
-  const getNotes = async (uid, fields = null) => {
-    let projection = { "notes._id": 1 }; // Sempre includi l'ID della nota
-
-    if (Array.isArray(fields) && fields.length > 0) {
-      fields.forEach((field) => {
-        projection[`notes.${field}`] = 1;
-      });
-    } else {
-      projection = { notes: 1 }; // Se fields non è specificato o è vuoto, prendi tutte le note
-    }
-
-    const user = await userModel.findById(uid, projection);
+  const getNotes = async (uid) => {
+    const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-
-    return user.notes.map((note) => {
-      if (Array.isArray(fields) && fields.length > 0) {
-        const filteredNote = { _id: note._id };
-        fields.forEach((field) => {
-          if (note[field] !== undefined) {
-            filteredNote[field] = note[field];
-          }
-        });
-        return filteredNote;
-      } else {
-        return note.toObject(); // Ritorna tutti i campi della nota
-      }
-    });
+    const publicNotes = await noteModel.find({});
+    const privateNote = user.notes;
+    return {
+      private: privateNote,
+      public: publicNotes,
+    };
   };
 
   const getNoteById = async (uid, noteId) => {
@@ -419,14 +426,15 @@ export async function createDataBase(uri) {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      const noteIndex = user.notes.findIndex(
+      let noteIndex = user.notes.findIndex(
         (note) => note._id.toString() === noteId,
       );
-      if (noteIndex === -1) throw new Error("Note not found");
-
-      user.notes.splice(noteIndex, 1);
-      await user.save();
-
+      if (noteIndex === -1) {
+        noteIndex = await noteModel.findByIdAndDelete(noteId);
+      } else {
+        user.notes.splice(noteIndex, 1);
+        await user.save();
+      }
       return { message: "Note removed successfully" };
     } catch (error) {
       console.error("Error removing note:", error);

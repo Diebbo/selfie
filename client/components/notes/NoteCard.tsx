@@ -5,10 +5,15 @@ interface NoteCardProps {
   note: NoteModel;
   onClick: (note: NoteModel) => void;
   onDelete: (id?: string) => void;
+  showDelete?: boolean;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ note, onClick, onDelete }) => {
-
+const NoteCard: React.FC<NoteCardProps> = ({
+  note,
+  onClick,
+  onDelete,
+  showDelete,
+}) => {
   return (
     <div
       key={note._id}
@@ -21,15 +26,17 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick, onDelete }) => {
       <span className="absolute top-2 right-2 text-xs text-gray-600">
         {new Date(note.date!).toLocaleDateString("it-IT")}
       </span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(note._id);
-        }}
-        className="absolute bottom-2 right-2 text-red-500 hover:text-red-700"
-      >
-        🗑️
-      </button>
+      {(showDelete === undefined || showDelete === true) && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(note._id);
+          }}
+          className="absolute bottom-2 right-2 text-red-500 hover:text-red-700"
+        >
+          🗑️
+        </button>
+      )}
     </div>
   );
 };

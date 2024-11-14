@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { NoteModel } from "@/helpers/types";
-import { getNotes } from "@/actions/notes";
+import { getNotes, saveNote } from "@/actions/notes";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { NoteEditor } from "./NoteEditor";
@@ -15,6 +15,7 @@ interface NotePageProps {
 
 const NotePage: React.FC<NotePageProps> = (props) => {
   const [notes, setNotes] = useState<NoteModel[]>(props.notes);
+  const [showPublic, setShowPublic] = useState(false);
 
   const [noteState, setNoteState] = useState({
     selectedNote: null as NoteModel | null,
@@ -22,6 +23,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     content: "",
     tags: "",
     showMarkdown: false,
+    isPublic: false,
   });
   const [uiState, setUiState] = useState({
     searchQuery: "",
@@ -45,6 +47,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
           content: foundNote.content,
           tags: foundNote.tags.join(", "),
           showMarkdown: false,
+          isPublic: foundNote.isPublic || false, // aggiungi
         });
         setUiState((prev) => ({
           ...prev,
@@ -64,6 +67,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         content: "",
         tags: "",
         showMarkdown: false,
+        isPublic: false,
       });
     } else if (listNote) {
       setUiState((prev) => ({
@@ -97,7 +101,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     };
   }, []);
 
-  const saveNote = async (note: NoteModel, id?: string) => {
+  /*const saveNote = async (note: NoteModel, id?: string) => {
     console.log(id);
     const res = await fetch(`/api/notes/${id ? id : ""}`, {
       method: id ? "PUT" : "POST",
@@ -107,7 +111,11 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       body: JSON.stringify(note),
     });
     return res.ok;
-  };
+  };*/
+
+  const filteredNotes = notes.filter((note) =>
+    showPublic ? note.isPublic === true : !note.isPublic,
+  );
 
   const deleteNote = async (id: string) => {
     const res = await fetch(`/api/notes/${id}`, {
@@ -127,7 +135,14 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   };
 
   const handleDuplicate = async (note: NoteModel) => {
-    const success = await saveNote(note);
+    const success = await saveNote(
+      {
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+      },
+      note?.isPublic || false,
+    );
     if (success) {
       const updatedNotes = await getNotes();
       setNotes(updatedNotes);
@@ -147,14 +162,19 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (publicNote: boolean) => {
     const note: NoteModel = {
       title: noteState.title,
       content: noteState.content,
       tags: noteState.tags.split(",").map((tag) => tag.trim()),
+      isPublic: publicNote, // aggiungi il campo isPublic
     };
 
-    const success = await saveNote(note, noteState.selectedNote?._id);
+    const success = await saveNote(
+      note,
+      publicNote,
+      noteState.selectedNote?._id,
+    );
     if (success) {
       const updatedNotes = await getNotes();
       setNotes(updatedNotes);
@@ -209,6 +229,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         content: "",
         tags: "",
         showMarkdown: false,
+        isPublic: false,
       });
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
@@ -263,7 +284,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
           className={`${uiState.isMobileView ? "w-full" : "w-64"} overflow-scroll`}
         >
           <NotesSidebar
-            notes={notes}
+            notes={filteredNotes}
             searchQuery={uiState.searchQuery}
             onSearch={handleSearchChange}
             onShowNoteList={handleShowNoteList}
@@ -271,6 +292,8 @@ const NotePage: React.FC<NotePageProps> = (props) => {
             onNoteSelect={handleCardClick}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            showPublic={showPublic}
+            onTogglePublic={() => setShowPublic(!showPublic)}
           />
         </div>
       )}
@@ -284,11 +307,13 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         >
           {uiState.showNoteList ? (
             <NotesList
-              notes={notes}
+              notes={filteredNotes}
               onNoteClick={handleCardClick}
               onDelete={handleDelete}
               isMobileView={uiState.isMobileView}
               onBack={handleIndietro}
+              showPublic={showPublic}
+              onTogglePublic={() => setShowPublic(!showPublic)}
             />
           ) : uiState.showNoteForm ? (
             <NoteEditor
@@ -296,6 +321,9 @@ const NotePage: React.FC<NotePageProps> = (props) => {
               onTitleChange={(title) => setNoteState((s) => ({ ...s, title }))}
               onContentChange={(content) =>
                 setNoteState((s) => ({ ...s, content }))
+              }
+              onIsPublicChange={(isPublic) =>
+                setNoteState((s) => ({ ...s, isPublic }))
               }
               onTagsChange={(tags) => setNoteState((s) => ({ ...s, tags }))}
               onSave={handleSave}

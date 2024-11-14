@@ -43,8 +43,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">(
     "today",
   );
-  const [user, setUser] = useState<Person>(props.user);
+  const [user] = useState<Person>(props.user);
+  const [notes] = useState<NoteModel[]>(props.notes);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
+  const [showPublicNotes, setShowPublicNotes] = useState(false);
   const { currentTime } = useTime();
   const router = useRouter();
 
@@ -90,6 +92,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
       }
     });
   };
+
+  const filteredNotes = notes?.filter((note) =>
+    showPublicNotes ? note.isPublic === true : !note.isPublic,
+  );
 
   return (
     <div className="h-full lg:px-6">
@@ -172,6 +178,14 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   <h3 className="text-xl font-semibold text-foreground-900">
                     Notes Preview
                   </h3>
+                  <Button
+                    onClick={() => setShowPublicNotes(!showPublicNotes)}
+                    className={`px-4 py-2 rounded transition-colors bg-opacity-0 ${
+                      showPublicNotes ? "" : ""
+                    } text-blue-500`}
+                  >
+                    {showPublicNotes ? "Note Pubbliche" : "Note Private"}
+                  </Button>
                   <Link
                     href="/notes"
                     as={NextLink}
@@ -183,9 +197,9 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-hide">
-                    {user.notes && user.notes.length > 0 ? (
+                    {filteredNotes && filteredNotes.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {user.notes
+                        {filteredNotes
                           ?.sort(
                             (a: NoteModel, b: NoteModel) =>
                               new Date(b.date!).getTime() -
@@ -199,13 +213,15 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                                 router.push(`/notes?id=${note._id}`);
                               }}
                               onDelete={() => {}}
+                              showDelete={false}
                             />
                           ))}
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-500">
                         <p className="text-xl font-medium mb-2">
-                          Nessuna nota disponibile
+                          Nessuna nota{" "}
+                          {showPublicNotes ? "pubblica" : "privata"} disponibile
                         </p>
                         <p className="text-sm">
                           Crea una nuova nota per iniziare
