@@ -1,4 +1,5 @@
 import Markdown from "react-markdown";
+import { useState } from "react";
 
 interface NoteEditorProps {
   title: string;
@@ -27,8 +28,20 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   onToggleMarkdown,
   onBack,
   isEditing,
-  isMobileView
+  isMobileView,
 }) => {
+  const [copyStatus, setCopyStatus] = useState<string>("");
+  const handleCopyContent = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopyStatus("Copiato!");
+      setTimeout(() => setCopyStatus(""), 2000);
+    } catch (err) {
+      setCopyStatus("Errore nella copia");
+      setTimeout(() => setCopyStatus(""), 2000);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {isMobileView && (
@@ -74,6 +87,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
         >
           {showMarkdown ? "Edit View" : "Markdown View"}
+        </button>
+        <button
+          onClick={handleCopyContent}
+          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center gap-2"
+        >
+          {copyStatus || "Copia Contenuto"}
         </button>
       </div>
       {showMarkdown && (

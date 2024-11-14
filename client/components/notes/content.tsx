@@ -126,6 +126,27 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     }));
   };
 
+  const handleDuplicate = async (note: NoteModel) => {
+    const success = await saveNote(note);
+    if (success) {
+      const updatedNotes = await getNotes();
+      setNotes(updatedNotes);
+      toast(
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"✅ Nota duplicata"}
+            </h4>
+          </div>
+        </div>,
+        {
+          duration: 2000,
+          position: "top-right",
+        },
+      );
+    }
+  };
+
   const handleSave = async () => {
     const note: NoteModel = {
       title: noteState.title,
@@ -248,6 +269,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
             onShowNoteList={handleShowNoteList}
             onNewNote={handleNewNote}
             onNoteSelect={handleCardClick}
+            onDuplicate={handleDuplicate}
             onDelete={handleDelete}
           />
         </div>
