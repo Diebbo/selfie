@@ -1,4 +1,5 @@
 import { NoteModel } from "@/helpers/types";
+import { Button, Select, SelectItem } from "@nextui-org/react";
 import { useState } from "react";
 
 interface NotesSidebarProps {
@@ -12,6 +13,8 @@ interface NotesSidebarProps {
   onDelete: (id: string) => void;
   showPublic: boolean;
   onTogglePublic: () => void;
+  sortBy: string;
+  onSortChange: (sort: string) => void;
 }
 
 const NotesSidebar: React.FC<NotesSidebarProps> = ({
@@ -25,6 +28,8 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
   onDelete,
   showPublic,
   onTogglePublic,
+  sortBy,
+  onSortChange,
 }) => {
   // Filtra prima per pubblico/privato, poi per la ricerca
   const filteredNotes = notes.filter(
@@ -40,20 +45,20 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
     <div className="h-full bg-gray-100 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-2">
         <h2 className="text-xl font-bold">Le tue note</h2>
-        <div className="flex gap-2 flex-wrap">
-          <button
+        <div className="grid gap-2 grid-cols-2">
+          <Button
             onClick={onNewNote}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
             Nuova Nota
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onShowNoteList}
             className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
           >
             Lista Note
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onTogglePublic}
             className={`px-4 py-2 rounded transition-colors ${
               showPublic
@@ -61,8 +66,25 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
                 : "bg-yellow-500 hover:bg-yellow-600"
             } text-white`}
           >
-            {showPublic ? "Note Pubbliche" : "Note Private"}
-          </button>
+            {showPublic ? "Pubbliche" : "Private"}
+          </Button>
+          <Select
+            size={"md"}
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value)}
+            variant="bordered"
+            defaultSelectedKeys={"date"}
+          >
+            <SelectItem key="date" value="date">
+              Date
+            </SelectItem>
+            <SelectItem key="title" value="title">
+              Title
+            </SelectItem>
+            <SelectItem key="length" value="length">
+              Length
+            </SelectItem>
+          </Select>
         </div>
         <input
           type="text"
