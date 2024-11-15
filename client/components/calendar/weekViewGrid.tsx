@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import { useRouter } from "next/navigation";
 import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helpers/types";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure, Chip, Input } from "@nextui-org/react";
@@ -40,6 +40,10 @@ export const WeekViewGrid: React.FC<{
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [selectedHourAppointments, setSelectedHourAppointments] = useState<CombinedAppointment[]>([]);
   const [isToday, setToday] = useState(currentTime);
+
+  useEffect(() => {
+    setToday(currentTime);
+  }, [currentTime]);
 
   // Helper function to generate hours for the grid
   const generateHours = () => {
@@ -279,7 +283,7 @@ export const WeekViewGrid: React.FC<{
       {hours.map((hour, index) => {
         const appointmentsForHour = getAppointmentsForHour(index);
         const hasAppointments = appointmentsForHour.length > 0;
-        const isCurrentHour = isToday.getDate() && isToday.getDay() === index;
+        const isCurrentHour = isSameDay(date, isToday) && currentTime.getHours() === index;
 
         return (
           <div
