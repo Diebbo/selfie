@@ -215,11 +215,11 @@ const CalendarPage = (props: CalendarPageProps) => {
   return (
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
       <div
-        className="flex flex-col md:flex-row min-h-screen relative"
+        className="flex flex-col md:flex-row relative h-full overflow-y-hidden"
         aria-label="Back Ground Calendar"
       >
         <div className="flex-grow">
-          <div className="bg-white dark:bg-black h-screen flex flex-col">
+          <div className="bg-white dark:bg-black flex flex-col">
             <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
               <EventAdder
                 friends={props.friends}
@@ -287,7 +287,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 &gt;
               </button>
             </div>
-            <div className="flex-grow overflow-auto">
+            <div className="flex overflow-auto">
               <table className="w-full h-full table-fixed">
                 <thead>
                   <tr className="h-2">
@@ -305,13 +305,13 @@ const CalendarPage = (props: CalendarPageProps) => {
                   </tr>
                 </thead>
                 {isMonthView && (
-                  <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
+                  <tbody className="scrollbar-hide bg-slate-500 dark:bg-black text-xs md:text-sm">
                     {renderCalendarMonth()}
                   </tbody>
                 )}
 
                 {!isMonthView && (
-                  <tbody className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
+                  <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
                     {renderCalendarWeek()}
                   </tbody>
                 )}

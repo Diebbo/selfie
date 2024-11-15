@@ -164,7 +164,7 @@ export default function MusicPlayer() {
   };
 
   return (
-    <div className="flex justify-center align-center">
+    <div className="flex h-full justify-center align-center">
       {/* <AudioVisualizer audio={audioElement} /> */}
       <Card
         isBlurred

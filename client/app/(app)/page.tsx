@@ -9,15 +9,15 @@ import {
   Person,
 } from "@/helpers/types";
 
+import { getNotes } from "@/actions/notes";
+import { getStats } from "@/actions/pomodoro";
+import getProjects from "@/actions/projects";
+import { getEvents } from "@/actions/events";
+
 export default async function Home() {
   try {
-    const [chats,  user]: [
-      ChatModel[],
-      Person | Error
-    ] = await Promise.all([
-      getChats(),
-      getUser(),
-    ]);
+    const [chats, notes, user]: [ChatModel[], NoteModel[], Person] =
+      await Promise.all([getChats(), getNotes(), getUser()]);
 
     if (user instanceof Error) {
       throw user.message;
@@ -28,11 +28,11 @@ export default async function Home() {
       <>
         <Content
           chats={chats}
-          notes={user.notes}
+          notes={notes}
           projects={user.projects}
           pomodoro={user.pomodoro}
           events={user.events}
-          user = {user}
+          user={user}
         />
       </>
     );

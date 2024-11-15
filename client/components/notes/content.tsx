@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { NoteModel } from "@/helpers/types";
-import { getNotes } from "@/actions/notes";
+import { getNotes, saveNote } from "@/actions/notes";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { NoteEditor } from "./NoteEditor";
@@ -15,6 +15,8 @@ interface NotePageProps {
 
 const NotePage: React.FC<NotePageProps> = (props) => {
   const [notes, setNotes] = useState<NoteModel[]>(props.notes);
+  const [showPublic, setShowPublic] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("date");
 
   const [noteState, setNoteState] = useState({
     selectedNote: null as NoteModel | null,
@@ -22,6 +24,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     content: "",
     tags: "",
     showMarkdown: false,
+    isPublic: false,
   });
   const [uiState, setUiState] = useState({
     searchQuery: "",
@@ -35,9 +38,9 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     const noteId = searchParams.get("id");
     const newNote = searchParams.has("new");
     const listNote = searchParams.has("list");
-  
+
     if (noteId) {
-      const foundNote = notes.find(note => note._id === noteId);
+      const foundNote = notes.find((note) => note._id === noteId);
       if (foundNote) {
         setNoteState({
           selectedNote: foundNote,
@@ -45,15 +48,16 @@ const NotePage: React.FC<NotePageProps> = (props) => {
           content: foundNote.content,
           tags: foundNote.tags.join(", "),
           showMarkdown: false,
+          isPublic: foundNote.isPublic || false, // aggiungi
         });
-        setUiState(prev => ({
+        setUiState((prev) => ({
           ...prev,
           showNoteList: false,
           showNoteForm: true,
         }));
       }
     } else if (newNote) {
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         showNoteList: false,
         showNoteForm: true,
@@ -64,15 +68,16 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         content: "",
         tags: "",
         showMarkdown: false,
+        isPublic: false,
       });
     } else if (listNote) {
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         showNoteList: true,
         showNoteForm: false,
       }));
     } else {
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         showNoteList: false,
         showNoteForm: !prev.isMobileView,
@@ -83,7 +88,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   useEffect(() => {
     const handleResize = () => {
       const isMobileView = window.innerWidth < 768;
-      setUiState(prev => ({
+      setUiState((prev) => ({
         ...prev,
         isMobileView: isMobileView,
       }));
@@ -97,8 +102,7 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     };
   }, []);
 
-
-  const saveNote = async (note: NoteModel, id?: string) => {
+  /*const saveNote = async (note: NoteModel, id?: string) => {
     console.log(id);
     const res = await fetch(`/api/notes/${id ? id : ""}`, {
       method: id ? "PUT" : "POST",
@@ -108,7 +112,21 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       body: JSON.stringify(note),
     });
     return res.ok;
-  };
+  };*/
+
+  const filteredNotes = notes
+    .filter((note) => (showPublic ? note.isPublic === true : !note.isPublic))
+    .sort((a, b) => {
+      if (sortBy === "date") {
+        return new Date(b.date!).getTime() - new Date(a.date!).getTime();
+      } else if (sortBy === "title") {
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === "length") {
+        return b.content.length - a.content.length;
+      } else {
+        return 0;
+      }
+    });
 
   const deleteNote = async (id: string) => {
     const res = await fetch(`/api/notes/${id}`, {
@@ -123,33 +141,67 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUiState((prev) => ({
       ...prev,
-      searchQuery: e.target.value
+      searchQuery: e.target.value,
     }));
   };
 
-  const handleSave = async () => {
+  const handleDuplicate = async (note: NoteModel) => {
+    const success = await saveNote(
+      {
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+      },
+      note?.isPublic || false,
+    );
+    if (success) {
+      const updatedNotes = await getNotes();
+      setNotes(updatedNotes);
+      toast(
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"✅ Nota duplicata"}
+            </h4>
+          </div>
+        </div>,
+        {
+          duration: 2000,
+          position: "top-right",
+        },
+      );
+    }
+  };
+
+  const handleSave = async (publicNote: boolean) => {
     const note: NoteModel = {
       title: noteState.title,
       content: noteState.content,
       tags: noteState.tags.split(",").map((tag) => tag.trim()),
+      isPublic: publicNote, // aggiungi il campo isPublic
     };
 
-    const success = await saveNote(note, noteState.selectedNote?._id);
+    const success = await saveNote(
+      note,
+      publicNote,
+      noteState.selectedNote?._id,
+    );
     if (success) {
-    
       const updatedNotes = await getNotes();
       setNotes(updatedNotes);
 
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"✅ Nota salvata"}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"✅ Nota salvata"}
+            </h4>
           </div>
         </div>,
         {
-          duration: 2000  ,
-          position: 'top-right',
-        }
+          duration: 2000,
+          position: "top-right",
+        },
       );
 
       if (uiState.isMobileView) {
@@ -163,13 +215,15 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"❌ Errore durante il salvataggio"}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"❌ Errore durante il salvataggio"}
+            </h4>
           </div>
         </div>,
         {
-          duration: 2000  ,
-          position: 'top-right',
-        }
+          duration: 2000,
+          position: "top-right",
+        },
       );
     }
   };
@@ -186,17 +240,20 @@ const NotePage: React.FC<NotePageProps> = (props) => {
         content: "",
         tags: "",
         showMarkdown: false,
-      }); 
+        isPublic: false,
+      });
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"✅ Nota eliminata"}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"✅ Nota eliminata"}
+            </h4>
           </div>
         </div>,
         {
-          duration: 2000  ,
-          position: 'top-right',
-        }
+          duration: 2000,
+          position: "top-right",
+        },
       );
     }
   };
@@ -230,19 +287,26 @@ const NotePage: React.FC<NotePageProps> = (props) => {
   };
 
   return (
-    <div className="flex" style={{ height: "calc(100vh - 4rem)" }}>
+    <div className="flex h-full">
       {/* Sidebar */}
       {(!uiState.isMobileView ||
         (!uiState.showNoteList && !uiState.showNoteForm)) && (
-        <div className={`${uiState.isMobileView ? "w-full" : "w-64"} overflow-scroll`}>
+        <div
+          className={`${uiState.isMobileView ? "w-full" : "w-64"} overflow-scroll`}
+        >
           <NotesSidebar
-            notes={notes}
+            notes={filteredNotes}
             searchQuery={uiState.searchQuery}
             onSearch={handleSearchChange}
             onShowNoteList={handleShowNoteList}
             onNewNote={handleNewNote}
             onNoteSelect={handleCardClick}
+            onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            showPublic={showPublic}
+            onTogglePublic={() => setShowPublic(!showPublic)}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
         </div>
       )}
@@ -251,14 +315,18 @@ const NotePage: React.FC<NotePageProps> = (props) => {
       {(!uiState.isMobileView ||
         uiState.showNoteList ||
         uiState.showNoteForm) && (
-        <div className={`${uiState.isMobileView ? "w-full" : "flex-1"} p-4 overflow-scroll`}>
+        <div
+          className={`${uiState.isMobileView ? "w-full" : "flex-1"} p-4 overflow-scroll`}
+        >
           {uiState.showNoteList ? (
             <NotesList
-              notes={notes}
+              notes={filteredNotes}
               onNoteClick={handleCardClick}
               onDelete={handleDelete}
               isMobileView={uiState.isMobileView}
               onBack={handleIndietro}
+              showPublic={showPublic}
+              onTogglePublic={() => setShowPublic(!showPublic)}
             />
           ) : uiState.showNoteForm ? (
             <NoteEditor
@@ -266,6 +334,9 @@ const NotePage: React.FC<NotePageProps> = (props) => {
               onTitleChange={(title) => setNoteState((s) => ({ ...s, title }))}
               onContentChange={(content) =>
                 setNoteState((s) => ({ ...s, content }))
+              }
+              onIsPublicChange={(isPublic) =>
+                setNoteState((s) => ({ ...s, isPublic }))
               }
               onTagsChange={(tags) => setNoteState((s) => ({ ...s, tags }))}
               onSave={handleSave}

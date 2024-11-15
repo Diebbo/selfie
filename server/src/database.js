@@ -9,9 +9,10 @@ import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
-
+import { noteSchema } from "./models/note-model.js";
 // services import
 import createProjectService from "./services/projects.mjs";
+import e from "express";
 
 export async function createDataBase(uri) {
   // creating a model
@@ -22,6 +23,7 @@ export async function createDataBase(uri) {
   const projectModel = mongoose.model("Project", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
+  const noteModel = mongoose.model("Note", noteSchema);
 
   const models = {
     timeModel,
@@ -345,21 +347,44 @@ export async function createDataBase(uri) {
 
       if (id) {
         // Modify existing note
-        const noteId = new mongoose.Types.ObjectId(id); // convert _id field from a string to ObjectID to compare with ids in the db
-        const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
-        if (noteIndex !== -1) {
-          // Update existing note
-          user.notes[noteIndex] = {
-            ...user.notes[noteIndex].toObject(),
-            ...note,
-            _id: noteId, // Ensure we keep the original ObjectId
-          };
+        const noteId = new mongoose.Types.ObjectId(id);
+        if (note.isPublic) {
+          // Modifica nota pubblica
+          const publicNote = await noteModel.findById(noteId);
+          if (publicNote) {
+            await noteModel.findByIdAndUpdate(noteId, {
+              ...note,
+              userId: uid,
+              _id: noteId,
+            });
+          } else {
+            throw new Error("Public note with provided ID not found");
+          }
         } else {
-          throw new Error("Note with provided ID not found");
+          // Modifica nota privata
+          const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
+          if (noteIndex !== -1) {
+            user.notes[noteIndex] = {
+              ...user.notes[noteIndex].toObject(),
+              ...note,
+              _id: noteId,
+            };
+          } else {
+            throw new Error("Note with provided ID not found");
+          }
         }
       } else {
         // New note
-        user.notes.push(note);
+        if (note.isPublic) {
+          // Crea nota pubblica
+          await noteModel.create({
+            ...note,
+            userId: uid,
+          });
+        } else {
+          // Crea nota privata
+          user.notes.push(note);
+        }
       }
 
       await user.save();
@@ -370,33 +395,15 @@ export async function createDataBase(uri) {
     }
   };
 
-  const getNotes = async (uid, fields = null) => {
-    let projection = { "notes._id": 1 }; // Sempre includi l'ID della nota
-
-    if (Array.isArray(fields) && fields.length > 0) {
-      fields.forEach((field) => {
-        projection[`notes.${field}`] = 1;
-      });
-    } else {
-      projection = { notes: 1 }; // Se fields non è specificato o è vuoto, prendi tutte le note
-    }
-
-    const user = await userModel.findById(uid, projection);
+  const getNotes = async (uid) => {
+    const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-
-    return user.notes.map((note) => {
-      if (Array.isArray(fields) && fields.length > 0) {
-        const filteredNote = { _id: note._id };
-        fields.forEach((field) => {
-          if (note[field] !== undefined) {
-            filteredNote[field] = note[field];
-          }
-        });
-        return filteredNote;
-      } else {
-        return note.toObject(); // Ritorna tutti i campi della nota
-      }
-    });
+    const publicNotes = await noteModel.find({});
+    const privateNote = user.notes;
+    return {
+      private: privateNote,
+      public: publicNotes,
+    };
   };
 
   const getNoteById = async (uid, noteId) => {
@@ -419,14 +426,15 @@ export async function createDataBase(uri) {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      const noteIndex = user.notes.findIndex(
+      let noteIndex = user.notes.findIndex(
         (note) => note._id.toString() === noteId,
       );
-      if (noteIndex === -1) throw new Error("Note not found");
-
-      user.notes.splice(noteIndex, 1);
-      await user.save();
-
+      if (noteIndex === -1) {
+        noteIndex = await noteModel.findByIdAndDelete(noteId);
+      } else {
+        user.notes.splice(noteIndex, 1);
+        await user.save();
+      }
       return { message: "Note removed successfully" };
     } catch (error) {
       console.error("Error removing note:", error);
@@ -435,8 +443,8 @@ export async function createDataBase(uri) {
   };
 
   const addNotification = async (user, notification) => {
-    if (!user.inobxNotifications) user.inboxNotifications = [];
-    user.inboxNotifications.push(notification);
+    if (!user.inbox) user.inbox = [];
+    user.inbox.push(notification);
     await user.save();
   };
   /* Explanation of the generateNotifications function:
@@ -806,25 +814,25 @@ export async function createDataBase(uri) {
     if (!user) throw new Error("User not found");
 
     for (const event of Object.values(events)) {
-      if (event.type !== 'VEVENT') continue;
+      if (event.type !== "VEVENT") continue;
 
       try {
         // Converti l'evento iCal nel formato del tuo schema
         const eventData = {
-          title: event.summary || '',
-          summary: event.summary || '',
+          title: event.summary || "",
+          summary: event.summary || "",
           uid: userId,
           sequence: event.sequence || 0,
           status: mapStatus(event.status),
-          transp: event.transparency || 'OPAQUE',
+          transp: event.transparency || "OPAQUE",
           dtstart: event.start,
           dtend: event.end,
           dtstamp: event.dtstamp?.toISOString() || new Date().toISOString(),
           allDay: event.allDay || false,
           categories: event.categories || [],
-          location: event.location || '',
-          description: event.description || '',
-          URL: event.url || '',
+          location: event.location || "",
+          description: event.description || "",
+          URL: event.url || "",
           participants: [],
         };
 
@@ -832,7 +840,7 @@ export async function createDataBase(uri) {
         if (event.geo) {
           eventData.geo = {
             lat: event.geo.lat,
-            lon: event.geo.lon
+            lon: event.geo.lon,
           };
         }
 
@@ -849,9 +857,8 @@ export async function createDataBase(uri) {
 
         // Aggiungi l'evento all'array importedEvents
         importedEvents.push(savedEvent);
-
       } catch (error) {
-        console.error('Error importing event:', error);
+        console.error("Error importing event:", error);
         // Continua con il prossimo evento anche se questo fallisce
         continue;
       }
@@ -865,37 +872,36 @@ export async function createDataBase(uri) {
           {
             $push: {
               events: {
-                $each: importedEvents.map(event => event._id)
-              }
-            }
+                $each: importedEvents.map((event) => event._id),
+              },
+            },
           },
-          { new: true }
+          { new: true },
         );
       }
 
       const importedTitles = importedEvents
-        .map(event => event.title)
-        .filter(title => title !== undefined && title !== null);
+        .map((event) => event.title)
+        .filter((title) => title !== undefined && title !== null);
 
       return importedTitles;
-
     } catch (error) {
-      console.error('Error updating user events:', error);
-      throw new Error('Failed to update user events');
+      console.error("Error updating user events:", error);
+      throw new Error("Failed to update user events");
     }
   };
 
   // Helper function per mappare lo status dell'evento
   const mapStatus = (status) => {
     switch (status?.toUpperCase()) {
-      case 'CONFIRMED':
-        return 'confirmed';
-      case 'TENTATIVE':
-        return 'tentative';
-      case 'CANCELLED':
-        return 'cancelled';
+      case "CONFIRMED":
+        return "confirmed";
+      case "TENTATIVE":
+        return "tentative";
+      case "CANCELLED":
+        return "cancelled";
       default:
-        return 'confirmed';
+        return "confirmed";
     }
   };
 
@@ -928,20 +934,21 @@ export async function createDataBase(uri) {
     }
 
     if (rrule.byday) {
-      ruleObj.byday = rrule.byday.map(day => {
-        if (typeof day === 'string') {
+      ruleObj.byday = rrule.byday.map((day) => {
+        if (typeof day === "string") {
           return { day: day };
         }
         return {
           day: day.day,
-          position: day.pos || 1
+          position: day.pos || 1,
         };
       });
     }
 
     if (rrule.bysetpos) {
-      ruleObj.bysetpos = Array.isArray(rrule.bysetpos) ?
-        rrule.bysetpos : [rrule.bysetpos];
+      ruleObj.bysetpos = Array.isArray(rrule.bysetpos)
+        ? rrule.bysetpos
+        : [rrule.bysetpos];
     }
 
     if (rrule.wkst) {
@@ -1602,16 +1609,6 @@ export async function createDataBase(uri) {
         status: "sent",
       });
 
-      // send notification
-      const newNotification = {
-        title: "New message",
-        description: message,
-        fromMessage: newMessage._id,
-        when: now,
-        method: "email",
-      };
-      await addNotification(receiver, newNotification);
-
       return {
         createdAt: newMessage.createdAt,
         message: newMessage.message,
@@ -1714,11 +1711,11 @@ export async function createDataBase(uri) {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-              uid: otherUser._id,
-              username: otherUser.username,
-              lastMessage: { ...msg, sender: sender.username },
-              avatar: otherUser.avatar,
-            }
+                uid: otherUser._id,
+                username: otherUser.username,
+                lastMessage: { ...msg, sender: sender.username },
+                avatar: otherUser.avatar,
+              }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1808,15 +1805,15 @@ export async function createDataBase(uri) {
           path: "projects",
           populate: {
             path: "members",
-            select: "username _id"
-          }
+            select: "username _id",
+          },
         })
         .populate({
           path: "projects",
           populate: {
             path: "creator",
-            select: "username _id avatar"
-          }
+            select: "username _id avatar",
+          },
         })
         .populate({
           path: "friends",
@@ -1865,7 +1862,6 @@ export async function createDataBase(uri) {
     addActivityToProject,
     getDateTime,
   });
-
 
   return {
     login,

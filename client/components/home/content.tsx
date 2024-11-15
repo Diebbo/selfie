@@ -43,8 +43,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">(
     "today",
   );
-  const [user, setUser] = useState<Person>(props.user);
+  const [user] = useState<Person>(props.user);
+  const [notes] = useState<NoteModel[]>(props.notes);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
+  const [showPublicNotes, setShowPublicNotes] = useState(false);
   const { currentTime } = useTime();
   const router = useRouter();
 
@@ -91,6 +93,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
     });
   };
 
+  const filteredNotes = notes?.filter((note) =>
+    showPublicNotes ? note.isPublic === true : !note.isPublic,
+  );
+
   return (
     <div className="h-full lg:px-6">
       <div className="flex justify-center gap-5 pt-4 px-4 xl:px-3 2xl:px-5 flex-wrap xl:flex-nowrap max-w-[100rem] mx-auto w-full">
@@ -99,9 +105,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div className="flex flex-col border rounded-lg p-4 h-[500px]">
               <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={eventType === "your" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setEventType("your")}
@@ -110,6 +117,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={eventType === "group" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setEventType("group")}
@@ -117,9 +125,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                     Group Events
                   </Button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
+                    className="px-3 min-w-10"
                     variant={timeFilter === "today" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setTimeFilter("today")}
@@ -128,6 +137,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={timeFilter === "week" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setTimeFilter("week")}
@@ -172,6 +182,16 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   <h3 className="text-xl font-semibold text-foreground-900">
                     Notes Preview
                   </h3>
+                  <Button
+                    size="sm"
+                    variant="shadow"
+                    onClick={() => setShowPublicNotes(!showPublicNotes)}
+                    className={` transition-colors ${
+                      showPublicNotes ? "bg-emerald-600" : "bg-blue-500"
+                    } text-white`}
+                  >
+                    {showPublicNotes ? "Pubbliche" : "Private"}
+                  </Button>
                   <Link
                     href="/notes"
                     as={NextLink}
@@ -183,9 +203,9 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-hide">
-                    {user.notes && user.notes.length > 0 ? (
+                    {filteredNotes && filteredNotes.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {user.notes
+                        {filteredNotes
                           ?.sort(
                             (a: NoteModel, b: NoteModel) =>
                               new Date(b.date!).getTime() -
@@ -199,13 +219,15 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                                 router.push(`/notes?id=${note._id}`);
                               }}
                               onDelete={() => {}}
+                              showDelete={false}
                             />
                           ))}
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <p className="text-xl font-medium mb-2">
-                          Nessuna nota disponibile
+                        <p className="text-xl text-center font-medium mb-2">
+                          Nessuna nota{" "}
+                          {showPublicNotes ? "pubblica" : "privata"} disponibile
                         </p>
                         <p className="text-sm">
                           Crea una nuova nota per iniziare

@@ -20,7 +20,7 @@ import { PassLockIcon } from "../auth/PassLockIcon";
 import NotificationSettings from "../auth/NotificationSettings";
 import { useRouter } from "next/navigation";
 import { SelfieEvent } from "@/helpers/types";
-import ImportExportCal from "./importExportCal"
+import ImportExportCal from "./importExportCal";
 
 interface SettingsPageProps {
   username: string;
@@ -119,10 +119,14 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       setStatusPasswordChange("Password cambiata con successo");
     } else if (type === "email") {
       setEmailEdit(false);
-      const event = new CustomEvent("emailUpdated", { detail: { updatedEmail: email } });
+      const event = new CustomEvent("emailUpdated", {
+        detail: { updatedEmail: email },
+      });
       window.dispatchEvent(event);
     } else if (type === "avatar") {
-      const event = new CustomEvent("avatarUpdated", { detail: { updatedAvatar: avatar } });
+      const event = new CustomEvent("avatarUpdated", {
+        detail: { updatedAvatar: avatar },
+      });
       window.dispatchEvent(event);
     }
   };
@@ -147,10 +151,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     let body = {};
     if (type === "push") {
       body = { enable: !pushNotifications };
-
     } else if (type === "email") {
       body = { enable: !emailNotifications };
-
     } else {
       console.error("Tipo non supportato:", type);
       return;
@@ -166,7 +168,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center h-full">
       <Card className="max-w-[600px] mx-auto m-auto p-5 w-full">
         <h1 className="flex text-2xl font-bold text-foreground mb-5 justify-center">
           Impostazioni Account
@@ -174,11 +176,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         <Spacer y={1} />
         <h3 className="text-lg mb-5">Cambia Avatar</h3>
         <div className="flex f-row justify-between gap-2">
-          <Avatar
-            src={avatar}
-            size="lg"
-            alt="avatar"
-          />
+          <Avatar src={avatar} size="lg" alt="avatar" />
           <Input
             variant="faded"
             label="Avatar"
@@ -359,12 +357,9 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             <h3 className="mb-3">Change Theme</h3>
             <DarkModeSwitch />
           </div>
-
         </div>
 
-        <ImportExportCal
-          events={props.events}
-        />
+        <ImportExportCal events={props.events} />
 
         <Button color="danger" onPress={onOpen} className="w-full">
           Elimina Account
