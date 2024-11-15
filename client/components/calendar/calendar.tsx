@@ -8,8 +8,9 @@ import CalendarCell from "@/components/calendar/calendarCell";
 import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
 import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
-import { getCurrentTime } from "@/actions/setTime";
 import { useTime } from "../contexts/TimeContext";
+import { TaskMutiResponse } from "@/helpers/api-types";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface CalendarPageProps {
   createdEvents: SelfieEvent[];
@@ -17,6 +18,7 @@ interface CalendarPageProps {
   dbdate: Date;
   friends: People;
   projects: ProjectModel[];
+  tasks: TaskMutiResponse;
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -51,7 +53,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     // Calcola la differenza in ore tra il nuovo currentTime e il precedente
     const hoursDifference = Math.abs(
       (currentTime.getTime() - prevTimeRef.current.getTime()) /
-        (1000 * 60 * 60),
+      (1000 * 60 * 60),
     );
 
     // Aggiorna currentDate solo se la differenza è maggiore di 24 ore
@@ -110,6 +112,7 @@ const CalendarPage = (props: CalendarPageProps) => {
             isToday={isToday}
             events={events}
             projects={props.projects}
+            tasks={props.tasks}
           />
         </td>,
       );
@@ -150,6 +153,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 isToday={isToday}
                 events={events}
                 projects={props.projects}
+                tasks={props.tasks}
               />
             ) : null}
           </td>,
@@ -224,15 +228,16 @@ const CalendarPage = (props: CalendarPageProps) => {
                 aria-label="Event Adder Button"
               />
 
-              <button
+              <Button
                 onClick={() => {
                   isMonthView ? changeMonth(-1) : changeWeek(-7);
                 }}
-                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                variant="flat"
+                color="primary"
+                isIconOnly
               >
-                &lt;
-              </button>
-
+                <ArrowLeft />
+              </Button>
               <div className="flex items-center gap-4">
                 <Switch
                   defaultSelected={true}
@@ -275,14 +280,16 @@ const CalendarPage = (props: CalendarPageProps) => {
               >
                 Oggi
               </Button>
-              <button
+              <Button
                 onClick={() => {
                   isMonthView ? changeMonth(1) : changeWeek(7);
                 }}
-                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                variant="flat"
+                color="primary"
+                isIconOnly
               >
-                &gt;
-              </button>
+                <ArrowRight />
+              </Button>
             </div>
             <div className="flex overflow-auto">
               <table className="w-full h-full table-fixed">

@@ -13,6 +13,9 @@ export default async function Page({
     const { id } = await params;
     const projects = await getProjects();
     const user = await getUser();
+    if (user instanceof Error) {
+      throw user.message;
+    }
     return <Content projects={projects} user={user} id={id}/>;
   } catch (error: any) {
     return <div className="text-error">{error.message}</div>;

@@ -26,9 +26,8 @@ export const Login = () => {
       try {
         const response = await login(values);
         // We need this to show the error message in the login page from the server action
-        if (response?.success === false) {
-          setError(response.message);
-          return;
+        if (response instanceof Error) {
+          throw response;
         }
         await createAuthCookie(response.token);
         router.replace(redirect || "/");
