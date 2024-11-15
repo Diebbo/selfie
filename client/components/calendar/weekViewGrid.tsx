@@ -6,6 +6,20 @@ import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helper
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure, Chip, Input } from "@nextui-org/react";
 import { useTime } from "../contexts/TimeContext";
 
+enum AppointmentButtonColor {
+  EVENT = 'bg-primary-400',
+  PROJECT = 'bg-warning-400',
+  TASK = 'bg-secondary-400',
+  PROJECT_TASK = 'bg-danger-400',
+}
+
+enum CompressedAppointmentButtonColor {
+  ALL = 'bg-danger-300',
+  EVENT = 'bg-primary-300',
+  PROJECT = 'bg-warning-300',
+  TASK = 'bg-secondary-300',
+}
+
 interface CombinedAppointment {
   type: 'event' | 'project' | 'task' | 'project-task';
   event?: SelfieEvent;
@@ -152,11 +166,13 @@ export const WeekViewGrid: React.FC<{
 
     function handleColor() {
       if (hasProjects && hasTasks && hasEvents) {
-        return "bg-secondary-400";
+        return CompressedAppointmentButtonColor.ALL;
       } else if (hasEvents) {
-        return "bg-primary-400";
-      } else {
-        return "bg-warning-400";
+        return CompressedAppointmentButtonColor.EVENT;
+      } else if (hasTasks) {
+        return CompressedAppointmentButtonColor.TASK;
+      } else if (hasProjects) {
+        return CompressedAppointmentButtonColor.PROJECT;
       }
     }
 
