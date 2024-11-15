@@ -169,7 +169,7 @@ interface Task {
   dueDate: Date;
 }
 
-export interface TaskModel {
+export interface TaskModel  {
   _id: string;
   name: string;
   dueDate: Date;
@@ -186,11 +186,12 @@ export enum TaskStatus {
   COMPLETED = "completed",
 }
 
-interface ProjectTaskModel extends Task {
+export interface ProjectTaskModel  extends Task {
   description: string;
   status: TaskStatus;
   participants: string[]; // Usernames
   subTasks: ProjectTaskModel[];
+  startDate: Date;
 }
 
 export interface ProjectModel {
@@ -202,4 +203,5 @@ export interface ProjectModel {
   members: Person[]; // particapants usernames
   creationDate: Date;
   deadline: Date;
+  startDate: Date;
 }

@@ -14,7 +14,9 @@ const Page = async () => {
       getNotificationStatus(),
     ]);
 
-    //console.log("miao", user);
+    if (user instanceof Error) {
+      throw user.message;
+    }
 
     return (
       <Content

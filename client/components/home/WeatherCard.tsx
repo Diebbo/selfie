@@ -68,6 +68,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({ position }) => {
         await getWeather(position).then((data) => {
           setWeather(data.current);
           setForecast(data.forecast);
+          setError(data.error);
         });
       } catch (err) {
         setError("Impossibile caricare i dati meteo");

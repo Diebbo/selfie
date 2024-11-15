@@ -25,11 +25,10 @@ export const UserDropdown = () => {
 
   const fetchUser = useCallback(async () => {
     try {
-      /*const res = await fetch("/api/users/id");
-      if (!res.ok) {
-        throw new Error("Failed to fetch user");
-      }*/
       const dbUser = await getUser();
+      if (dbUser instanceof Error) {
+        throw dbUser.message;
+      }
       setUser(dbUser);
     } catch (error) {
       console.error("Failed to fetch user:", error);

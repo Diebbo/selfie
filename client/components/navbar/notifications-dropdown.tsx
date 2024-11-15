@@ -76,8 +76,10 @@ export const NotificationsDropdown = () => {
       try {
         // Fetch user ID
         const user = await fetchID();
+        if (user instanceof Error) {
+          throw user;
+        }
         await fetchNotifications();
-        console.log("id", user._id);
 
         // Inizializza la connessione socket
         if (!process.env.NEXT_PUBLIC_SOCKET_URL) {

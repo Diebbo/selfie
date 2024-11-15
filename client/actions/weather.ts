@@ -15,7 +15,11 @@ export async function getWeather(position: {
   );
 
   if (!currentWeatherResponse.ok || !forecastResponse.ok) {
-    throw new Error("Weather data fetch failed");
+    return {
+      current: null,
+      forecast: null,
+      error: "Errore nel recupero dei dati meteo",
+    };
   }
 
   const currentData = await currentWeatherResponse.json();
@@ -42,5 +46,6 @@ export async function getWeather(position: {
         weather: reading.weather[0].main,
         icon: reading.weather[0].icon,
       })),
+    error: null,
   };
 }

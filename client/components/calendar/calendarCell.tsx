@@ -2,31 +2,43 @@
 
 import React, { useState, useContext } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
-import { SelfieEvent, ProjectModel } from "@/helpers/types";
+import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { WeekViewGrid } from './weekViewGrid';
 import { mobileContext } from "./contextStore"
+import { TaskMutiResponse } from "@/helpers/api-types";
 
-// Utility Functions
-const areSameDay = (date1: Date, date2: Date): boolean => {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-};
+enum AppointmentButtonColor {
+  EVENT = 'primary',
+  PROJECT = 'warning',
+  TASK = 'secondary',
+  PROJECT_TASK = 'danger',
+  ALL_DAY = 'info',
+  GROUP_EVENT = 'success',
+}
+
+const isInBeetween = (date: Date, startDate: Date, endDate: Date): boolean => {
+  return date.getTime() >= startDate.getTime() && date.getTime() <= endDate.getTime();
+}
+
+const areSameDay = (dateA: Date, dateB: Date): boolean => {
+  return dateA.getFullYear() === dateB.getFullYear() && dateA.getMonth() === dateB.getMonth() && dateA.getDate() === dateB.getDate();
+}
 
 const isAM = (date: Date): boolean => {
   return date.getHours() < 12;
 };
 
 interface CombinedAppointment {
-  type: 'event' | 'project';
+  type: 'event' | 'project' | 'task' | 'project-task';
   event?: SelfieEvent;
   project?: ProjectModel;
+  task?: TaskModel;
+  projectTask?: ProjectTaskModel;
+  projectId?: string;
 }
 
-const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: ProjectModel[], date: Date): CombinedAppointment[] => {
+const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: ProjectModel[], tasks: TaskMutiResponse | undefined, date: Date): CombinedAppointment[] => {
   const appointments: CombinedAppointment[] = [];
 
   // Add events
@@ -35,8 +47,7 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
       const eventDateStart = new Date(event.dtstart);
       const eventDateEnd = new Date(event.dtend);
       if (
-        (date.getTime() <= eventDateEnd.getTime() && date.getTime() >= eventDateStart.getTime()) ||
-        areSameDay(date, eventDateStart)
+        isInBeetween(date, eventDateStart, eventDateEnd)
       ) {
         appointments.push({
           type: 'event',
@@ -52,24 +63,68 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
       const projectDeadline = new Date(project.deadline);
       const projectStartDate = new Date(project.creationDate);
 
-      if (areSameDay(date, projectStartDate)) {
+      if (isInBeetween(date, projectStartDate, projectDeadline)) {
         appointments.push({
           type: 'project',
           project: project
         });
       }
-      else if (areSameDay(date, projectDeadline)) {
+      project.activities.forEach(task => {
+        const taskDueDate = new Date(task.dueDate);
+        if (areSameDay(date, taskDueDate)) {
+          appointments.push({
+            type: 'project-task',
+            projectTask: task,
+            projectId: project._id,
+          });
+        }
+      });
+    });
+  }
+
+  // Add tasks
+  if (tasks && tasks.activities) {
+    tasks.activities.forEach(task => {
+      const taskDueDate = new Date(task.dueDate);
+      if (areSameDay(date, taskDueDate)) {
         appointments.push({
-          type: 'project',
-          project: project
+          type: 'task',
+          task: task
         });
       }
     });
   }
 
   return appointments.sort((a, b) => {
-    const dateA = new Date(a.type === 'event' ? a.event!.dtstart : a.project!.deadline);
-    const dateB = new Date(b.type === 'event' ? b.event!.dtstart : b.project!.deadline);
+    let dateA: Date, dateB: Date;
+    switch (a.type) {
+      case 'event':
+        dateA = new Date(a.event!.dtstart);
+        break;
+      case 'project':
+        dateA = new Date(a.project!.startDate);
+        break;
+      case 'task':
+        dateA = new Date(a.task!.dueDate);
+        break;
+      case 'project-task':
+        dateA = new Date(a.projectTask!.startDate);
+        break;
+    }
+    switch (b.type) {
+      case 'event':
+        dateB = new Date(b.event!.dtstart);
+        break;
+      case 'project':
+        dateB = new Date(b.project!.startDate);
+        break;
+      case 'task':
+        dateB = new Date(b.task!.dueDate);
+        break;
+      case 'project-task':
+        dateB = new Date(b.projectTask!.startDate);
+        break;
+    }
     const aIsAM = isAM(dateA);
     const bIsAM = isAM(dateB);
     if (aIsAM && !bIsAM) return -1;
@@ -93,34 +148,47 @@ const formatEventTime = (event: SelfieEvent): string => {
   return eventDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 };
 
-// Appointment Display Component
-const AppointmentsList = ({ events, projects, date, handleClick, isMonthView }: {
+const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthView, hasMoreAppointments, setIsAllEventsOpen }: {
   events: SelfieEvent[] | undefined,
   projects: ProjectModel[],
+  tasks: TaskMutiResponse | undefined,
   date: Date,
   handleClick: (item: CombinedAppointment) => void,
   isMonthView: boolean,
+  hasMoreAppointments: boolean,
+  setIsAllEventsOpen: React.Dispatch<React.SetStateAction<boolean>>,
+
 }): JSX.Element | null => {
-  const todayAppointments = getAppointmentsByDay(events, projects, date);
+  const todayAppointments = getAppointmentsByDay(events, projects, tasks, date);
   const appointmentsToShow = isMonthView ? todayAppointments.slice(0, 2) : todayAppointments;
   const { isMobile } = useContext(mobileContext) as any;
 
   const handleColor = (item: CombinedAppointment): string => {
     if (item.type === 'project') {
-      return "bg-warning-100 text-warning-700 hover:border-warning-700";
+      return `bg-${AppointmentButtonColor.PROJECT}-100 bg-${AppointmentButtonColor.PROJECT}-700 hover:border-${AppointmentButtonColor.PROJECT}-700`;
     }
 
+    if (item.type === 'task') {
+      return `bg-${AppointmentButtonColor.TASK}-100 bg-${AppointmentButtonColor.TASK}-700 hover:border-${AppointmentButtonColor.TASK}-700`;
+    }
+
+    if (item.type === 'project-task') {
+      return `bg-${AppointmentButtonColor.PROJECT_TASK}-100 bg-${AppointmentButtonColor.PROJECT_TASK}-700 hover:border-${AppointmentButtonColor.PROJECT_TASK}-700`;
+    }
+    
+    // evento di gruppo
     if (Array.isArray(item.event?.participants) && item.event!.participants.length > 0) {
-      if (item.event!.allDay) {
-        return "bg-success-200 text-success-700 hover:border-success-700";
-      }
-      return "bg-default-100 text-default-700 hover:border-default-700";
+      return `bg-${AppointmentButtonColor.GROUP_EVENT}-100 bg-${AppointmentButtonColor.GROUP_EVENT}-700 hover:border-${AppointmentButtonColor.GROUP_EVENT}-700`;
     }
 
+    // evento tutto il giorno
     if (item.event?.allDay) {
-      return "bg-primary-200 text-primary-700 hover:border-primary-700";
+      return `bg-${AppointmentButtonColor.ALL_DAY}-100 bg-${AppointmentButtonColor.ALL_DAY}-700 hover:border-${AppointmentButtonColor.ALL_DAY}-700`;
     }
-    return "bg-danger-100 text-danger-700 hover:border-danger-700";
+    
+    
+    // evento normale
+    return `bg-${AppointmentButtonColor.EVENT}-100 bg-${AppointmentButtonColor.EVENT}-700 hover:border-${AppointmentButtonColor.EVENT}-700`;
   };
 
   return (
@@ -145,9 +213,30 @@ const AppointmentsList = ({ events, projects, date, handleClick, isMonthView }: 
               {" - "}
             </>
           )}
-          {item.type === 'event' ? item.event?.title : item.project?.title}
+          {(!isMobile && item.type === 'task') && (
+            <>
+              <span className="font-medium">📝</span>
+              {" - "}
+            </>
+          )}
+          {(!isMobile && item.type === 'project-task') && (
+            <>
+              <span className="font-medium">📝</span>
+              {" - "}
+            </>
+          )}
+          {item.event?.title || item.project?.title || item.task?.name || item.projectTask?.title}
         </button>
       ))}
+      {hasMoreAppointments && isMonthView && (
+        <Button
+          aria-label="tooManyAppoinments"
+          className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
+          onClick={() => setIsAllEventsOpen(true)}
+        >
+          ...
+        </Button>
+      )}
     </>
   );
 };
@@ -157,7 +246,6 @@ const monthNames = [
   "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
 ];
 
-// Main Component
 interface CalendarCellProps {
   isMonthView: boolean;
   day: number;
@@ -165,6 +253,7 @@ interface CalendarCellProps {
   isToday: boolean;
   events?: SelfieEvent[];
   projects: ProjectModel[];
+  tasks: TaskMutiResponse | undefined;
 }
 
 const CalendarCell: React.FC<CalendarCellProps> = ({
@@ -174,12 +263,13 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   isToday,
   events = [],
   projects,
+  tasks,
 }) => {
   const [isAllEventsOpen, setIsAllEventsOpen] = useState(false);
   const router = useRouter();
   const cellDate = new Date(date.getFullYear(), date.getMonth(), day);
   const safeEvents = Array.isArray(events) ? events : [];
-  const todayAppointments = getAppointmentsByDay(safeEvents, projects, cellDate);
+  const todayAppointments = getAppointmentsByDay(safeEvents, projects, tasks, cellDate);
   const hasMoreAppointments = todayAppointments.length > 2;
   const hasAppointments = todayAppointments.length > 0;
   const { isMobile } = useContext(mobileContext) as any;
@@ -187,22 +277,24 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
   const handleClick = (item: CombinedAppointment) => {
     if (item.type === 'project') {
       router.push(`/projects/${item.project?._id}`);
-    } else {
+    } else if (item.type === 'event') {
       router.push(`/calendar/${item.event?._id}`);
+    } else if (item.type === 'task'){
+      router.push(`/task`);
+    } else if (item.type === 'project-task') {
+      router.push(`/projects/${item.projectId}`);
     }
   };
 
-  // Shared button styles
   const dayButtonClass = isToday
     ? "text-slate-200 bg-[#9353d3] border-2 border-slate-300"
     : "bg-slate-800 text-white dark:text-white";
 
-  // Modal Component
   const AppointmentsModal = () => (
     <Modal isOpen={isAllEventsOpen} onClose={() => setIsAllEventsOpen(false)} size="md">
       <ModalContent>
-        <ModalHeader>Eventi e Progetti del {day} {monthNames[date.getMonth()]} </ModalHeader>
-        <ModalBody className="p-4">
+        <ModalHeader>Events, Projects and Activity {day} {monthNames[date.getMonth()]} </ModalHeader>
+        <ModalBody className="p-4 max-h-[80vh] overflow-y-auto">
           <div className="space-y-3">
             {todayAppointments.map((item, index) => (
               <div
@@ -216,22 +308,35 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                 <p className="font-medium">
                   {item.type === 'project' ? (
                     <>
-                      <span className="text-warning">📋 Progetto</span>
+                      <span className={"text-" + AppointmentButtonColor.PROJECT}>📋 Project</span>
+                      {" - "}
+                    </>
+                  ) : (item.type === 'task') ? (
+                    <>
+                      <span className={"text-" + AppointmentButtonColor.TASK}>📝 Activity</span>
+                      {" - "}
+                    </>
+                  ) : (item.type === 'project-task') ? (
+                    <>
+                      <span className={"text-" + AppointmentButtonColor.PROJECT_TASK}>📝 Close Project Activity</span>
                       {" - "}
                     </>
                   ) : (
                     <>
-                      <span className="text-primary">
+                      <span className={"text-" + AppointmentButtonColor.EVENT}>
                         {!item.event?.allDay && formatEventTime(item.event!)}
+                        {item.event?.allDay && "All day"}
                       </span>
-                      {!item.event?.allDay && " - "}
+                      {" - "}
                     </>
                   )}
-                  <b>{item.type === 'event' ? item.event?.title : item.project?.title}</b>
+                  <b>{item.event?.title || item.project?.title || item.task?.name || item.projectTask?.title}</b>
                 </p>
                 <p className="text-sm text-gray-500">
                   {item.type === 'project' ? (
                     <>Scadenza Progetto</>
+                  ) : item.type === 'task' || item.type === 'project-task' ? (
+                    <>Scadenza Attività</>
                   ) : (
                     <>
                       {!item.event?.allDay && formatDate(new Date(item.event!.dtstart))}
@@ -247,7 +352,6 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     </Modal>
   );
 
-  // Week View
   if (!isMonthView) {
     return (
       <div aria-label="weekView" className={`h-full w-full rounded-[20px] ${isToday ? 'bg-blue-50 dark:bg-slate-900' : ''}`}>
@@ -271,13 +375,13 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           events={events}
           isMobile={isMobile}
           projects={projects}
+          tasks={tasks?.activities}
         />
         <AppointmentsModal />
       </div>
     );
   }
 
-  // Month View
   return (
     <div aria-label="monthView" className={isMobile ? "w-[calc(87vw/7)] h-[calc(87vw/7)] flex flex-col items-center" : "w-full"}>
       {!isMobile ? (
@@ -292,19 +396,13 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
             <AppointmentsList
               events={safeEvents}
               projects={projects}
+              tasks={tasks}
               date={cellDate}
               handleClick={handleClick}
               isMonthView={isMonthView}
+              hasMoreAppointments={hasMoreAppointments}
+              setIsAllEventsOpen={setIsAllEventsOpen}
             />
-            {hasMoreAppointments && isMonthView && (
-              <Button
-                aria-label="tooManyAppoinments"
-                className="h-fit w-full rounded-[100px] bg-primary text-white border-2 border-transparent hover:border-white"
-                onClick={() => setIsAllEventsOpen(true)}
-              >
-                ...
-              </Button>
-            )}
           </div>
         </div>
       ) : (
