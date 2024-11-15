@@ -308,25 +308,26 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                 <p className="font-medium">
                   {item.type === 'project' ? (
                     <>
-                      <span className="text-warning">📋 Project</span>
+                      <span className={"text-" + AppointmentButtonColor.PROJECT}>📋 Project</span>
                       {" - "}
                     </>
                   ) : (item.type === 'task') ? (
                     <>
-                      <span className="text-warning">📝 Activity</span>
+                      <span className={"text-" + AppointmentButtonColor.TASK}>📝 Activity</span>
                       {" - "}
                     </>
                   ) : (item.type === 'project-task') ? (
                     <>
-                      <span className="text-danger">📝 Close Project Activity</span>
+                      <span className={"text-" + AppointmentButtonColor.PROJECT_TASK}>📝 Close Project Activity</span>
                       {" - "}
                     </>
                   ) : (
                     <>
-                      <span className="text-primary">
+                      <span className={"text-" + AppointmentButtonColor.EVENT}>
                         {!item.event?.allDay && formatEventTime(item.event!)}
+                        {item.event?.allDay && "All day"}
                       </span>
-                      {!item.event?.allDay && " - "}
+                      {" - "}
                     </>
                   )}
                   <b>{item.event?.title || item.project?.title || item.task?.name || item.projectTask?.title}</b>
