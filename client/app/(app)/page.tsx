@@ -19,6 +19,7 @@ export default async function Home() {
       getUser(),
     ]);
 
+
     if (user instanceof Error) {
       throw user.message;
     }
@@ -28,11 +29,11 @@ export default async function Home() {
       <>
         <Content
           chats={chats}
-          notes={user.notes}
+          notes={notes}
           projects={user.projects}
           pomodoro={user.pomodoro}
           events={user.events}
-          user = {user}
+          user={user}
         />
       </>
     );
