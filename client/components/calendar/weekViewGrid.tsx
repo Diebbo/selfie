@@ -6,13 +6,6 @@ import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helper
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure, Chip, Input } from "@nextui-org/react";
 import { useTime } from "../contexts/TimeContext";
 
-enum AppointmentButtonColor {
-  EVENT = 'bg-primary-400',
-  PROJECT = 'bg-warning-400',
-  TASK = 'bg-secondary-400',
-  PROJECT_TASK = 'bg-danger-400',
-}
-
 enum AppointmentChipColor {
   EVENT = 'primary',
   PROJECT = 'warning',

@@ -8,6 +8,15 @@ import { WeekViewGrid } from './weekViewGrid';
 import { mobileContext } from "./contextStore"
 import { TaskMutiResponse } from "@/helpers/api-types";
 
+enum AppointmentButtonColor {
+  EVENT = 'primary',
+  PROJECT = 'warning',
+  TASK = 'secondary',
+  PROJECT_TASK = 'danger',
+  ALL_DAY = 'info',
+  GROUP_EVENT = 'success',
+}
+
 const isInBeetween = (date: Date, startDate: Date, endDate: Date): boolean => {
   return date.getTime() >= startDate.getTime() && date.getTime() <= endDate.getTime();
 }
@@ -156,24 +165,30 @@ const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthV
 
   const handleColor = (item: CombinedAppointment): string => {
     if (item.type === 'project') {
-      return "bg-warning-100 text-warning-700 hover:border-warning-700";
+      return `bg-${AppointmentButtonColor.PROJECT}-100 bg-${AppointmentButtonColor.PROJECT}-700 hover:border-${AppointmentButtonColor.PROJECT}-700`;
     }
 
     if (item.type === 'task') {
-      return "bg-warning-200 text-warning-700 hover:border-warning-700";
+      return `bg-${AppointmentButtonColor.TASK}-100 bg-${AppointmentButtonColor.TASK}-700 hover:border-${AppointmentButtonColor.TASK}-700`;
     }
 
+    if (item.type === 'project-task') {
+      return `bg-${AppointmentButtonColor.PROJECT_TASK}-100 bg-${AppointmentButtonColor.PROJECT_TASK}-700 hover:border-${AppointmentButtonColor.PROJECT_TASK}-700`;
+    }
+    
+    // evento di gruppo
     if (Array.isArray(item.event?.participants) && item.event!.participants.length > 0) {
-      if (item.event!.allDay) {
-        return "bg-success-200 text-success-700 hover:border-success-700";
-      }
-      return "bg-default-100 text-default-700 hover:border-default-700";
+      return `bg-${AppointmentButtonColor.GROUP_EVENT}-100 bg-${AppointmentButtonColor.GROUP_EVENT}-700 hover:border-${AppointmentButtonColor.GROUP_EVENT}-700`;
     }
 
+    // evento tutto il giorno
     if (item.event?.allDay) {
-      return "bg-primary-200 text-primary-700 hover:border-primary-700";
+      return `bg-${AppointmentButtonColor.ALL_DAY}-100 bg-${AppointmentButtonColor.ALL_DAY}-700 hover:border-${AppointmentButtonColor.ALL_DAY}-700`;
     }
-    return "bg-danger-100 text-danger-700 hover:border-danger-700";
+    
+    
+    // evento normale
+    return `bg-${AppointmentButtonColor.EVENT}-100 bg-${AppointmentButtonColor.EVENT}-700 hover:border-${AppointmentButtonColor.EVENT}-700`;
   };
 
   return (
