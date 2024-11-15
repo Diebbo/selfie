@@ -16,6 +16,7 @@ interface NotePageProps {
 const NotePage: React.FC<NotePageProps> = (props) => {
   const [notes, setNotes] = useState<NoteModel[]>(props.notes);
   const [showPublic, setShowPublic] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("date");
 
   const [noteState, setNoteState] = useState({
     selectedNote: null as NoteModel | null,
@@ -113,9 +114,19 @@ const NotePage: React.FC<NotePageProps> = (props) => {
     return res.ok;
   };*/
 
-  const filteredNotes = notes.filter((note) =>
-    showPublic ? note.isPublic === true : !note.isPublic,
-  );
+  const filteredNotes = notes
+    .filter((note) => (showPublic ? note.isPublic === true : !note.isPublic))
+    .sort((a, b) => {
+      if (sortBy === "date") {
+        return new Date(b.date!).getTime() - new Date(a.date!).getTime();
+      } else if (sortBy === "title") {
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === "length") {
+        return b.content.length - a.content.length;
+      } else {
+        return 0;
+      }
+    });
 
   const deleteNote = async (id: string) => {
     const res = await fetch(`/api/notes/${id}`, {
@@ -294,6 +305,8 @@ const NotePage: React.FC<NotePageProps> = (props) => {
             onDelete={handleDelete}
             showPublic={showPublic}
             onTogglePublic={() => setShowPublic(!showPublic)}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
         </div>
       )}

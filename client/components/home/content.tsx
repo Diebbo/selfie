@@ -105,9 +105,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div className="flex flex-col border rounded-lg p-4 h-[500px]">
               <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={eventType === "your" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setEventType("your")}
@@ -116,6 +117,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={eventType === "group" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setEventType("group")}
@@ -123,9 +125,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                     Group Events
                   </Button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
+                    className="px-3 min-w-10"
                     variant={timeFilter === "today" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setTimeFilter("today")}
@@ -134,6 +137,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={timeFilter === "week" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setTimeFilter("week")}
@@ -179,12 +183,14 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                     Notes Preview
                   </h3>
                   <Button
+                    size="sm"
+                    variant="shadow"
                     onClick={() => setShowPublicNotes(!showPublicNotes)}
-                    className={`px-4 py-2 rounded transition-colors bg-opacity-0 ${
-                      showPublicNotes ? "" : ""
-                    } text-blue-500`}
+                    className={` transition-colors ${
+                      showPublicNotes ? "bg-emerald-600" : "bg-blue-500"
+                    } text-white`}
                   >
-                    {showPublicNotes ? "Note Pubbliche" : "Note Private"}
+                    {showPublicNotes ? "Pubbliche" : "Private"}
                   </Button>
                   <Link
                     href="/notes"
@@ -219,7 +225,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <p className="text-xl font-medium mb-2">
+                        <p className="text-xl text-center font-medium mb-2">
                           Nessuna nota{" "}
                           {showPublicNotes ? "pubblica" : "privata"} disponibile
                         </p>
