@@ -245,8 +245,8 @@ export const WeekViewGrid: React.FC<{
   // Helper function to render appointment button
   const renderAppointmentButton = (appointments: CombinedAppointment[]) => {
     const hasEvents = appointments.some(a => a.type === 'event');
-    const hasProjects = appointments.some(a => a.type === 'project');
-    const hasTasks = appointments.some(a => a.type === 'task' || a.type === 'project-task');
+    const hasProjects = appointments.some(a => a.type === 'project' || a.type === 'project-task');
+    const hasTasks = appointments.some(a => a.type === 'task');
 
     const getButtonColor = () => {
       if (hasEvents && hasProjects && hasTasks) {
