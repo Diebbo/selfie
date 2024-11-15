@@ -20,7 +20,7 @@ export const deleteAuthCookie = async () => {
 };
 
 // Purpose: Handles the login process.
-export async function login(user: LoginFormType | Error) {
+export async function login(user: LoginFormType | Error) : Promise<{token: string} | Error> {
   try {
     const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
       method: "POST",
