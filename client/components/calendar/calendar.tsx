@@ -10,6 +10,7 @@ import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
 import { useTime } from "../contexts/TimeContext";
 import { TaskMutiResponse } from "@/helpers/api-types";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface CalendarPageProps {
   createdEvents: SelfieEvent[];
@@ -227,15 +228,16 @@ const CalendarPage = (props: CalendarPageProps) => {
                 aria-label="Event Adder Button"
               />
 
-              <button
+              <Button
                 onClick={() => {
                   isMonthView ? changeMonth(-1) : changeWeek(-7);
                 }}
-                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                variant="flat"
+                color="primary"
+                isIconOnly
               >
-                &lt;
-              </button>
-
+                <ArrowLeft />
+              </Button>
               <div className="flex items-center gap-4">
                 <Switch
                   defaultSelected={true}
@@ -278,14 +280,16 @@ const CalendarPage = (props: CalendarPageProps) => {
               >
                 Oggi
               </Button>
-              <button
+              <Button
                 onClick={() => {
                   isMonthView ? changeMonth(1) : changeWeek(7);
                 }}
-                className="text-white hover:text-yellow-300 text-xl md:text-2xl"
+                variant="flat"
+                color="primary"
+                isIconOnly
               >
-                &gt;
-              </button>
+                <ArrowRight />
+              </Button>
             </div>
             <div className="flex-grow overflow-auto">
               <table className="w-full h-full table-fixed">
