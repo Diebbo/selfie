@@ -17,6 +17,14 @@ export default async function Page({ params }: { params: Promise<{ receiverUsern
       throw chat;
     }
 
+    if (user instanceof Error) {
+      throw user;
+    }
+
+    if (receiver instanceof Error) {
+      throw receiver;
+    }
+
     return (
       <Suspense fallback={<div>Loading...</div>}>
         <ChatModal receiverUsername={receiverUsername} chat={chat} user={user} receiver={receiver} />;

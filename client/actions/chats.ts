@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import getBaseUrl from '@/config/proxy';
 import { ChatModel, MessageModel } from '@/helpers/types';
 
-async function getChats(): Promise<ChatModel> {
+async function getChats(): Promise<ChatModel[]> {
 	const cookieStore = await cookies();
 	const token = cookieStore.get('token')?.value;
 

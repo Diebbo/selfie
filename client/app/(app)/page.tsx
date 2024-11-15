@@ -11,7 +11,7 @@ import {
 
 export default async function Home() {
   try {
-    const [chats,  user]: [
+    const [chats, user]: [
       ChatModel[],
       Person | Error
     ] = await Promise.all([
@@ -29,7 +29,7 @@ export default async function Home() {
       <>
         <Content
           chats={chats}
-          notes={notes}
+          notes={user.notes}
           projects={user.projects}
           pomodoro={user.pomodoro}
           events={user.events}
