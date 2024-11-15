@@ -24,7 +24,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (
-    process.env.NODE_ENV === "production" &&
+    process.env.REDIRECT === "true" &&
     req.headers.get("x-forwarded-proto") !== "https"
   ) {
     console.log("redirecting to https");

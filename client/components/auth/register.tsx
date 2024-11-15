@@ -18,17 +18,17 @@ export const Register = () => {
   const steps = ["Account", "Personal Info", "Address"];
 
   const initialValues: RegisterFormType = {
-    name: "miao",
-    surname: "miao",
-    email: "prova@prova",
-    username: "paopdokapdk",
-    password: "123",
-    confirmPassword: "123",
+    name: "",
+    surname: "",
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
     country: "Italia",
-    zip: "40133",
+    zip: "",
     city: "Bologna",
     state: "Emilia Romagna",
-    address: "asidjaodjsoad",
+    address: "",
     phoneNumber: "",
     birthDate: new Date(),
   };
@@ -36,11 +36,19 @@ export const Register = () => {
   const handleRegister = useCallback(
     async (values: RegisterFormType) => {
       try {
-        const response = await register(values as RegisterType);
-        if (response instanceof Error) {
-          throw response;
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Registration failed");
         }
-        await createAuthCookie(response.token);
+        const data = await response.json();
+        await createAuthCookie(data.token);
         router.replace("/");
       } catch (err: any) {
         setError(
@@ -145,7 +153,7 @@ export const Register = () => {
                   variant="bordered"
                   label="Birth Date"
                   type="date"
-                  value={values.birthDate.toString()}
+                  value={new Date(values.birthDate).toString()}
                   isInvalid={!!errors.birthDate && !!touched.birthDate}
                   onChange={handleChange("birthDate")}
                 />

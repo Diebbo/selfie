@@ -21,24 +21,30 @@ export const Login = () => {
 
   const redirect = searchParams.get("redirect");
 
-  const handleLogin = useCallback(
-    async (values: LoginFormType) => {
-      try {
-        const response = await login(values);
-        // We need this to show the error message in the login page from the server action
-        if (response instanceof Error) {
-          throw response;
-        }
-        await createAuthCookie(response.token);
-        router.replace(redirect || "/");
-      } catch (err: any) {
-        setError(
-          err.message ? err.message.toString() : "An unknown error occurred",
-        );
+  const handleLogin = async (values: LoginFormType) => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
       }
-    },
-    [router],
-  );
+
+      await createAuthCookie(data?.token);
+      router.replace(redirect || "/");
+    } catch (err: any) {
+      setError(
+        err.message ? err.message.toString() : "An unknown error occurred",
+      );
+    }
+  };
 
   return (
     <>
@@ -61,6 +67,7 @@ export const Login = () => {
                 isInvalid={!!errors.email && !!touched.email}
                 errorMessage={errors.email}
                 onChange={handleChange("email")}
+                required
               />
               <Input
                 variant="bordered"
