@@ -7,17 +7,18 @@ import {
   parseDateTime,
   parseDate,
   CalendarDateTime,
+  parseAbsoluteToLocal,
+  ZonedDateTime,
 } from "@internationalized/date";
-import { DatePicker } from "@nextui-org/react";
-import { Card, CardBody, Button, Input } from "@nextui-org/react";
+import { DatePicker, DateValue } from "@nextui-org/react";
+import { Button } from "@nextui-org/react";
 
 interface TimeModifierClientProps {
   onSubmit: (
-    formData: FormData,
+    formData: FormData
   ) => Promise<{ success: boolean; error?: string }>;
   onReset: () => Promise<{ success: boolean; error?: string }>;
-
-  onClose?: () => void; // Aggiungiamo questa prop per gestire la chiusura del modal
+  onClose?: () => void;
   initialTime: Date;
 }
 
@@ -27,18 +28,19 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
   onClose,
   initialTime,
 }) => {
-  const [time, setTime] = React.useState(initialTime.toISOString());
+  const [time, setTime] = React.useState(
+    parseAbsoluteToLocal(initialTime.toISOString())
+  );
   const [state, setState] = React.useState({ success: false, error: null });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Prevent the default form submission behavior
 
     const formData = new FormData(event.currentTarget);
+    formData.set("time", time.toDate().toISOString());
 
-    // Invoke onSubmit with the form data
     const response = await onSubmit(formData);
 
-    // Update the state based on the response
     setState(response as any);
   };
 
@@ -53,18 +55,6 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
     }
   };
 
-  // Convert Date to type DateValue for
-  const convertToCalendarDateTime = (date: Date) => {
-    return new CalendarDateTime(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate(),
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-    );
-  };
-
   return (
     <form onSubmit={handleSubmit} className="px-4 py-2">
       <div className="flex justify-items-center flex-col gap-4 items-center">
@@ -73,13 +63,14 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
           variant="bordered"
           hideTimeZone
           showMonthAndYearPickers
-          defaultValue={convertToCalendarDateTime(initialTime)}
-          onChange={(date) =>
-            setTime(date.toDate(getLocalTimeZone()).toISOString())
-          }
+          value={time}
+          onChange={(date: ZonedDateTime) => {
+            if (date) {
+              setTime(date);
+            }
+          }}
           className="max-w-60"
         />
-        <input type="hidden" name="time" value={time} />
 
         <div className="flex gap-2 justify-center">
           <Button color="primary" variant="shadow" type="submit">
