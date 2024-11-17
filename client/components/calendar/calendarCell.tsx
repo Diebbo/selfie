@@ -92,6 +92,18 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
           task: task
         });
       }
+
+      if (task.subActivities) {
+        task.subActivities.forEach(subTask => {
+          const subTaskDueDate = new Date(subTask.dueDate);
+          if (areSameDay(date, subTaskDueDate)) {
+            appointments.push({
+              type: 'task',
+              task: subTask
+            });
+          }
+        });
+      }
     });
   }
 
