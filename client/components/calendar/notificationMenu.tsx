@@ -45,18 +45,18 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
   return (
     <div className="flex flex-col gap-4 mt-3">
       <Input
-        label="Titolo notifica"
+        label="Notification title"
         value={notification?.title?.toString() || ""}
         onChange={(e) => handleNotificationChange("title", e.target.value)}
-        placeholder="Inserisci il titolo della notifica"
+        placeholder="Insert notification title"
       />
       <Input
-        label="Descrizione notifica"
+        label="Notification description"
         value={notification?.description?.toString() || ""}
         onChange={(e) =>
           handleNotificationChange("description", e.target.value)
         }
-        placeholder="Inserisci la descrizione della notifica"
+        placeholder="Insert notification description"
       />
       <Select
         label="Tipo notifica"
@@ -77,16 +77,16 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
       </Select>
       <DatePicker
         defaultValue={now(getLocalTimeZone())}
-        label="Data di inizio notifiche"
+        label="Starting notification date"
         isRequired
         hideTimeZone
         onChange={(date) => handleNotificationChange("fromDate", date)}
         isInvalid={notificationError}
         granularity={isAllDay ? "day" : "minute"}
-        errorMessage="Inserire una data prima dell'inizio dell'evento"
+        errorMessage="You need to insert a date before the event starts"
       />
       <Select
-        label="Frequenza ripetizione"
+        label="Frequency repetition"
         variant="bordered"
         classNames={{
           base: "data-[hover=true]:bg-yellow-300",
@@ -100,30 +100,30 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
           handleNotificationChange("repetition.freq", Array.from(keys)[0])
         }
       >
-        <SelectItem key="Minuto" value="minute">
+        <SelectItem key="Minute" value="minutely">
           Minuto
         </SelectItem>
-        <SelectItem key="Oraria" value="hour">
+        <SelectItem key="Hour" value="hourly">
           Oraria
         </SelectItem>
-        <SelectItem key="Giornaliera" value="day">
+        <SelectItem key="Day" value="daily">
           Giornaliera
         </SelectItem>
-        <SelectItem key="Settimanale" value="week">
+        <SelectItem key="Week" value="weekly">
           Settimanale
         </SelectItem>
-        <SelectItem key="Mensile" value="month">
+        <SelectItem key="Month" value="monthly">
           Mensile
         </SelectItem>
-        <SelectItem key="Annuale" value="year">
+        <SelectItem key="Year" value="yearly">
           Annuale
         </SelectItem>
       </Select>
       <Input
-        label="Intervallo ripetizione"
+        label="Interval repetition"
         value={notification?.repetition?.interval?.toString() || ""}
         onChange={(e) => handleNotificationChange("repetition.interval", e.target.value)}
-        placeholder="Inserisci l'intervallo di ripetizione"
+        placeholder="Set the frequency repetition"
       />
     </div>
   );

@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import getBaseUrl from '@/config/proxy';
 import { AuthenticationError, ServerError } from '@/helpers/errors';
-import { SelfieEvent } from '@/helpers/types';
+import { SelfieEvent, ResourceModel } from '@/helpers/types';
 
 export async function getEvents(): Promise<SelfieEvent[]> {
   const cookieStore = await cookies();
@@ -89,4 +89,33 @@ export async function getOwner(ownerid: String): Promise<string> {
   const owner = await response.json();
 
   return owner;
+}
+
+
+export async function getResource(): Promise<ResourceModel[]> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${getBaseUrl()}/api/events/resource/all`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+  });
+
+  if (response.status !== 200) {
+    const errorText = await response.text();
+    throw new Error(
+      `HTTP error! status: ${response.status}, message: ${errorText}`,
+    );
+  }
+
+  const resource = await response.json();
+
+  return resource;
 }

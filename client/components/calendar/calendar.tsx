@@ -5,7 +5,7 @@ import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
 import React, { useState, useEffect, useRef } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
+import { SelfieEvent, People, ProjectModel, ResourceModel } from "@/helpers/types";
 import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
 import { useTime } from "../contexts/TimeContext";
@@ -19,6 +19,7 @@ interface CalendarPageProps {
   friends: People;
   projects: ProjectModel[];
   tasks: TaskMutiResponse;
+  resource: ResourceModel[];
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
@@ -103,7 +104,7 @@ const CalendarPage = (props: CalendarPageProps) => {
       daysOfWeek.push(
         <td
           key={`week-cell-${i}`}
-          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-full`}
         >
           <CalendarCell
             isMonthView={isMonthView}
@@ -162,7 +163,7 @@ const CalendarPage = (props: CalendarPageProps) => {
       days.push(
         <tr
           key={`row-${i}`}
-          className="overflow-y-auto scrollbar max-h-[calc(85vh)]"
+          className="overflow-y-auto scrollbar max-h-[calc(77vh)]"
         >
           {week}
         </tr>,
@@ -173,18 +174,18 @@ const CalendarPage = (props: CalendarPageProps) => {
   };
 
   const monthNames = [
-    "Gennaio",
-    "Febbraio",
-    "Marzo",
-    "Aprile",
-    "Maggio",
-    "Giugno",
-    "Luglio",
-    "Agosto",
-    "Settembre",
-    "Ottobre",
-    "Novembre",
-    "Dicembre",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const handleToday = () => {
@@ -221,10 +222,11 @@ const CalendarPage = (props: CalendarPageProps) => {
       >
         <div className="flex-grow">
           <div className="bg-white dark:bg-black flex flex-col">
-            <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
+            <div className="flex items-center justify-between px-2 md:px-4 py-2 gap-0 bg-slate-300 dark:bg-zinc-900 w-full">
               <EventAdder
                 friends={props.friends}
                 isMobile={isMobile}
+                resource={props.resource}
                 aria-label="Event Adder Button"
               />
 
@@ -238,15 +240,15 @@ const CalendarPage = (props: CalendarPageProps) => {
               >
                 <ArrowLeft />
               </Button>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center mr-0">
                 <Switch
                   defaultSelected={true}
                   onValueChange={handleToggle}
                   color="primary"
                   startContent={<span> M </span>}
                   endContent={<span> W </span>}
-                  className="data-[state=checked]:bg-primary"
-                  aria-label="Cambia visualizzazione"
+                  aria-label="Change visualization"
+                  className={`data-[state=checked]:bg-primary [&>*]:mr-0`}
                 />
               </div>
 
@@ -278,7 +280,7 @@ const CalendarPage = (props: CalendarPageProps) => {
                 onClick={handleToday}
                 className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
               >
-                Oggi
+                Today
               </Button>
               <Button
                 onClick={() => {

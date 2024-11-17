@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helpers/types";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure, Chip, Input } from "@nextui-org/react";
@@ -279,7 +279,7 @@ export const WeekViewGrid: React.FC<{
   const hours = generateHours();
 
   return (
-    <div className="overflow-y-auto scrollbar-hide max-h-[calc(85vh)]">
+    <div className="overflow-y-auto scrollbar-hide max-h-[calc(77vh)]">
       {hours.map((hour, index) => {
         const appointmentsForHour = getAppointmentsForHour(index);
         const hasAppointments = appointmentsForHour.length > 0;
@@ -344,12 +344,12 @@ export const WeekViewGrid: React.FC<{
                     </div>
                   ))
                 ) : (
-                  <p>Nessun appuntamento</p>
+                  <p>No appointment</p>
                 )}
               </ModalBody>
               <ModalFooter>
                 <Button color="danger" variant="light" onPress={onClose}>
-                  Chiudi
+                  Close
                 </Button>
               </ModalFooter>
             </>
