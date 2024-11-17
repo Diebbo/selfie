@@ -128,7 +128,7 @@ export default function createProjectService(models, lib) {
     },
     async delete(uid, projectId) {
       const result = await projectModel.deleteOne({ _id: projectId, creator: uid });
-      if (result.deletedCount === 0) throw new Error("Errore nell'eliminazione del progetto");
+      if (result.deletedCount === 0) throw new Error("Errore nell'eliminazione del progetto! Potresti non avere i permessi per farlo!");
       return { success: true };
     },
 
