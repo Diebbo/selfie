@@ -11,9 +11,9 @@ interface ImportExportCalProps {
 };
 
 const ImportExportCal: React.FC<ImportExportCalProps> = ({ events }) => {
-  const [importUrl, setImportUrl] = useState('');
+  // const [importUrl, setImportUrl] = useState('');
+  // const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{
@@ -52,6 +52,7 @@ const ImportExportCal: React.FC<ImportExportCalProps> = ({ events }) => {
   );
 
   const exportToIcal = () => {
+    console.log(events);
     if (!events || events.length === 0) {
       setError('No events to export');
       return;
@@ -95,40 +96,40 @@ const ImportExportCal: React.FC<ImportExportCalProps> = ({ events }) => {
     );
   };
 
-  const importFromUrl = async () => {
-    if (!importUrl) {
-      setError('Please enter a valid URL');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/events/import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url: importUrl }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to import calendar');
-      }
-
-      const importedTitles = Object(await response.json()).importedTitles;
-      showModal(
-        renderEventsList(importedTitles)
-      );
-
-      setImportUrl('');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to import calendar');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const importFromUrl = async () => {
+  //   if (!importUrl) {
+  //     setError('Please enter a valid URL');
+  //     return;
+  //   }
+  //
+  //   setLoading(true);
+  //   setError('');
+  //
+  //   try {
+  //     const response = await fetch('/api/events/import', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ url: importUrl }),
+  //     });
+  //
+  //     if (!response.ok) {
+  //       throw new Error('Failed to import calendar');
+  //     }
+  //
+  //     const importedTitles = Object(await response.json()).importedTitles;
+  //     showModal(
+  //       renderEventsList(importedTitles)
+  //     );
+  //
+  //     setImportUrl('');
+  //   } catch (error) {
+  //     setError(error instanceof Error ? error.message : 'Failed to import calendar');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const browseFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -200,28 +201,7 @@ const ImportExportCal: React.FC<ImportExportCalProps> = ({ events }) => {
         <Tab key="import" title="Import">
           <div className="mt-4 space-y-4">
             <Input
-              type="url"
-              label="Import from URL"
-              labelPlacement='outside'
-              placeholder="Enter iCal URL"
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              className="w-full"
-            />
-            <Button
-              color="primary"
-              onClick={importFromUrl}
-              isLoading={loading}
-              className="w-full"
-            >
-              from URL
-            </Button>
-            <div className="text-center">
-              or
-            </div>
-            <Input
               type="file"
-              label="Search your file"
               accept=".ics,.ical"
               onChange={browseFile}
               ref={fileInputRef}
