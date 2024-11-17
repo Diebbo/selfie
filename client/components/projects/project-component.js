@@ -116,7 +116,7 @@ class ProjectComponent extends HTMLElement {
       }
       this.render();
     }).catch((error) => {
-      console.error('Error deleting project:', error.message);
+        alert(error.message || 'Failed to delete project');
     });
   }
 
@@ -127,12 +127,14 @@ class ProjectComponent extends HTMLElement {
     const res = await fetch(`/api/projects/${projectId}`, {
       method: 'DELETE'
     });
+    
+    const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+      throw new Error(data.message || 'Failed to delete project');
     }
-
-    return res.json();
+    
+    return data;
   }
 
   connectedCallback() {
@@ -228,16 +230,21 @@ class ProjectComponent extends HTMLElement {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ project: newProject })
-      }).then((res) => {
-        if (res.ok) {
-          return res.json();
-        }
-        throw new Error('Error creating project');
-      }).then((data) => {
-        addProject(data.project);
-      }).catch((error) => {
-        this._modal.setError('Error creating project:', error.message);
-      });
+      })
+        .then((res) => {
+          return res.json().then(data => {
+            if (!res.ok) {
+              throw data; // Throw the parsed error response
+            }
+            return data;
+          });
+        })
+        .then((data) => {
+          addProject(data);
+        })
+        .catch((error) => {
+          this._modal.setError(error.message || 'Error creating project');
+        });
     }
   };
 

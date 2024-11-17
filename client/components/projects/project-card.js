@@ -348,6 +348,10 @@ class ProjectCard extends HTMLElement {
           <button class="delete" id="delete-proj">delete</button>
         </div>
         <h3>${this.project.description}</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>Members: ${this.project.members.join(', ')}</h4>
+            <h5>Creator: ${this.project.creator}</h5>
+        </div>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
           ${this.renderGanttChart(this.project.activities, days, startDate)}
@@ -357,8 +361,15 @@ class ProjectCard extends HTMLElement {
             <input type="text" id="activityTitle" placeholder="Activity Title" required>
             <label for="activityStartDate">From - To Date</label>
             <div class="header-inline">
-                <input type="date" id="activityStartDate" placeholder="Start Date" required>
-                <input type="date" id="activityDueDate" placeholder="Due Date" required>
+                <input 
+                    type="date" 
+                    min="${startDate.toISOString().split('T')[0]}"
+                    max="${endDate.toISOString().split('T')[0]}"
+                    id="activityStartDate" placeholder="Start Date" required>
+                <input type="date" 
+                    min="${startDate.toISOString().split('T')[0]}"
+                    max="${endDate.toISOString().split('T')[0]}"
+                    id="activityDueDate" placeholder="Due Date" required>
             </div>
             <label for="activityAssignees">Assignees</label>
             <select id="activityAssignees" multiple>
@@ -613,7 +624,6 @@ class ProjectCard extends HTMLElement {
         this.fetchProject(project).then((updatedProject) => {
             this.modifyProject(updatedProject);
         }).catch((error) => {
-            this.addError(`Failed to delete activity: ${error.message}`);
             // Revert the deletion
         });
     }
@@ -879,19 +889,6 @@ class ProjectCard extends HTMLElement {
         return isCompleted && allSubActivitiesComplete;
     }
 
-    // Add this helper method to your class
-    isActivityFullyComplete(activity) {
-        if (!activity.subActivities || activity.subActivities.length === 0) {
-            return activity.completed;
-        }
-
-        const allSubActivitiesComplete = activity.subActivities.every(subActivity =>
-            this.isActivityFullyComplete(subActivity)
-        );
-
-        return activity.completed && allSubActivitiesComplete;
-    }
-
     getActivityCompletionStatus(activity, parentActivity = null) {
         // If it's a leaf activity (no sub-activities)
         if (!activity.subActivities || activity.subActivities.length === 0) {
@@ -956,7 +953,7 @@ class ProjectCard extends HTMLElement {
                 const activityEndTimestamp = activityEnd.getTime();
 
                 if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-                    return `<div class="gantt-task-cell gantt-cell ${activity.status}" 
+                    return `<div class="gantt-task-cell gantt-cell ${completionStatus}" 
                  data-activity-name="${activity.title}"
                  data-status="${activity.status}"></div>`;
                 }
