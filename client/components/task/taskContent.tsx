@@ -60,6 +60,18 @@ const Content = (props: TaskContentProps) => {
         if (!parentTask) {
           throw new Error("Parent task not found");
         }
+        
+        // if all subtasks are completed, mark parent task as completed else mark as incomplete
+        const allSubtasksCompleted = parentTask.subActivities.every((subtask) => 
+          (subtask.completed && subtask._id !== updatedTask._id) || (updatedTask.completed && subtask._id === updatedTask._id)
+        );
+
+        if (allSubtasksCompleted) {
+          parentTask.completed = true;
+        } else {
+          parentTask.completed = false;
+        }
+
         fetchedTask = await saveTaskInParent(updatedTask, parentTask);
 
         if (!fetchedTask.success) {
@@ -78,6 +90,12 @@ const Content = (props: TaskContentProps) => {
         });
 
       } else {
+        // set status to all subtasks
+        updatedTask.subActivities = updatedTask.subActivities.map((subtask) => ({
+          ...subtask,
+          completed: updatedTask.completed,
+        }));
+
         fetchedTask = await saveTask(updatedTask);
         if (!fetchedTask.success) {
           throw new Error(fetchedTask.message);
@@ -117,11 +135,17 @@ const Content = (props: TaskContentProps) => {
           throw new Error(fetchedTask.message);
         }
 
+        // update parent completion state if all subtasks are completed
+        const fetchedParent = await saveTask({
+          ...fetchedTask.activity,
+          completed: selectedParentTask.completed && (newTask.completed || false),
+        });
+
         startTransition(() => {
           setTasks((prevTasks) => {
             return prevTasks.map((task) => {
               if (task._id === selectedParentTask._id) {
-                return fetchedTask.activity;
+                return fetchedParent.activity;
               }
               return task;
             });
