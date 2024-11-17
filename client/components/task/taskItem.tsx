@@ -17,8 +17,12 @@ export default function TaskItem({ task, level, onAddSubtask, onEditTask, onTask
   const hasSubTasks = task.subActivities && task.subActivities.length > 0;
 
   const handleStatusChange = () => {
-    onTaskUpdate({ ...task, completed: !task.completed });
+    onTaskUpdate({
+      ...task,
+      completed: !task.completed,
+    });
   }
+
 
   const formatDate = (date: Date) => {
     date = new Date(date);

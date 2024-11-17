@@ -187,6 +187,17 @@ export const WeekViewGrid: React.FC<{
             task
           });
         }
+
+        if (task.subActivities) {
+          task.subActivities.forEach(subTask => {
+            if (isSameDay(date, new Date(subTask.dueDate))) {
+              appointments.push({
+                type: 'task',
+                task: subTask
+              });
+            }
+          });
+        }
       });
     }
 
