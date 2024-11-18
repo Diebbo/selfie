@@ -23,6 +23,12 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
   notificationError,
   setNotificationError,
 }) => {
+
+  useEffect(() => {
+    console.log("nofitication check");
+    setNotificationError(checkValidDate(value));
+  }, [startEventDate]);
+
   if (!value) return null;
 
   function checkValidDate(value: any) {
@@ -43,10 +49,6 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
     }
   };
 
-  useEffect(() => {
-    console.log("nofitication check");
-    setNotificationError(checkValidDate(value));
-  }, [startEventDate]);
 
   return (
     <div className="flex flex-col gap-4 mt-3">
