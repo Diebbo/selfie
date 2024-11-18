@@ -673,6 +673,7 @@ export async function createDataBase(uri) {
 
     const event = await eventModel.findById(eventid);
     if (!event) throw new Error("Event not found");
+    console.log("capiamo meglio la cosa", event);
 
     return event;
   };

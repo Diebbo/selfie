@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { areIntervalsOverlapping, parseISO } from 'date-fns';
+import { Interval } from 'date-fns';
 import {
   Button,
   Modal,
@@ -185,12 +187,23 @@ const EventAdder: React.FC<EventAdderProps> = ({
       const usageStart = new Date(usage.startTime);
       const usageEnd = new Date(usage.endTime);
       return (
-        (startDate >= usageStart && startDate < usageEnd) ||
-        (endDate > usageStart && endDate <= usageEnd) ||
-        (startDate <= usageStart && endDate >= usageEnd)
+        checkOverlap(startDate, endDate, usageStart, usageEnd)
       );
     });
   };
+
+  function checkOverlap(start1: string | Date, end1: string | Date, start2: string | Date, end2: string | Date): boolean {
+    const interval1: Interval = {
+      start: start1 instanceof Date ? start1 : parseISO(start1),
+      end: end1 instanceof Date ? end1 : parseISO(end1)
+    };
+    const interval2: Interval = {
+      start: start2 instanceof Date ? start2 : parseISO(start2),
+      end: end2 instanceof Date ? end2 : parseISO(end2)
+    };
+
+    return areIntervalsOverlapping(interval1, interval2);
+  }
 
   const fetchLocationSuggestions = useDebouncedCallback(
     async (query: string) => {
@@ -498,18 +511,18 @@ const EventAdder: React.FC<EventAdderProps> = ({
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1">
-              Creazione Evento
+              Creation of a New Event
             </ModalHeader>
             <ModalBody>
               <Input
                 isRequired
-                label="Titolo"
+                label="Title"
                 isInvalid={isError}
                 errorMessage="You need to insert the title before submit the event"
                 name="title"
                 value={eventData.title as string}
                 onChange={handleInputChange}
-                placeholder="Inserisci il titolo"
+                placeholder="Insert new title"
                 className={`${isMobile ? "" : "mb-4"}`}
               />
 
@@ -557,7 +570,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     setAllDayEvent(!allDayEvent);
                   }}
                 >
-                  Tutto il giorno
+                  All Day Long
                 </Switch>
                 }
 
@@ -638,11 +651,11 @@ const EventAdder: React.FC<EventAdderProps> = ({
               </div>
 
               <Textarea
-                label="Descrizione"
+                label="Description"
                 name="description"
                 value={eventData.description?.toString()}
                 onChange={handleInputChange}
-                placeholder="Inserisci una descrizione"
+                placeholder="Insert a description"
                 className={`${isMobile ? "" : "mb-4"}`}
               />
               <div
@@ -650,8 +663,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
               >
                 <Autocomplete
                   variant="bordered"
-                  label="Amici"
-                  placeholder="Seleziona un utente da invitare"
+                  label="Friends"
+                  placeholder="Choose someone to invite"
                   labelPlacement="inside"
                   selectedKey=""
                   className="max-w-sm"
@@ -689,7 +702,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   <Dropdown>
                     <DropdownTrigger>
                       <Button variant="flat" className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}>
-                        Invitati ({eventData.participants?.length || 0})
+                        Invited ({eventData.participants?.length || 0})
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -713,7 +726,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                                     variant="light"
                                     onPress={() => handleRemoveParticipant(participant)}
                                   >
-                                    Rimuovi
+                                    Remove
                                   </Button>
                                 }
                               >
@@ -739,7 +752,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                           .filter((item): item is JSX.Element => item !== null)
                       ) : (
                         <DropdownItem className="text-default-400">
-                          Nessun invitato
+                          None invited yet
                         </DropdownItem>
                       )}
                     </DropdownMenu>
@@ -751,7 +764,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     isDisabled={!eventData.participants?.length}
                     onPress={handleRemoveAllParticipants}
                   >
-                    Rimuovi tutti
+                    Remove All
                   </Button>
                 </div>
               </div>
@@ -765,7 +778,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     categories: e.target.value.split(",").map((c) => c.trim()),
                   }))
                 }
-                placeholder="Inserisci le categorie (separate da virgola)"
+                placeholder="Choose categories (separete them with commas)"
                 className="mb-4"
               />
               <Input
@@ -773,7 +786,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 name="URL"
                 value={eventData.URL?.toString()}
                 onChange={handleInputChange}
-                placeholder="Inserisci l'URL dell'evento"
+                placeholder="Insert URL for your event"
                 className="mb-4"
               />
               <div className="flex flex-col pb-4 gap-4 ">
@@ -782,7 +795,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   isSelected={notifications}
                   onValueChange={setNotifications}
                 >
-                  Abilita le notifiche
+                  Allow Notifications
                 </Switch>
                 <NotificationMenu
                   value={notifications}

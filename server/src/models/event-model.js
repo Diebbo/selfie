@@ -125,6 +125,7 @@ const eventSchema = new mongoose.Schema({
   participants: [String],
   URL: String,
   notification: notificationSchema,
+  resource: String,
 });
 
 const resourceSchema = new mongoose.Schema({
