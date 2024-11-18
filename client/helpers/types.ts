@@ -122,6 +122,7 @@ export interface SelfieEvent {
   participants: string[];
   notification: SelfieNotification;
   _id: string;
+  resource: string;
 }
 
 export interface SelfieNotification {
@@ -169,7 +170,7 @@ interface Task {
   dueDate: Date;
 }
 
-export interface TaskModel  {
+export interface TaskModel {
   _id: string;
   name: string;
   dueDate: Date;
@@ -186,7 +187,7 @@ export enum TaskStatus {
   COMPLETED = "completed",
 }
 
-export interface ProjectTaskModel  extends Task {
+export interface ProjectTaskModel extends Task {
   description: string;
   status: TaskStatus;
   participants: string[]; // Usernames
@@ -205,3 +206,14 @@ export interface ProjectModel {
   deadline: Date;
   startDate: Date;
 }
+
+export interface ResourceModel {
+  _id: string;
+  name: string;
+  used: [{
+    startTime: Date,
+    endTime: Date,
+    claimant: string,
+  }];
+}
+

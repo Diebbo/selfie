@@ -4,7 +4,7 @@ import React, { useState, useContext } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, Button } from "@nextui-org/react";
 import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
-import { WeekViewGrid } from './weekViewGrid';
+import WeekViewGrid from './weekViewGrid';
 import { mobileContext } from "./contextStore"
 import { TaskMutiResponse } from "@/helpers/api-types";
 
@@ -187,7 +187,7 @@ const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthV
     if (item.type === 'project-task') {
       return `bg-${AppointmentButtonColor.PROJECT_TASK}-100 bg-${AppointmentButtonColor.PROJECT_TASK}-700 hover:border-${AppointmentButtonColor.PROJECT_TASK}-700`;
     }
-    
+
     // evento di gruppo
     if (Array.isArray(item.event?.participants) && item.event!.participants.length > 0) {
       return `bg-${AppointmentButtonColor.GROUP_EVENT}-100 bg-${AppointmentButtonColor.GROUP_EVENT}-700 hover:border-${AppointmentButtonColor.GROUP_EVENT}-700`;
@@ -197,8 +197,8 @@ const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthV
     if (item.event?.allDay) {
       return `bg-${AppointmentButtonColor.ALL_DAY}-100 bg-${AppointmentButtonColor.ALL_DAY}-700 hover:border-${AppointmentButtonColor.ALL_DAY}-700`;
     }
-    
-    
+
+
     // evento normale
     return `bg-${AppointmentButtonColor.EVENT}-100 bg-${AppointmentButtonColor.EVENT}-700 hover:border-${AppointmentButtonColor.EVENT}-700`;
   };
@@ -291,7 +291,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
       router.push(`/projects/${item.project?._id}`);
     } else if (item.type === 'event') {
       router.push(`/calendar/${item.event?._id}`);
-    } else if (item.type === 'task'){
+    } else if (item.type === 'task') {
       router.push(`/task`);
     } else if (item.type === 'project-task') {
       router.push(`/projects/${item.projectId}`);

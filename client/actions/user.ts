@@ -127,3 +127,26 @@ export async function updateGPS(position: { latitude: number; longitude: number 
     body: JSON.stringify(position),
   });
 }
+
+
+export async function isAdmin(): Promise<Boolean> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const response = await fetch(`${getBaseUrl()}/api/users/admin`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: `token=${token.toString()}`,
+    },
+  });
+
+  const isAdmin = await response.json()
+  console.log(isAdmin);
+
+  return isAdmin
+}

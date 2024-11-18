@@ -101,5 +101,16 @@ export default function createUserRouter(db) {
     }
   });
 
+  router.get("/admin", cookieJwtAuth, async (req, res) => {
+    try {
+      const response = await db.isAdmin(req.user._id);
+      console.log(response);
+      return res.status(200).json(response);
+    } catch (error) {
+      return res.status(500).json({ message: error.message });
+    }
+  });
+
+
   return router;
 }
