@@ -26,9 +26,11 @@ interface CombinedAppointment {
   project?: ProjectModel;
   task?: TaskModel;
   projectTask?: ProjectTaskModel;
+  startTime: Date;
+  endTime: Date;
 }
 
-export const WeekViewGrid: React.FC<{
+const WeekViewGrid: React.FC<{
   date: Date,
   events?: SelfieEvent[],
   isMobile: boolean,
@@ -62,24 +64,30 @@ export const WeekViewGrid: React.FC<{
       date1.getDate() === date2.getDate();
   };
 
-  // Helper function to get the date of an appointment
-  const getDayOfAppointment = (appointment: CombinedAppointment) => {
-    let appointmentDate;
+  // Helper function to get the date and times of an appointment
+  const getAppointmentTimes = (appointment: Omit<CombinedAppointment, 'startTime' | 'endTime'>): { startTime: Date, endTime: Date } => {
+    let startTime, endTime;
+
     switch (appointment.type) {
       case 'event':
-        appointmentDate = new Date(appointment.event!.dtstart);
+        startTime = new Date(appointment.event!.dtstart);
+        // If event has dtend use it, otherwise set end time to start time + 1 hour
+        endTime = appointment.event!.dtend ? new Date(appointment.event!.dtend) : new Date(startTime.getTime() + 3600000);
         break;
       case 'project':
-        appointmentDate = new Date(appointment.project!.deadline);
+        startTime = new Date(appointment.project!.deadline);
+        endTime = new Date(startTime.getTime() + 3600000); // Add 1 hour for projects
         break;
       case 'task':
-        appointmentDate = new Date(appointment.task!.dueDate);
+        startTime = new Date(appointment.task!.dueDate);
+        endTime = new Date(startTime.getTime() + 3600000); // Add 1 hour for tasks
         break;
       case 'project-task':
-        appointmentDate = new Date(appointment.projectTask!.dueDate);
+        startTime = new Date(appointment.projectTask!.dueDate);
+        endTime = new Date(startTime.getTime() + 3600000); // Add 1 hour for project tasks
         break;
     }
-    return appointmentDate;
+    return { startTime, endTime };
   };
 
   // Helper function to get appointment name
@@ -100,7 +108,7 @@ export const WeekViewGrid: React.FC<{
   const handleRedirect = (appointment: CombinedAppointment) => {
     switch (appointment.type) {
       case 'event':
-        return `/events/${appointment.event!._id}`;
+        return `/calendar/${appointment.event!._id}`;
       case 'project':
         return `/projects/${appointment.project!._id}`;
       case 'task':
@@ -139,9 +147,11 @@ export const WeekViewGrid: React.FC<{
     events.forEach(event => {
       const eventDate = new Date(event.dtstart);
       if (eventDate.toDateString() === date.toDateString()) {
+        const times = getAppointmentTimes({ type: 'event', event });
         appointments.push({
           type: 'event',
-          event
+          event,
+          ...times
         });
       }
     });
@@ -149,31 +159,24 @@ export const WeekViewGrid: React.FC<{
     // Add project tasks
     projects.forEach(project => {
       if (isSameDay(date, new Date(project.deadline))) {
+        const times = getAppointmentTimes({ type: 'project', project });
         appointments.push({
           type: 'project',
-          project: {
-            ...project,
-          }
+          project,
+          ...times
         });
       }
       project.activities.forEach(task => {
         const taskDate = new Date(task.dueDate);
         if (isSameDay(date, taskDate)) {
+          const times = getAppointmentTimes({ type: 'project-task', projectTask: task, project });
           appointments.push({
             type: 'project-task',
             projectTask: task,
-            project: project
+            project,
+            ...times
           });
         }
-        task.subTasks?.forEach(subTask => {
-          if (isSameDay(date, new Date(subTask.dueDate))) {
-            appointments.push({
-              type: 'project-task',
-              projectTask: subTask,
-              project: project
-            });
-          }
-        });
       });
     });
 
@@ -182,20 +185,11 @@ export const WeekViewGrid: React.FC<{
       tasks.forEach(task => {
         const taskDate = new Date(task.dueDate);
         if (taskDate.toDateString() === date.toDateString()) {
+          const times = getAppointmentTimes({ type: 'task', task });
           appointments.push({
             type: 'task',
-            task
-          });
-        }
-
-        if (task.subActivities) {
-          task.subActivities.forEach(subTask => {
-            if (isSameDay(date, new Date(subTask.dueDate))) {
-              appointments.push({
-                type: 'task',
-                task: subTask
-              });
-            }
+            task,
+            ...times
           });
         }
       });
@@ -207,18 +201,18 @@ export const WeekViewGrid: React.FC<{
   // Helper function to get appointments for a specific hour
   const getAppointmentsForHour = (hourIndex: number): CombinedAppointment[] => {
     return getDayAppointments().filter(appointment => {
-      const appointmentDate = getDayOfAppointment(appointment);
-      return appointmentDate.getHours() === hourIndex;
+      const hourStart = new Date(date);
+      hourStart.setHours(hourIndex, 0, 0, 0);
+      const hourEnd = new Date(date);
+      hourEnd.setHours(hourIndex + 1, 0, 0, 0);
+
+      return appointment.startTime <= hourEnd && appointment.endTime > hourStart;
     });
   };
 
   // Helper function to handle opening the appointment modal
   const handleOpenAppointmentModal = (hourIndex: number) => {
-    const appointmentsForHour = getDayAppointments().filter(appointment => {
-      const appointmentDate = getDayOfAppointment(appointment);
-      return appointmentDate.getHours() === hourIndex;
-    });
-
+    const appointmentsForHour = getAppointmentsForHour(hourIndex);
     setSelectedHourAppointments(appointmentsForHour);
     onOpen();
   };
@@ -266,7 +260,7 @@ export const WeekViewGrid: React.FC<{
       } else if (hasProjects) {
         return CompressedAppointmentButtonColor.PROJECT;
       }
-      return CompressedAppointmentButtonColor.ALL; // Default fallback
+      return CompressedAppointmentButtonColor.ALL;
     };
 
     return (
@@ -276,7 +270,7 @@ export const WeekViewGrid: React.FC<{
         className={`${isMobile ? "w-[calc(95vw/7)] min-w-0" : "sm:w-full md:w-16"} 
           ${getButtonColor()} text-10 mx-auto flex justify-center items-center gap-1`}
         aria-label={appointments.length > 2 ? "tooManyAppoinments" : ""}
-        onPress={() => handleOpenAppointmentModal(getDayOfAppointment(appointments[0]).getHours())}
+        onPress={() => handleOpenAppointmentModal(appointments[0].startTime.getHours())}
       >
         {(hasEvents || hasTasks || hasProjects) &&
           <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e8eaed">
@@ -318,7 +312,7 @@ export const WeekViewGrid: React.FC<{
               <ModalHeader className="flex flex-col gap-1">
                 {selectedHourAppointments.length > 0 && (
                   <span>
-                    Appuntamenti alle {getDayOfAppointment(selectedHourAppointments[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    Appuntamenti alle {selectedHourAppointments[0].startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 )}
               </ModalHeader>
@@ -346,7 +340,8 @@ export const WeekViewGrid: React.FC<{
                               {getAppointmentName(appointment)}
                             </p>
                             <p className="text-small text-default-500 justify-end">
-                              {getDayOfAppointment(appointment).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {appointment.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                              {appointment.endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -371,4 +366,4 @@ export const WeekViewGrid: React.FC<{
   );
 };
 
-export default WeekViewGrid;
+export default WeekViewGrid; 

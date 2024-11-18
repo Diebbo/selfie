@@ -50,6 +50,7 @@ export async function getEvent(eventid: string): Promise<SelfieEvent> {
   });
 
   const data = await res.json();
+  console.log(data);
 
   if (res.status === 401) {
     throw new AuthenticationError('Unauthorized, please login.');
