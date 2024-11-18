@@ -12,9 +12,11 @@ import {
   DatePicker,
   Autocomplete,
   AutocompleteItem,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
 import { parseDate } from "@internationalized/date";
-import { Person, SelfieEvent, SelfieNotification } from "@/helpers/types";
+import { Person, ResourceModel, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { useReload } from "./contextStore";
 import { useDebouncedCallback } from "use-debounce";
@@ -30,6 +32,7 @@ type State = {
   isEditing: boolean;
   editedEvent: SelfieEvent | null;
   dateRange: { start: Date; end: Date } | null;
+  availableResources: ResourceModel[];
 };
 
 type Action =
@@ -39,6 +42,7 @@ type Action =
   | { type: 'UPDATE_DATE_RANGE'; payload: { start: Date; end: Date } }
   | { type: 'UPDATE_NOTIFICATION'; payload: { field: keyof SelfieNotification; value: any } }
   | { type: 'UPDATE_GEO'; payload: Geo }
+  | { type: 'UPDATE_AVAILABLE_RESOURCES'; payload: ResourceModel[] }
   | { type: 'RESET_STATE' };
 
 function eventReducer(state: State, action: Action): State {
@@ -54,6 +58,12 @@ function eventReducer(state: State, action: Action): State {
         }
       };
 
+    case 'UPDATE_AVAILABLE_RESOURCES':
+      return {
+        ...state,
+        availableResources: action.payload
+      };
+
     case 'CANCEL_EDITING':
       return {
         isEditing: false,
@@ -61,7 +71,8 @@ function eventReducer(state: State, action: Action): State {
         dateRange: {
           start: new Date(action.payload.dtstart),
           end: new Date(action.payload.dtend)
-        }
+        },
+        availableResources: state.availableResources,
       };
 
     case 'UPDATE_FIELD':
@@ -113,7 +124,8 @@ function eventReducer(state: State, action: Action): State {
       return {
         isEditing: false,
         editedEvent: null,
-        dateRange: null
+        dateRange: null,
+        availableResources: state.availableResources,
       };
 
     default:
@@ -158,13 +170,15 @@ interface ShowEventProps {
   event: SelfieEvent;
   user: Person;
   owner: string;
+  resource: ResourceModel[];
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) => {
   const initialState: State = {
     isEditing: false,
     editedEvent: null,
     dateRange: null,
+    availableResources: resource,
   };
 
   const [state, dispatch] = useReducer(eventReducer, initialState);
@@ -177,6 +191,34 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   const isOwner = user._id === event.uid ? true : false;
   const { reloadEvents, setReloadEvents } = useReload();
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+
+  const checkResourceAvailability = (resource: ResourceModel, start: Date, end: Date) => {
+    if (!resource.used || resource.used.length <= 0) return true;
+
+    return !resource.used.some(usage => {
+      const usageStart = new Date(usage.startTime);
+      const usageEnd = new Date(usage.endTime);
+
+      // Check if the event's time period overlaps with any usage period
+      return !(end <= usageStart || start >= usageEnd);
+    });
+  };
+
+  const updateAvailableResources = (start: Date, end: Date) => {
+    const available = resource.filter(r => {
+      // If this is the currently selected resource in edit mode, include it
+      if (state.editedEvent && r._id === state.editedEvent.resource) return true;
+      return checkResourceAvailability(r, start, end);
+    });
+
+    dispatch({ type: 'UPDATE_AVAILABLE_RESOURCES', payload: available });
+  };
+
+  useEffect(() => {
+    if (state.dateRange) {
+      updateAvailableResources(state.dateRange.start, state.dateRange.end);
+    }
+  }, [state.dateRange]);
 
 
   const handleLocationSelect = (value: string) => {
@@ -298,6 +340,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
 
   const handleDateRangeChange = (range: { start: Date; end: Date }) => {
     dispatch({ type: 'UPDATE_DATE_RANGE', payload: range });
+    updateAvailableResources(range.start, range.end);
   };
 
   const handleNotificationChange = (field: keyof SelfieNotification, value: any) => {
@@ -378,7 +421,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
   }
 
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
-  console.log(displayEvent);
+  console.log(displayEvent?.resource);
 
   if (!isOpen) return null;
 
@@ -401,7 +444,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
           <>
             <ModalHeader className="flex justify-between items-center">
               <Input
-                isReadOnly={!state.isEditing}
+                isDisabled={!state.isEditing}
                 value={displayEvent?.title as string}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 className="max-w-xs"
@@ -441,14 +484,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                 } : undefined}
                 onChange={handleDateRangeChange as any}
                 isDisabled={!state.isEditing}
-                visibleMonths={2}
+                visibleMonths={1}
               />
               <div>
                 <Autocomplete
-                  label="Luogo"
+                  label="Location"
                   placeholder={displayEvent?.location.toString()}
                   items={locationSuggestions}
-                  isReadOnly={!state.isEditing}
+                  isDisabled={!state.isEditing}
                   onInputChange={(value) => {
                     handleInputChange("location", value);
                     fetchLocationSuggestions(value);
@@ -469,8 +512,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                   )}
                 </Autocomplete>
               </div>
+              <Select
+                label="Resource"
+                className="mb-4"
+                isDisabled={!state.isEditing}
+                placeholder={displayEvent?.resource ? displayEvent.resource : ""}
+                onChange={(e) => handleInputChange('resource', e.target.value)}
+              >
+                {state.availableResources.map((res) => (
+                  <SelectItem key={res._id} value={res._id}>
+                    {res.name}
+                  </SelectItem>
+                ))}
+              </Select>
               <Input
-                isReadOnly={!state.isEditing}
+                isDisabled={!state.isEditing}
                 label="Description"
                 value={displayEvent.description as string}
                 onChange={(e) => handleInputChange('description', e.target.value)}
@@ -479,7 +535,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
 
               {participants && participants.length > 0 &&
                 <Input
-                  isReadOnly={!state.isEditing}
+                  isDisabled={!state.isEditing}
                   label="Participants"
                   value={[owner, ...participants.map(p => p.toString())].join(", ")}
 
@@ -488,14 +544,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
                 />
               }
               <Input
-                isReadOnly={!state.isEditing}
+                isDisabled={!state.isEditing}
                 label="URL"
                 value={displayEvent.URL as string}
                 onChange={(e) => handleInputChange('URL', e.target.value)}
                 className="mb-4"
               />
               <Input
-                isReadOnly={!state.isEditing}
+                isDisabled={!state.isEditing}
                 label="Categories"
                 value={displayEvent.categories?.join(", ")}
                 onChange={(e) => handleInputChange('categories', e.target.value.split(", "))}
@@ -504,14 +560,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user }) => {
               {displayEvent.notification && (
                 <>
                   <Input
-                    isReadOnly={!state.isEditing}
+                    isDisabled={!state.isEditing}
                     label="Notification Title"
                     value={displayEvent.notification.title as string}
                     onChange={(e) => handleNotificationChange('title', e.target.value)}
                     className="mb-4"
                   />
                   <DatePicker
-                    isReadOnly={!state.isEditing}
+                    isDisabled={!state.isEditing}
                     label="Notification Start Date"
                     onChange={(date) => handleNotificationChange('fromDate', date)}
                     className="mb-4"

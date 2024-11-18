@@ -42,7 +42,7 @@ function createCalendarRouter(db, sendNotification) {
     if (!result)
       return res.status(404).json({ message: "Nessun evento trovato" });
 
-    //console.log(result);
+    console.log(result);
     return res.status(200).json(result);
   });
 
@@ -62,7 +62,6 @@ function createCalendarRouter(db, sendNotification) {
     //console.log(result);
     return res.status(200).json(result);
   });
-
 
   router.get("/owner/:id", cookieJwtAuth, async (req, res) => {
     try {
@@ -142,17 +141,68 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
-  // ritorna gli username, forse implementerò un query param per gli ids 
-  router.get('/:id/participants', cookieJwtAuth, async function(req, res) {
+  // ritorna gli username, forse implementerò un query param per gli ids
+  router.get("/:id/participants", cookieJwtAuth, async function(req, res) {
     try {
-      const eventid = req.params.id
+      const eventid = req.params.id;
       const usernames = await db.getParticipantsUsernames(eventid);
       const uids = await db.userService.fromUsernamesToIds(usernames);
       res.status(200).json({ usernames: usernames, uids: uids });
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }
+  });
 
+  // se metto /resourse non funziona, sta cosa non ha senso
+  router.get("/resource/all", cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    try {
+      const result = await db.getResource(uid);
+      return res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server error, " + e.message });
+    }
+  });
+
+  router.put("/resource", cookieJwtAuth, async function(req, res) {
+    try {
+      const newResource = req.body.resource;
+      const result = await db.addResource(newResource, req.user._id);
+      return res.status(201).json({ message: "Resource added succesfully" + result });
+    } catch (e) {
+      return res.status(500).json({ message: "Server error, " + e.message });
+    }
+  });
+
+  router.patch("/resource/:id", cookieJwtAuth, async function(req, res) {
+    const id = req.params.id;
+    const uid = req.user._id;
+    const endDate = req.body.endDate;
+    const startDate = req.body.startDate;
+    console.log("bookResource: ", startDate, endDate, id);
+    try {
+      const result = await db.bookResource(uid, id, startDate, endDate);
+      if (result) {
+        return res.status(200).json(result);
+      }
+      else {
+        return res.status(400).json({ message: "Resource not available" });
+      }
+    } catch (e) {
+      return res.status(400).json({ message: "Server error, " + e.message });
+    }
+  });
+
+  router.delete("/resource/delete", cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const resourceName = req.body.name;
+
+    try {
+      const result = await db.deleteResource(uid, resourceName);
+      return res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server Error" + e })
+    }
   });
 
 

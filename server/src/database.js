@@ -10,6 +10,8 @@ import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
 import { noteSchema } from "./models/note-model.js";
+import { resourceSchema } from "./models/event-model.js";
+
 // services import
 import createProjectService from "./services/projects.mjs";
 import e from "express";
@@ -19,6 +21,7 @@ export async function createDataBase(uri) {
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
+  const resourceModel = mongoose.model("Resource", resourceSchema);
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Project", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
@@ -33,6 +36,7 @@ export async function createDataBase(uri) {
     projectModel,
     activityModel,
     chatModel,
+    resourceModel,
   };
 
   await mongoose.connect(uri, { dbName: "test" });
@@ -571,6 +575,83 @@ export async function createDataBase(uri) {
     );
   }
 
+  const getResource = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    try {
+      const risorse = await resourceModel.find();
+      return risorse;
+    } catch (error) {
+      throw new Error(error);
+    }
+  };
+
+  const addResource = async (resource, uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    if (user.role === 'user') throw new Error("Not Authorized");
+
+    try {
+      const addedResource = resourceModel.create({ ...resource, creator: uid });
+      return addedResource;
+    } catch (e) {
+      throw new Error(e);
+    }
+  };
+
+  const bookResource = async (uid, id, startDate, endDate) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const resource = await resourceModel.findById(id);
+      if (!resource) throw new Error("Resource not found");
+
+      const isOverlapping = resource.used.some((period) => {
+        return (
+          (startDate >= period.startTime && startDate < period.endTime) ||
+          (endDate > period.startTime && endDate <= period.endTime) ||
+          (startDate <= period.startTime && endDate >= period.endTime)
+        );
+      });
+
+      if (isOverlapping) {
+        return false;
+      }
+
+      resource.used.push({
+        startTime: startDate,
+        endTime: endDate,
+      });
+
+      await resource.save();
+      return true;
+    } catch (error) {
+      throw new Error(error);
+    }
+  };
+
+  const deleteResource = async (uid, resourceName) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // Verifica che l'utente sia admin
+    if (!isAdmin(uid)) throw new Error("User is not authorized to delete resources");
+
+    // Trova la risorsa tramite il nome
+    const resource = await resourceModel.findOne({ name: resourceName });
+    if (!resource) throw new Error("Resource not found");
+
+    // Elimina la risorsa dal modello delle risorse
+    await resourceModel.deleteOne({ _id: resource._id });
+
+    return {
+      success: true,
+      message: `Resource ${resourceName} successfully deleted`,
+      deletedResource: resource
+    };
+  };
+
   const getEvents = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -592,6 +673,7 @@ export async function createDataBase(uri) {
 
     const event = await eventModel.findById(eventid);
     if (!event) throw new Error("Event not found");
+    console.log("capiamo meglio la cosa", event);
 
     return event;
   };
@@ -1711,11 +1793,11 @@ export async function createDataBase(uri) {
           const sender = msg.sender.toString() === uid ? user : otherUser;
           return otherUser
             ? {
-                uid: otherUser._id,
-                username: otherUser.username,
-                lastMessage: { ...msg, sender: sender.username },
-                avatar: otherUser.avatar,
-              }
+              uid: otherUser._id,
+              username: otherUser.username,
+              lastMessage: { ...msg, sender: sender.username },
+              avatar: otherUser.avatar,
+            }
             : null;
         })
         .filter((chat) => chat !== null);
@@ -1863,6 +1945,14 @@ export async function createDataBase(uri) {
     getDateTime,
   });
 
+  const isAdmin = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (user.role === 'admin') return true;
+    else return false;
+  };
+
   return {
     login,
     register,
@@ -1878,6 +1968,10 @@ export async function createDataBase(uri) {
     getNoteById,
     removeNoteById,
     createEvent,
+    getResource,
+    bookResource,
+    addResource,
+    deleteResource,
     getEvent,
     getEvents,
     deleteEvent,
@@ -1921,5 +2015,6 @@ export async function createDataBase(uri) {
     getAllUserEvents,
     projectService,
     getUsernameForActivities,
+    isAdmin,
   };
 }
