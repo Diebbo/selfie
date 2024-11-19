@@ -217,3 +217,11 @@ export interface ResourceModel {
   }];
 }
 
+export interface CombinedAppointment {
+  type: 'event' | 'project' | 'task' | 'project-task';
+  event?: SelfieEvent;
+  project?: ProjectModel;
+  task?: TaskModel;
+  projectTask?: ProjectTaskModel;
+  projectId?: string;
+}
