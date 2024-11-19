@@ -2,8 +2,8 @@ import { SelfieEvent, TaskModel, ProjectModel, ProjectTaskModel } from "@/helper
 import { TaskMutiResponse } from "./api-types";
 import { DayType, CombinedAppointment } from "./types";
 
-const isInBeetween = (date: Date, startDate: Date, endDate: Date): boolean => {
-  return date.getTime() >= startDate.getTime() && date.getTime() <= endDate.getTime();
+const isInBetween = (date: Date, startDate: Date, endDate: Date): boolean => {
+  return areSameDay(date, startDate) || areSameDay(date, endDate) || (date.getTime() >= startDate.getTime() && date.getTime() <= endDate.getTime());
 }
 
 const areSameDay = (dateA: Date, dateB: Date): boolean => {
@@ -28,7 +28,7 @@ const calculateFutureEvents = (event: SelfieEvent, date: Date): SelfieEvent[] =>
 
   let current = new Date(dtstart);
   let count = 0;
-  while (current.getTime() <= until.getTime()) {
+  while (isInBetween(current, dtstart, until)) {
     // check if the repetition is in range
     if (rrule.count && count >= rrule.count) break;
     count++;
@@ -76,14 +76,14 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
       if (event.rrule) {
         const futureEvents:SelfieEvent[] = calculateFutureEvents(event, date);
         futureEvents.forEach(futureEvent => {
-          if (isInBeetween(date, new Date(futureEvent.dtstart), new Date(futureEvent.dtend)))
+          if (isInBetween(date, new Date(futureEvent.dtstart), new Date(futureEvent.dtend)))
             appointments.push({
               type: 'event',
               event: futureEvent
             });
         });
       } else if (
-        isInBeetween(date, eventDateStart, eventDateEnd)
+        isInBetween(date, eventDateStart, eventDateEnd)
       ) {
         appointments.push({
           type: 'event',
@@ -97,9 +97,9 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
   if (Array.isArray(projects)) {
     projects.forEach(project => {
       const projectDeadline = new Date(project.deadline);
-      const projectStartDate = new Date(project.creationDate);
+      const projectStartDate = new Date(project.startDate);
 
-      if (isInBeetween(date, projectStartDate, projectDeadline)) {
+      if (isInBetween(date, projectStartDate, projectDeadline)) {
         appointments.push({
           type: 'project',
           project: project
@@ -199,5 +199,7 @@ const formatEventTime = (event: SelfieEvent): string => {
 export {
   getAppointmentsByDay,
   formatDate,
-  formatEventTime
+  formatEventTime,
+  calculateFutureEvents,
+  isInBetween
 };

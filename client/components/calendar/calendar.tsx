@@ -29,18 +29,23 @@ const CalendarPage = (props: CalendarPageProps) => {
   );
   const { currentTime } = useTime();
   const [isMobile, setIsMobile] = useState(false);
-  const [currentDate, setCurrentDate] = useState(currentTime);
+  const tmp = new Date(currentTime);
+  tmp.setHours(0, 0, 0, 0);
+  const [currentDate, setCurrentDate] = useState(tmp);
+
   const [isMonthView, setIsMonthView] = useState(true);
   const { reloadEvents, setReloadEvents } = useReload();
   const prevTimeRef = useRef<Date>(currentTime);
 
   const setCurrentTime = async () => {
-    setCurrentDate(currentTime);
+    // set the current date to midnight
+    const tmp = new Date(currentTime);
+    tmp.setHours(0, 0, 0, 0);
+    setCurrentDate(tmp);
   };
 
   useEffect(() => {
     if (reloadEvents) {
-      console.log("sto fetchando gli eventi");
       const e = getEvents();
       e.then((events) => {
         setEvents(events);

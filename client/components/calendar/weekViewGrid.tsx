@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { SelfieEvent, ProjectModel, TaskModel, ProjectTaskModel } from "@/helpers/types";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, useDisclosure, Chip, Input } from "@nextui-org/react";
 import { useTime } from "../contexts/TimeContext";
+import { calculateFutureEvents, isInBetween } from '@/helpers/calendar';
 
 enum AppointmentChipColor {
   EVENT = 'primary',
@@ -146,14 +147,29 @@ const WeekViewGrid: React.FC<{
     // Add events
     events.forEach(event => {
       const eventDate = new Date(event.dtstart);
-      if (eventDate.toDateString() === date.toDateString()) {
-        const times = getAppointmentTimes({ type: 'event', event });
-        appointments.push({
-          type: 'event',
-          event,
-          ...times
+      if (event.rrule) {
+        const futureEvents: SelfieEvent[] = calculateFutureEvents(event, date);
+        futureEvents.forEach(futureEvent => {
+          if (isInBetween(date, new Date(futureEvent.dtstart), new Date(futureEvent.dtend))) {
+            const times = getAppointmentTimes({ type: 'event', event: futureEvent });
+            appointments.push({
+              type: 'event',
+              event: futureEvent,
+              ...times
+            });
+          }
         });
+      } else {
+        if (isInBetween(date, eventDate, new Date(event.dtend))) {
+          const times = getAppointmentTimes({ type: 'event', event });
+          appointments.push({
+            type: 'event',
+            event,
+            ...times
+          });
+        }
       }
+
     });
 
     // Add project tasks
