@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import WeekViewGrid from './weekViewGrid';
 import { mobileContext } from "./contextStore"
 import { TaskMutiResponse } from "@/helpers/api-types";
+import { DayType } from "@/helpers/types";
 
 enum AppointmentButtonColor {
   EVENT = 'primary',
@@ -38,6 +39,55 @@ interface CombinedAppointment {
   projectId?: string;
 }
 
+const calculateFutureEvents = (event: SelfieEvent, date: Date): SelfieEvent[] => {
+  const futureEvents: SelfieEvent[] = [];
+  const rrule = event.rrule;
+  if (!rrule) return futureEvents;
+
+  const dtstart = new Date(event.dtstart);
+  const dtend = new Date(event.dtend);
+  const duration = dtend.getTime() - dtstart.getTime();
+  const until = new Date(rrule.until? rrule.until : date);
+  const freq = rrule.freq?.toUpperCase() || 'DAILY';
+  const interval = rrule.interval;
+
+  let current = new Date(dtstart);
+  let count = 0;
+  while (current.getTime() <= until.getTime()) {
+    // check if the repetition is in range
+    if (rrule.count && count >= rrule.count) break;
+    count++;
+    const newEvent = {
+      ...event,
+      dtstart: new Date(current),
+      dtend: new Date(current.getTime() + duration)
+    };
+    futureEvents.push(newEvent);
+
+    // check if the repetition is by day
+    if (rrule.byday) {
+      const currentDay = current.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0,2) as DayType;
+      const bydayDays = rrule.byday.map(dayObj => dayObj.day);
+      if (bydayDays.includes(currentDay)) {
+        current.setDate(current.getDate() + 1);
+        continue;
+      }
+    }
+
+    if (freq === 'YEARLY') {
+      current.setFullYear(current.getFullYear() + interval);
+    } else if (freq === 'MONTHLY') {
+      current.setMonth(current.getMonth() + interval);
+    } else if (freq === 'WEEKLY') {
+      current.setDate(current.getDate() + 7 * interval);
+    } else if (freq === 'DAILY') {
+      current.setDate(current.getDate() + interval);
+    } 
+  }
+
+  return futureEvents;
+}
+
 const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: ProjectModel[], tasks: TaskMutiResponse | undefined, date: Date): CombinedAppointment[] => {
   const appointments: CombinedAppointment[] = [];
 
@@ -46,7 +96,18 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
     events.forEach(event => {
       const eventDateStart = new Date(event.dtstart);
       const eventDateEnd = new Date(event.dtend);
-      if (
+
+      // check if the repetition is in range
+      if (event.rrule) {
+        const futureEvents:SelfieEvent[] = calculateFutureEvents(event, date);
+        futureEvents.forEach(futureEvent => {
+          if (isInBeetween(date, new Date(futureEvent.dtstart), new Date(futureEvent.dtend)))
+            appointments.push({
+              type: 'event',
+              event: futureEvent
+            });
+        });
+      } else if (
         isInBeetween(date, eventDateStart, eventDateEnd)
       ) {
         appointments.push({
