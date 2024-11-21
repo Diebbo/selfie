@@ -100,7 +100,7 @@ export default function createProjectService(models, lib) {
   return {
     async updateProject(uid, projectId, project) {
       const dbProj = await projectModel.findOne({ _id: projectId, creator: uid });
-      if (!dbProj) throw new Error("Progetto non trovato");
+      if (!dbProj) throw new Error("Porject not found or you don't have the permission to update it");
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
