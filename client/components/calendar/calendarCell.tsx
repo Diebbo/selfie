@@ -73,9 +73,8 @@ const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthV
           {(!isMobile && item.type === 'event' && !item.event?.allDay) && (
             <>
               <span className="font-medium">
-                {formatEventTime(item.event as SelfieEvent)}
+                {formatEventTime(item.event as SelfieEvent, date.getDate())}
               </span>
-              {" - "}
             </>
           )}
           {(!isMobile && item.type === 'project') && (
@@ -113,8 +112,18 @@ const AppointmentsList = ({ events, projects, tasks, date, handleClick, isMonthV
 };
 
 const monthNames = [
-  "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-  "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 interface CalendarCellProps {
@@ -195,23 +204,22 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                   ) : (
                     <>
                       <span className={"text-" + AppointmentButtonColor.EVENT}>
-                        {!item.event?.allDay && formatEventTime(item.event!)}
-                        {item.event?.allDay && "All day"}
+                        {!item.event?.allDay && formatEventTime(item.event!, date.getDate())}
+                        {item.event?.allDay}
                       </span>
-                      {" - "}
                     </>
                   )}
                   <b>{item.event?.title || item.project?.title || item.task?.name || item.projectTask?.title}</b>
                 </p>
                 <p className="text-sm text-gray-500">
                   {item.type === 'project' ? (
-                    <>Scadenza Progetto</>
+                    <>Project Deadline</>
                   ) : item.type === 'task' || item.type === 'project-task' ? (
-                    <>Scadenza Attività</>
+                    <>Activity Deadline</>
                   ) : (
                     <>
                       {!item.event?.allDay && formatDate(new Date(item.event!.dtstart))}
-                      {item.event?.allDay && "Tutto il giorno"}
+                      {item.event?.allDay && "All day long"}
                     </>
                   )}
                 </p>
@@ -284,9 +292,34 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           >
             {day}
           </Button>
-          {hasAppointments && (
-            <div className="mt-[0.5rem] w-3 h-3 rounded-full bg-sky-300 mt-1" />
-          )}
+          {todayAppointments && todayAppointments.length > 0 && <div
+            className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
+              ${todayAppointments.map((a) => a.type == 'event' ? "bg-primary"
+              : '')}`}
+          />
+          }
+
+          {todayAppointments && todayAppointments.length > 0 && <div
+            className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
+              ${todayAppointments.map((a) => a.type == 'project' ? "bg-warning"
+              : '')}`}
+          />
+          }
+
+          {todayAppointments && todayAppointments.length > 0 && <div
+            className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
+              ${todayAppointments.map((a) => a.type == 'task' ? "bg-green-400"
+              : '')}`}
+          />
+          }
+
+          {todayAppointments && todayAppointments.length > 0 && <div
+            className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
+              ${todayAppointments.map((a) => a.type == 'project-task' ? "bg-danger"
+              : '')}`}
+          />
+          }
+
         </div>
       )}
       <AppointmentsModal />
