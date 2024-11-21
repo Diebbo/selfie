@@ -693,6 +693,8 @@ export async function createDataBase(uri) {
       const addedEvent = await eventModel.create({ ...event, uid: uid });
       if (!addedEvent) throw new Error("Failed to create event");
 
+      console.log("vediamo sta cousa", addedEvent);
+
       // Aggiungi l'evento all'utente creatore
       await userModel.findByIdAndUpdate(
         uid,

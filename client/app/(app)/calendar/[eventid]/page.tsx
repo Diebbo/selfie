@@ -16,7 +16,6 @@ const EventPage = async ({ params }: { params: Promise<{ eventid: string }> }) =
     return showError(user);
   }
 
-
   return (
     <ShowEvent
       event={event}

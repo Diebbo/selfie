@@ -14,8 +14,15 @@ import {
   AutocompleteItem,
   Select,
   SelectItem,
+  DateValue,
 } from "@nextui-org/react";
-import { parseDate } from "@internationalized/date";
+import {
+  parseAbsoluteToLocal,
+  CalendarDate,
+  ZonedDateTime,
+  getLocalTimeZone,
+  toTimeZone
+} from "@internationalized/date";
 import { Person, ResourceModel, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { useReload } from "./contextStore";
@@ -351,13 +358,37 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     try {
       if (!state.editedEvent) return;
 
-      const updatedEvent = {
-        ...state.editedEvent,
-        dtstart: state.dateRange?.start || state.editedEvent.dtstart,
-        dtend: state.dateRange?.end || state.editedEvent.dtend,
+      // Convert CalendarDate or ZonedDateTime to standard Date objects
+      const convertToStandardDate = (date: DateValue | Date | string): Date => {
+        if (date instanceof Date) return date;
+
+        if (date instanceof CalendarDate) {
+          // For CalendarDate, create a Date object
+          return new Date(date.year, date.month - 1, date.day);
+        }
+
+        if (typeof date === 'string') {
+          return new Date(date);
+        }
+
+        // For ZonedDateTime, convert to local Date
+        return new Date(date.toDate(getLocalTimeZone()));
       };
 
-      console.log("evento modificato: ", updatedEvent);
+      const updatedEvent = {
+        ...state.editedEvent,
+        dtstart: convertToStandardDate(state.editedEvent.dtstart),
+        dtend: convertToStandardDate(state.editedEvent.dtend),
+        // If notification has dates, convert them too
+        ...(state.editedEvent.notification?.fromDate && {
+          notification: {
+            ...state.editedEvent.notification,
+            fromDate: convertToStandardDate(state.editedEvent.notification.fromDate)
+          }
+        })
+      };
+
+      console.log("Modified event with standard Date objects: ", updatedEvent);
       const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
         method: "PATCH",
         headers: {
@@ -420,6 +451,49 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     }
   }
 
+  const getDateParsed = (date: Date | string): DateValue => {
+    if (displayEvent?.allDay) {
+      return convertToDate(date);
+    }
+    return convertToZonedDateTime(date);
+  };
+
+  const convertToDate = (date: Date | string): DateValue => {
+    const dateObj = date instanceof Date ? date : new Date(date);
+
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth() + 1;
+    const day = dateObj.getDate();
+
+    console.log(year, month, day, dateObj);
+    return new CalendarDate(year, month, day);
+  };
+
+  // const convertToZonedDateTime = (date: Date | string): ZonedDateTime => {
+  //
+  //   const parsedDate = parseAbsoluteToLocal(new Date(date).toISOString());
+  //
+  //   console.log("siamo sicuri?", parsedDate);
+  //   return toTimeZone(parsedDate, getLocalTimeZone());
+  // };
+
+  const convertToZonedDateTime = (date: Date | string): DateValue => {
+    // Converti la data in una stringa ISO se è un oggetto Date
+    const dateObj = date instanceof Date ? date : new Date(date);
+
+    // Usa parseDateTime e converti nella timezone locale
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth() + 1;
+    const day = dateObj.getDate();
+    const hour = dateObj.getHours();
+    const min = dateObj.getMinutes();
+    const offset = 3600000;
+    const zone = getLocalTimeZone();
+
+    // Usa parseDateTime e converti nella timezone locale
+    return new ZonedDateTime(year, month, day, zone, offset, hour, min);
+  };
+
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
   console.log(displayEvent?.resource);
 
@@ -475,13 +549,15 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 className="max-w-[430px] mb-4"
                 hideTimeZone
                 defaultValue={{
-                  start: parseDate(displayEvent.dtstart.toString().split('T')[0]),
-                  end: parseDate(displayEvent.dtend.toString().split('T')[0]),
+                  start: getDateParsed(displayEvent.dtstart),
+                  end: getDateParsed(displayEvent.dtend),
                 }}
                 value={state.dateRange ? {
-                  start: parseDate(state.dateRange.start.toISOString().split('T')[0]),
-                  end: parseDate(state.dateRange.end.toISOString().split('T')[0])
-                } : undefined}
+                  start: getDateParsed(state.dateRange.start),
+                  end: getDateParsed(state.dateRange.end)
+                }
+                  : undefined}
+
                 onChange={handleDateRangeChange as any}
                 isDisabled={!state.isEditing}
                 visibleMonths={1}

@@ -44,6 +44,7 @@ import { useReload } from "./contextStore";
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
     console.log("evento aggiunto", event);
+    console.log("date saporite", event.dtstart, event.dtend)
     var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
@@ -558,8 +559,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
               <div className={`${isMobile ? "max-w-fit" : "flex gap-4 mb-4 "}`}>
                 <EventDatePicker
                   isAllDay={allDayEvent}
-                  startDate={eventData.dtstart as Date}
-                  endDate={eventData.dtend as Date}
                   onChange={handleDateChange}
                   setDateError={setDateError}
                 />

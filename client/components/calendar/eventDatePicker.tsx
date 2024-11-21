@@ -9,10 +9,30 @@ import {
 import { mobileContext } from "./contextStore";
 import { parseDateTime } from "@internationalized/date";
 
+
+export const getDefaultDateRange = (isAllDay: boolean) => {
+  const today = new Date();
+
+  if (isAllDay) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return {
+      start: parseDateTime(today.toISOString().split('T')[0]),
+      end: parseDateTime(tomorrow.toISOString().split('T')[0]),
+    };
+  } else {
+    const currentHour = new Date(today);
+    const nextHour = new Date(today);
+    nextHour.setHours(today.getHours() + 1);
+    return {
+      start: parseDateTime(currentHour.toISOString().split('T')[0]),
+      end: parseDateTime(nextHour.toISOString().split('T')[0]),
+    };
+  }
+};
+
 interface EventDatePickerProps {
   isAllDay: boolean;
-  startDate: Date | undefined;
-  endDate: Date | undefined;
   onChange: (start: Date | string, end: Date | string) => void;
   setDateError: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -49,26 +69,6 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
     }
   };
 
-  const getDefaultDateRange = (isAllDay: boolean) => {
-    const today = new Date();
-
-    if (isAllDay) {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return {
-        start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(tomorrow.toISOString().split('T')[0]),
-      };
-    } else {
-      const currentHour = new Date(today);
-      const nextHour = new Date(today);
-      nextHour.setHours(today.getHours() + 1);
-      return {
-        start: parseDateTime(currentHour.toISOString().split('T')[0]),
-        end: parseDateTime(nextHour.toISOString().split('T')[0]),
-      };
-    }
-  };
 
   return (
     <DateRangePicker
