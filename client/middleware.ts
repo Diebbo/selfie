@@ -41,7 +41,6 @@ export default async function middleware(req: NextRequest) {
     if (token) {
       try {
         const res = await isAuthenticated(token);
-        console.log(res);
         switch (res) {
           case AuthLevel.authenticated: // token is valid and email is verified
             if (isPublicRoute) {
