@@ -18,6 +18,10 @@ class ProjectCard extends HTMLElement {
         const style = document.createElement('style');
         this.shadowRoot.appendChild(style);
         const existingStyles = `
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
       .project-card {
         min-width: 300px;
         padding: 1.25rem; 
@@ -476,6 +480,12 @@ class ProjectCard extends HTMLElement {
         addActivityBtn.addEventListener('click', () => {
             this.openModal(null, project, true);
         });
+
+        // check if the user is the creator of the project
+        if (this.user && this.user.username !== project.creator) {
+            deleteProjectBtn.setAttribute('disabled', true);
+            addActivityBtn.setAttribute('disabled', true);
+        }
 
         deleteProjectBtn.addEventListener('click', () => {
             if (confirm(`Are you sure you want to delete the project "${project.title}"?`)) {
