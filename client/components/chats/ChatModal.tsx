@@ -306,7 +306,7 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
                       }`}
                   >
                     <p
-                      className={`px-4 py-2 rounded-lg ${msg.sender === currentUser.username
+                      className={`px-4 py-2 rounded-lg overflow-x-auto w-full ${msg.sender === currentUser.username
                         ? "bg-primary text-white"
                         : "bg-gray-100 dark:bg-gray-800"
                         }`}
