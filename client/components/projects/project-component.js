@@ -169,12 +169,6 @@ class ProjectComponent extends HTMLElement {
       option.textContent = friend;
       select.appendChild(option);
     });
-
-    const userOption = document.createElement('option');
-    userOption.value = this._user._id;
-    userOption.textContent = this._user.name;
-    userOption.selected = true;
-    select.appendChild(userOption);
   }
 
 
@@ -240,7 +234,7 @@ class ProjectComponent extends HTMLElement {
           });
         })
         .then((data) => {
-          addProject(data);
+          addProject(data.project);
         })
         .catch((error) => {
           this._modal.setError(error.message || 'Error creating project');
