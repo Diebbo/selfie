@@ -12,7 +12,7 @@ function createCalendarRouter(db, sendNotification) {
     if (!event) return res.status(400).json({ message: "Evento non fornito" });
 
     try {
-      console.log(event);
+      console.log("sapore di sale", event);
       var result = await db.createEvent(uid, event);
       const notifications = result.notifications;
       const addedEvent = result.addedEvent;
