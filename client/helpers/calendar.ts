@@ -1,4 +1,5 @@
 import { SelfieEvent, TaskModel, ProjectModel, ProjectTaskModel } from "@/helpers/types";
+import { deflate } from "zlib";
 import { TaskMutiResponse } from "./api-types";
 import { DayType, CombinedAppointment } from "./types";
 
@@ -22,7 +23,7 @@ const calculateFutureEvents = (event: SelfieEvent, date: Date): SelfieEvent[] =>
   const dtstart = new Date(event.dtstart);
   const dtend = new Date(event.dtend);
   const duration = dtend.getTime() - dtstart.getTime();
-  const until = new Date(rrule.until? rrule.until : date);
+  const until = new Date(rrule.until ? rrule.until : date);
   const freq = rrule.freq?.toUpperCase() || 'DAILY';
   const interval = rrule.interval;
 
@@ -41,7 +42,7 @@ const calculateFutureEvents = (event: SelfieEvent, date: Date): SelfieEvent[] =>
 
     // check if the repetition is by day
     if (rrule.byday) {
-      const currentDay = current.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0,2) as DayType;
+      const currentDay = current.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 2) as DayType;
       const bydayDays = rrule.byday.map(dayObj => dayObj.day);
       if (bydayDays.includes(currentDay)) {
         current.setDate(current.getDate() + 1);
@@ -57,7 +58,7 @@ const calculateFutureEvents = (event: SelfieEvent, date: Date): SelfieEvent[] =>
       current.setDate(current.getDate() + 7 * interval);
     } else if (freq === 'DAILY') {
       current.setDate(current.getDate() + interval);
-    } 
+    }
   }
 
   return futureEvents;
@@ -74,7 +75,7 @@ const getAppointmentsByDay = (events: SelfieEvent[] | undefined, projects: Proje
 
       // check if the repetition is in range
       if (event.rrule) {
-        const futureEvents:SelfieEvent[] = calculateFutureEvents(event, date);
+        const futureEvents: SelfieEvent[] = calculateFutureEvents(event, date);
         futureEvents.forEach(futureEvent => {
           if (isInBetween(date, new Date(futureEvent.dtstart), new Date(futureEvent.dtend)))
             appointments.push({
@@ -191,9 +192,22 @@ const formatDate = (date: Date): string => {
   });
 };
 
-const formatEventTime = (event: SelfieEvent): string => {
-  const eventDate = new Date(event.dtstart);
-  return eventDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+const formatEventTime = (event: SelfieEvent, index: number): string => {
+  const eventDateStart = new Date(event.dtstart);
+  const eventDateEnd = new Date(event.dtend);
+
+  if (eventDateStart.getDate() == eventDateEnd.getDate())
+    return eventDateStart.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + " - " + eventDateEnd.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + " - ";
+
+  switch (index) {
+    case eventDateStart.getDate():
+      return eventDateStart.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + " - ";
+    case eventDateEnd.getDate():
+      return eventDateEnd.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + " - ";
+    default:
+      return "";
+  }
+
 };
 
 export {

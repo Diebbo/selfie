@@ -377,8 +377,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
       const updatedEvent = {
         ...state.editedEvent,
-        dtstart: convertToStandardDate(state.editedEvent.dtstart),
-        dtend: convertToStandardDate(state.editedEvent.dtend),
+        dtstart: state.editedEvent.allDay ?
+          convertToStandardDate(state.editedEvent.dtstart).setHours(0, 0) :
+          convertToStandardDate(state.editedEvent.dtstart),
+        dtend: state.editedEvent.allDay ?
+          convertToStandardDate(state.editedEvent.dtend).setHours(23, 59) :
+          convertToStandardDate(state.editedEvent.dtend),
         // If notification has dates, convert them too
         ...(state.editedEvent.notification?.fromDate && {
           notification: {
