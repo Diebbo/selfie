@@ -258,14 +258,14 @@ export const Content = (props: ContentProps): ReactJSXElement => {
         </div>
 
         {/* Left Section */}
-        <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
+        <div className="mt-6 gap-2 flex flex-col xl:max-w-md w-full">
           <WeatherCard position={user.position} />
 
-          <div className="grid grid-cols-1 mt-1 max-w-[500px]">
+        <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
             <PomodoroStatistics stats={user.pomodoro} />
           </div>
 
-          <h3 className="text-xl font-semibold">Friends</h3>
+          <h3 className="text-xl font-semibold mb-3">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardFriends
               friends={friends as People}

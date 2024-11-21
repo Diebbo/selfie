@@ -39,18 +39,18 @@ export const PomodoroStatistics = (props: PomodoroStatisticsProps) => {
   };
 
   return (
-    <Card className="bg-sky-100 dark:bg-sky-950 shadow-sm">
-      <CardBody>
+    <Card className="bg-sky-100 dark:bg-sky-950 shadow-sm w-full h-full">
+      <CardBody className="h-full">
         <h3 className="text-xl font-semibold mb-4">Pomodoro Statistics</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col items-center p-4 bg-success/10 rounded-lg">
+        <div className="grid grid-cols-2 gap-4 w-full h-full">
+          <div className="flex flex-col items-center justify-center p-4 bg-success/10 rounded-lg h-full">
             <FcReading className="text-3xl mb-2" />
             <span className="text-sm text-default-600">Total Study Time</span>
             <span className="text-2xl font-bold text-success">
               {stats ? formatTime(stats.totalStudyTime) : "Loading..."}
             </span>
           </div>
-          <div className="flex flex-col items-center p-4 bg-warning/10 rounded-lg">
+          <div className="flex flex-col items-center justify-center p-4 bg-warning/10 rounded-lg h-full">
             <FcAlarmClock className="text-3xl mb-2" />
             <span className="text-sm text-default-600">Total Break Time</span>
             <span className="text-2xl font-bold text-warning">
