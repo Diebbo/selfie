@@ -17,11 +17,9 @@ import {
   DateValue,
 } from "@nextui-org/react";
 import {
-  parseAbsoluteToLocal,
   CalendarDate,
   ZonedDateTime,
   getLocalTimeZone,
-  toTimeZone
 } from "@internationalized/date";
 import { Person, ResourceModel, SelfieEvent, SelfieNotification } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
@@ -459,6 +457,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     if (displayEvent?.allDay) {
       return convertToDate(date);
     }
+    console.log("prima");
     return convertToZonedDateTime(date);
   };
 
@@ -469,23 +468,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     const month = dateObj.getMonth() + 1;
     const day = dateObj.getDate();
 
-    console.log(year, month, day, dateObj);
     return new CalendarDate(year, month, day);
   };
 
-  // const convertToZonedDateTime = (date: Date | string): ZonedDateTime => {
-  //
-  //   const parsedDate = parseAbsoluteToLocal(new Date(date).toISOString());
-  //
-  //   console.log("siamo sicuri?", parsedDate);
-  //   return toTimeZone(parsedDate, getLocalTimeZone());
-  // };
-
-  const convertToZonedDateTime = (date: Date | string): DateValue => {
-    // Converti la data in una stringa ISO se è un oggetto Date
+  const convertToZonedDateTime = (date: Date | string | ZonedDateTime): DateValue => {
+    if (date instanceof ZonedDateTime) return date;
     const dateObj = date instanceof Date ? date : new Date(date);
 
-    // Usa parseDateTime e converti nella timezone locale
     const year = dateObj.getFullYear();
     const month = dateObj.getMonth() + 1;
     const day = dateObj.getDate();
@@ -494,7 +483,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     const offset = 3600000;
     const zone = getLocalTimeZone();
 
-    // Usa parseDateTime e converti nella timezone locale
     return new ZonedDateTime(year, month, day, zone, offset, hour, min);
   };
 
@@ -515,7 +503,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
           <div className="p-8 text-center text-red-500">
             <p>Error: {error}</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Chiudi
+              Close
             </Button>
           </div>
         ) : displayEvent ? (
@@ -533,7 +521,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                   onClick={handleReset}
                   color="secondary"
                 >
-                  Annulla
+                  Cancel
                 </Button>
                 {user._id === displayEvent.uid && !state.isEditing &&
                   <Button
@@ -541,7 +529,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     onClick={handleEdit}
                     color="primary"
                   >
-                    Modifica
+                    Modify
                   </Button>
                 }
 
@@ -613,16 +601,18 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 className="mb-4"
               />
 
-              {participants && participants.length > 0 &&
-                <Input
-                  isDisabled={!state.isEditing}
-                  label="Participants"
-                  value={[owner, ...participants.map(p => p.toString())].join(", ")}
+              {/* aggiungere il componente dei partecipanti qui */}
 
-                  onChange={(e) => handleInputChange('URL', e.target.value)}
-                  className="mb-4"
-                />
-              }
+              <Input
+                isDisabled={!state.isEditing}
+                label="Participants"
+                value={participants && participants?.length > 0 ? [owner, ...participants!.map(p => p.toString())].join(", ") : owner}
+
+                onChange={(e) => handleInputChange('participants', e.target.value)}
+                className="mb-4"
+              />
+
+
               <Input
                 isDisabled={!state.isEditing}
                 label="URL"
