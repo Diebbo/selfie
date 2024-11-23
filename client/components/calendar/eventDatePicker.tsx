@@ -7,7 +7,7 @@ import {
   DateValue,
 } from "@nextui-org/react";
 import { mobileContext } from "./contextStore";
-import { parseDateTime } from "@internationalized/date";
+import { getLocalTimeZone, parseAbsoluteToLocal, parseDateTime, TimeFields } from "@internationalized/date";
 
 
 export const getDefaultDateRange = (isAllDay: boolean) => {
@@ -17,16 +17,17 @@ export const getDefaultDateRange = (isAllDay: boolean) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return {
-      start: parseDateTime(today.toISOString().split('T')[0]),
-      end: parseDateTime(tomorrow.toISOString().split('T')[0]),
+      start: parseAbsoluteToLocal(today.toISOString()),
+      end: parseAbsoluteToLocal(tomorrow.toISOString()),
     };
   } else {
     const currentHour = new Date(today);
     const nextHour = new Date(today);
-    nextHour.setHours(today.getHours() + 1);
+    nextHour.setHours(today.getHours());
+    console.log(parseAbsoluteToLocal(currentHour.toISOString()));
     return {
-      start: parseDateTime(currentHour.toISOString().split('T')[0]),
-      end: parseDateTime(nextHour.toISOString().split('T')[0]),
+      start: parseAbsoluteToLocal(currentHour.toISOString()),
+      end: parseAbsoluteToLocal(nextHour.toISOString()),
     };
   }
 };
@@ -46,25 +47,31 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
 
   const handleDateRangeChange = (value: RangeValue<DateValue>) => {
     if (value?.start && value?.end) {
-      let startDate: string, endDate: string;
+      const start: TimeFields = { hour: 0, minute: 0 };
+      const end: TimeFields = { hour: 23, minute: 59 };
+      console.log("inizio e fine", start, end);
+      const zone = getLocalTimeZone();
 
+      var startDate = value.start.toDate(zone);
+      var endDate = value.end.toDate(zone);
       if (isAllDay) {
-        startDate = `${value.start.toString().split('T')[0]}T00:00:00`;
-        endDate = `${value.end.toString().split('T')[0]}T23:59:59`;
-      } else {
-        startDate = value.start.toString();
-        endDate = value.end.toString();
+        startDate.setHours(0);
+        startDate.setMinutes(0);
+        startDate.setSeconds(0);
+        endDate.setHours(23);
+        endDate.setMinutes(59);
+        endDate.setSeconds(59);
       }
+      console.log("ma questo sono sapotite", startDate, endDate);
 
-      const startDateObj = new Date(startDate);
-      const endDateObj = new Date(endDate);
 
-      if (startDateObj > endDateObj) {
+      if (startDate.getTime() > endDate.getTime()) {
         setDateError(true);
         return;
       } else {
         setDateError(false);
         onChange(startDate, endDate);
+        return;
       }
     }
   };

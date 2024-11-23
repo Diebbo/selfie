@@ -9,10 +9,10 @@ function createCalendarRouter(db, sendNotification) {
   router.put("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const event = req.body.event;
+    console.log("sapore di sale", event);
     if (!event) return res.status(400).json({ message: "Evento non fornito" });
 
     try {
-      console.log("sapore di sale", event);
       var result = await db.createEvent(uid, event);
       const notifications = result.notifications;
       const addedEvent = result.addedEvent;

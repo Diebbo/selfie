@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
-import { Input, Select, SelectItem } from "@nextui-org/react";
-import { DatePicker } from "@nextui-org/react";
+import { DateValue, Input, Select, SelectItem } from "@nextui-org/react"; import { DatePicker } from "@nextui-org/react";
 import { SelfieNotification } from "@/helpers/types";
 import { now, getLocalTimeZone } from "@internationalized/date";
+import { getDateParsed } from "./showEvent"
 
 interface NotificationMenuProps {
   value: boolean;
@@ -49,6 +49,11 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
     }
   };
 
+  const getMaxDate = (): DateValue => {
+    return getDateParsed(startEventDate, isAllDay);
+  };
+
+  console.log("notify", notification.repetition.freq);
 
   return (
     <div className="flex flex-col gap-4 mt-3">
@@ -84,13 +89,14 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
         </SelectItem>
       </Select>
       <DatePicker
-        defaultValue={now(getLocalTimeZone())}
+        defaultValue={getMaxDate()}
         label="Starting notification date"
         isRequired
+        maxValue={getMaxDate()}
         hideTimeZone
-        onChange={(date) => handleNotificationChange("fromDate", date.toDate())}
+        onChange={(date) => handleNotificationChange("fromDate", date.toDate(getLocalTimeZone()))}
         isInvalid={notificationError}
-        granularity={isAllDay ? "day" : "minute"}
+        granularity={notification.repetition.freq == "minutely" ? "minute" : notification.repetition.freq == "hourly" ? "hour" : "day"}
         errorMessage="You need to insert a date before the starts of the event"
       />
 
@@ -110,22 +116,22 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
             handleNotificationChange("repetition.freq", Array.from(keys)[0])
           }
         >
-          <SelectItem key="Minute" value="minutely">
+          <SelectItem key="minutely" value="minutely">
             Minutely
           </SelectItem>
-          <SelectItem key="Hour" value="hourly">
+          <SelectItem key="hourly" value="hourly">
             Hourly
           </SelectItem>
-          <SelectItem key="Day" value="daily">
+          <SelectItem key="daily" value="daily">
             Daily
           </SelectItem>
-          <SelectItem key="Week" value="weekly">
+          <SelectItem key="weekly" value="weekly">
             Weekly
           </SelectItem>
-          <SelectItem key="Month" value="monthly">
+          <SelectItem key="monthly" value="monthly">
             Monthly
           </SelectItem>
-          <SelectItem key="Year" value="yearly">
+          <SelectItem key="yearly" value="yearly">
             Yearly
           </SelectItem>
         </Select>
