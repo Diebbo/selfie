@@ -28,7 +28,6 @@ const ParticipantsSlider: React.FC<ParticipantsSliderProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [potentialParticipants, setPotentialParticipants] = useState<Person[]>([]);
 
-  const ownerParticipant = participants.find(p => p._id === owner);
   const otherParticipants = participants.filter(p => p._id !== owner);
 
   const handleRemoveParticipant = (participant: Person) => {
@@ -89,15 +88,13 @@ const ParticipantsSlider: React.FC<ParticipantsSliderProps> = ({
         ]}
         className="max-w-full"
       >
-        {ownerParticipant && (
-          <Chip
-            variant="solid"
-            color="primary"
-            className="m-1"
-          >
-            {ownerParticipant.username} (Owner)
-          </Chip>
-        )}
+        <Chip
+          variant="solid"
+          color="primary"
+          className="m-1"
+        >
+          {owner} (Owner)
+        </Chip>
         {otherParticipants.map(participant => (
           <Chip
             key={participant._id}

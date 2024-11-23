@@ -40,17 +40,19 @@ import {
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
+import { serializeWithLocalDates } from "@/public/date-serializer"
 
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
     console.log("evento aggiunto", event);
     console.log("date saporite", event.dtstart, event.dtend)
+
     var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ event: event }),
+      body: serializeWithLocalDates({ event: event }),
       cache: "no-store",
     });
 
@@ -69,13 +71,16 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ startDate: event.dtstart, endDate: event.dtend }),
+        body: serializeWithLocalDates({  // Anche qui usiamo il serializzatore custom
+          startDate: event.dtstart,
+          endDate: event.dtend
+        }),
         cache: "no-store",
       });
     }
 
   } catch (e) {
-    throw new Error(`Error during modify event: ${(e as Error).message}`);
+    throw new Error(`Error during adding event: ${(e as Error).message}`);
   }
   return true;
 }
@@ -475,7 +480,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       } as SelfieEvent;
 
       try {
-        console.log("Saving event with rrule:", newEvent.rrule);
         const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
           console.log("Event created successfully");
@@ -644,7 +648,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 </Select>
                 {availableResources.length === 0 && (
                   <p className="text-warning text-sm mt-1">
-                    Nessuna risorsa disponibile per il periodo selezionato
+                    There are not resources available for choosen period
                   </p>
                 )}
               </div>
@@ -809,7 +813,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
             </ModalBody>
             <ModalFooter>
               <Button color="primary" type="submit" onClick={handleSave}>
-                Salva
+                Save
               </Button>
             </ModalFooter>
           </form>

@@ -111,8 +111,8 @@ const eventSchema = new mongoose.Schema({
       default: "MO"
     }
   },
-  dtstart: Date,
-  dtend: Date,
+  dtstart: String,
+  dtend: String,
   dtstamp: String,
   allDay: Boolean,
   categories: [String],

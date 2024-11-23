@@ -642,12 +642,18 @@ export async function createDataBase(uri) {
     const resource = await resourceModel.findOne({ name: resourceName });
     if (!resource) throw new Error("Resource not found");
 
+    // Trova e aggiorna tutti gli eventi che utilizzano questa risorsa
+    await eventModel.updateMany(
+      { resource: resourceName },
+      { $unset: { resource: "" } }
+    );
+
     // Elimina la risorsa dal modello delle risorse
     await resourceModel.deleteOne({ _id: resource._id });
 
     return {
       success: true,
-      message: `Resource ${resourceName} successfully deleted`,
+      message: `Resource ${resourceName} successfully deleted and removed from all events`,
       deletedResource: resource
     };
   };
@@ -689,11 +695,15 @@ export async function createDataBase(uri) {
       throw new Error("Event must have a date");
 
     try {
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      // Aggiungi la timezone ai campi temporali
+      console.log("timezone", userTimeZone);
+
       // Creazione evento
       const addedEvent = await eventModel.create({ ...event, uid: uid });
       if (!addedEvent) throw new Error("Failed to create event");
 
-      console.log("vediamo sta cousa", addedEvent);
 
       // Aggiungi l'evento all'utente creatore
       await userModel.findByIdAndUpdate(
