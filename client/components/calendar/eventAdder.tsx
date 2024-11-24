@@ -41,6 +41,7 @@ import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
 import { serializeWithLocalDates } from "@/public/date-serializer"
+import { selectClasses } from "@mui/material";
 
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
@@ -71,7 +72,7 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
         headers: {
           "Content-Type": "application/json",
         },
-        body: serializeWithLocalDates({  // Anche qui usiamo il serializzatore custom
+        body: serializeWithLocalDates({
           startDate: event.dtstart,
           endDate: event.dtend
         }),
@@ -138,7 +139,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   isMobile,
   resource,
 }) => {
-  console.log("risorse", resource);
+  console.log("eventAdder risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
   const [availableResources, setAvailableResources] = useState<ResourceModel[]>([]);
   const [selectedResource, setSelectedResource] = useState<ResourceModel | undefined>(undefined);
@@ -480,6 +481,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
       } as SelfieEvent;
 
       try {
+        console.log("aggiungo la risorsa _id", selectedResource?._id);
         const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
           console.log("Event created successfully");

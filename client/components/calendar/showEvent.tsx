@@ -396,6 +396,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
   };
 
   const handleInputChange = (field: keyof SelfieEvent, value: any) => {
+    console.log("check input change", field, value);
     dispatch({ type: 'UPDATE_FIELD', payload: { field, value } });
   };
 
@@ -410,6 +411,55 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
   const handleNotificationChange = (field: string, value: any) => {
     dispatch({ type: 'UPDATE_NOTIFICATION', payload: { field, value } });
+  };
+
+  async function handleResource(updatedEvent: any, selectedEvent: SelfieEvent | null) {
+    // caso base: no action needed 
+    if (updatedEvent.resource === '' && '' === selectedEvent?.resource) {
+      console.log("nessuna modifica per le risorse, si esce");
+      handleClose();
+      return;
+    }
+
+    console.log("salume e formaggio", updatedEvent.resource)
+    // caso 1: unbook risorsa (x -> 0)
+    var res;
+    if (updatedEvent.resource === '') {
+      const r = resource.find(r => r._id === updatedEvent?.resource);
+      const oldBookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+      console.log("r._id", r?._id)
+
+      res = await fetch(`${EVENTS_API_URL}/resource/${r?._id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bookId: oldBookId }),
+        cache: "no-store",
+      });
+
+    } else {
+      // caso in cui è avvenuta una modifica all'evento che interessa anche la risorsa
+      // (updatedEvent.resource !== selectedEvent?.resource
+      // || updatedEvent.dtstart !== selectedEvent!.dtstart
+      // || updatedEvent.dtend !== selectedEvent!.dtend) 
+
+      const q = `${EVENTS_API_URL}/resource/${r?._id}` + (oldBookId !== undefined ? `/oldBookId?=${oldBookId}` : "");
+      console.log("query", q);
+      res = await fetch(q, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ startDate: updatedEvent.dtstart, endDate: updatedEvent.dtend }),
+        cache: "no-store",
+      });
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to modify event: ${res.statusText}`);
+    }
+
   };
 
   async function modifyEvent() {
@@ -455,7 +505,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
         })
       };
 
-      console.log("salume e formaggio", updatedEvent.resource)
       var res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
         method: "PATCH",
         headers: {
@@ -469,24 +518,10 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
         throw new Error(`Failed to modify event: ${res.statusText}`);
       }
 
-      const resource = updatedEvent?.resource;
-      //modifiche alla risorsa o data di inizio o data di fine
-      if (resource !== selectedEvent?.resource || updatedEvent.dtstart !== selectedEvent.dtstart || updatedEvent.dtend !== selectedEvent.dtend) {
-        res = await fetch(`${EVENTS_API_URL}/resource/${resource}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ startDate: updatedEvent.dtstart, endDate: updatedEvent.dtend }),
-          cache: "no-store",
-        });
-      }
-
-      if (!res.ok) {
-        throw new Error(`Failed to modify event: ${res.statusText}`);
-      }
+      handleResource(updatedEvent, selectedEvent);
 
       handleClose();
+      return;
     } catch (e: unknown) {
       console.error(`Error during modify event: ${(e as Error).message}`);
       setError((e as Error).message);
@@ -504,6 +539,23 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
       if (!res.ok) {
         throw new Error(`Failed to delete event: ${res.statusText}`);
+      }
+
+      if (selectedEvent?.resource !== "") {
+        const r = resource.find(r => r.name === selectedEvent?.resource);
+        const bookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+        const res = await fetch(`${EVENTS_API_URL}/resource/${r?._id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bookId: bookId }),
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to unBook the resource: ${res.statusText}`);
+        }
       }
 
       dispatch({ type: 'RESET_STATE' });
@@ -538,7 +590,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
 
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
-  console.log("forse", resource.find(m => m.name === displayEvent?.resource)?.name, resource.find(m => m.name === state.editedEvent?.resource)?.name);
+  console.log("forse", resource.find(m => m._id === displayEvent?.resource)?.name, resource.find(m => m._id === state.editedEvent?.resource)?.name);
 
   if (!isOpen) return null;
 
@@ -645,7 +697,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     onChange={(e) => handleInputChange('resource', e.target.value)}
                   >
                     {state.availableResources.map((res) => (
-                      <SelectItem key={res._id} value={res._id}>
+                      <SelectItem key={res._id} value={res.name}>
                         {res.name}
                       </SelectItem>
                     ))}
@@ -826,7 +878,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     className="mx-2"
                     onPress={state.isEditing ? modifyEvent : handleClose}
                   >
-                    {state.isEditing ? "Salva" : "Chiudi"}
+                    {state.isEditing ? "Save" : "Close"}
                   </Button>
                 </div>
               )}
