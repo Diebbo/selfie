@@ -12,7 +12,6 @@ function createCalendarRouter(db, sendNotification) {
     if (!event) return res.status(400).json({ message: "Evento non fornito" });
 
     try {
-      console.log(event);
       var result = await db.createEvent(uid, event);
       const notifications = result.notifications;
       const addedEvent = result.addedEvent;
@@ -42,7 +41,6 @@ function createCalendarRouter(db, sendNotification) {
     if (!result)
       return res.status(404).json({ message: "Nessun evento trovato" });
 
-    console.log(result);
     return res.status(200).json(result);
   });
 
@@ -175,12 +173,16 @@ function createCalendarRouter(db, sendNotification) {
   });
 
   router.patch("/resource/:id", cookieJwtAuth, async function(req, res) {
-    const id = req.params.id;
     const uid = req.user._id;
+    const id = req.params.id;
     const endDate = req.body.endDate;
     const startDate = req.body.startDate;
-    console.log("bookResource: ", startDate, endDate, id);
+    const oldBookId = req.query.oldBookId ?? null;
     try {
+      if (oldBookId) {
+        const result = await db.unBookResource(uid, oldBookId);
+        if (!result) return res.status(400).json({ message: "Error unbooking the resource" });
+      }
       const result = await db.bookResource(uid, id, startDate, endDate);
       if (result) {
         return res.status(200).json(result);
@@ -193,6 +195,22 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
+  // route per rimuovere il book di una risorsa 
+  router.delete("/resource/:id", cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const bookId = req.body.bookId;
+
+    try {
+      const result = await db.unBookResource(uid, bookId);
+      console.log("risorsa unbookata", result);
+      return res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server Error" + e })
+    }
+
+  });
+
+  // route per cancellare totalmente una risorsa se admin
   router.delete("/resource/delete", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const resourceName = req.body.name;

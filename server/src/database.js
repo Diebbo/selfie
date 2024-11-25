@@ -599,6 +599,32 @@ export async function createDataBase(uri) {
     }
   };
 
+  const unBookResource = async (uid, bookId) => {
+    if (!uid || !bookId) {
+      throw new Error("Missing required parameters");
+    }
+
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const result = await resourceModel.findOneAndUpdate(
+      { "used._id": new mongoose.Types.ObjectId(bookId) },
+      { $pull: { used: { _id: new mongoose.Types.ObjectId(bookId) } } },
+      { new: true }
+    );
+    await result.save();
+
+    if (!result) {
+      throw new Error("Booking not found in any resource");
+    }
+
+    return {
+      success: true,
+      message: "Resource unbooked successfully",
+      resourceId: result._id
+    };
+  };
+
   const bookResource = async (uid, id, startDate, endDate) => {
     try {
       const user = await userModel.findById(uid);
@@ -642,12 +668,18 @@ export async function createDataBase(uri) {
     const resource = await resourceModel.findOne({ name: resourceName });
     if (!resource) throw new Error("Resource not found");
 
+    // Trova e aggiorna tutti gli eventi che utilizzano questa risorsa
+    await eventModel.updateMany(
+      { resource: resourceName },
+      { $unset: { resource: "" } }
+    );
+
     // Elimina la risorsa dal modello delle risorse
     await resourceModel.deleteOne({ _id: resource._id });
 
     return {
       success: true,
-      message: `Resource ${resourceName} successfully deleted`,
+      message: `Resource ${resourceName} successfully deleted and removed from all events`,
       deletedResource: resource
     };
   };
@@ -673,13 +705,11 @@ export async function createDataBase(uri) {
 
     const event = await eventModel.findById(eventid);
     if (!event) throw new Error("Event not found");
-    console.log("capiamo meglio la cosa", event);
 
     return event;
   };
 
   const createEvent = async (uid, event) => {
-    // Validazione iniziale dell'utente
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -689,23 +719,19 @@ export async function createDataBase(uri) {
       throw new Error("Event must have a date");
 
     try {
-      // Creazione evento
       const addedEvent = await eventModel.create({ ...event, uid: uid });
       if (!addedEvent) throw new Error("Failed to create event");
 
-      // Aggiungi l'evento all'utente creatore
       await userModel.findByIdAndUpdate(
         uid,
         { $push: { events: addedEvent._id } },
         { new: true },
       );
 
-      // Gestione partecipanti
       if (addedEvent.participants && addedEvent.participants.length > 0) {
         var notifications = [];
         for (const participant of addedEvent.participants) {
           try {
-            // Usa findOneAndUpdate invece di find + save
             const updated = await userModel.findByIdAndUpdate(
               participant,
               { $push: { invitedEvents: addedEvent._id } },
@@ -805,14 +831,12 @@ export async function createDataBase(uri) {
 
   // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
   const dodgeEvent = async (uid, eventId) => {
-    console.log("guma is gliding");
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
     const event = await eventModel.findById(eventId);
     if (!event) throw new Error("Event not found");
 
-    // togliere l'evento dalla lista degli eventi dello user
     const res = await userModel.findByIdAndUpdate(uid, {
       $pull: { participatingEvents: eventId },
     });
@@ -820,7 +844,7 @@ export async function createDataBase(uri) {
     return res;
   };
 
-  // accetto la proposta dell'evento [componente participateevent]
+  // accetto la proposta dell'evento [componente participateEvent]
   const participateEvent = async (uid, eventId) => {
     console.log("prova");
     const user = await userModel.findById(uid);
@@ -846,7 +870,7 @@ export async function createDataBase(uri) {
     return user.invitedEvents;
   };
 
-  // rifiuto la proposta dell'evento [componente participateevent]
+  // rifiuto la proposta dell'evento [componente participateEvent]
   const rejectEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -1970,6 +1994,7 @@ export async function createDataBase(uri) {
     createEvent,
     getResource,
     bookResource,
+    unBookResource,
     addResource,
     deleteResource,
     getEvent,

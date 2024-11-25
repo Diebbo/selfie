@@ -14,9 +14,20 @@ import {
   AutocompleteItem,
   Select,
   SelectItem,
+  DateValue,
+  Switch,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Avatar,
 } from "@nextui-org/react";
-import { parseDate } from "@internationalized/date";
-import { Person, ResourceModel, SelfieEvent, SelfieNotification } from "@/helpers/types";
+import {
+  CalendarDate,
+  ZonedDateTime,
+  getLocalTimeZone,
+} from "@internationalized/date";
+import { Person, ResourceModel, SelfieEvent, People } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { useReload } from "./contextStore";
 import { useDebouncedCallback } from "use-debounce";
@@ -40,7 +51,7 @@ type Action =
   | { type: 'CANCEL_EDITING'; payload: SelfieEvent }
   | { type: 'UPDATE_FIELD'; payload: { field: keyof SelfieEvent; value: any } }
   | { type: 'UPDATE_DATE_RANGE'; payload: { start: Date; end: Date } }
-  | { type: 'UPDATE_NOTIFICATION'; payload: { field: keyof SelfieNotification; value: any } }
+  | { type: 'UPDATE_NOTIFICATION'; payload: { field: string; value: any } }
   | { type: 'UPDATE_GEO'; payload: Geo }
   | { type: 'UPDATE_AVAILABLE_RESOURCES'; payload: ResourceModel[] }
   | { type: 'RESET_STATE' };
@@ -158,6 +169,40 @@ async function fetchParticipants(eventid: string) {
   }
 }
 
+export const getDateParsed = (date: Date | string, allDay: Boolean): DateValue => {
+  if (allDay) {
+    return convertToDate(date);
+  }
+  console.log("prima");
+  return convertToZonedDateTime(date);
+};
+
+const convertToDate = (date: Date | string): DateValue => {
+  const dateObj = date instanceof Date ? date : new Date(date);
+
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth() + 1;
+  const day = dateObj.getDate();
+
+  return new CalendarDate(year, month, day);
+};
+
+const convertToZonedDateTime = (date: Date | string | ZonedDateTime): DateValue => {
+  if (date instanceof ZonedDateTime) return date;
+  const dateObj = date instanceof Date ? date : new Date(date);
+
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth() + 1;
+  const day = dateObj.getDate();
+  const hour = dateObj.getHours();
+  const min = dateObj.getMinutes();
+  const offset = 3600000;
+  const zone = getLocalTimeZone();
+
+  return new ZonedDateTime(year, month, day, zone, offset, hour, min);
+};
+
+
 interface LocationSuggestion {
   label: string;
   value: string;
@@ -171,26 +216,34 @@ interface ShowEventProps {
   user: Person;
   owner: string;
   resource: ResourceModel[];
+  friends: People;
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) => {
-  const initialState: State = {
-    isEditing: false,
-    editedEvent: null,
-    dateRange: null,
-    availableResources: resource,
+const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, friends }) => {
+  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
+
+  const getAvailableFriends = (friends: People, participants: string[] | undefined) => {
+    if (!participants) return friends;
+    return friends.filter(friend => !participants.includes(friend._id));
   };
 
-  const [state, dispatch] = useReducer(eventReducer, initialState);
-  const [isOpen, setIsOpen] = useState(true);
-  const router = useRouter();
-  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
-  const [error, setError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<Person[] | null>(null);
-  const eventid = event._id;
-  const isOwner = user._id === event.uid ? true : false;
-  const { reloadEvents, setReloadEvents } = useReload();
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const handleRemoveResource = () => {
+    if (state.editedEvent) {
+      handleInputChange('resource', '');
+      setResourceValue('No resource booked');
+
+      const updatedResources = getAvailableResources(
+        resource,
+        state.dateRange?.start || new Date(state.editedEvent.dtstart),
+        state.dateRange?.end || new Date(state.editedEvent.dtend)
+      );
+
+      dispatch({
+        type: 'UPDATE_AVAILABLE_RESOURCES',
+        payload: updatedResources
+      });
+    }
+  };
 
   const checkResourceAvailability = (resource: ResourceModel, start: Date, end: Date) => {
     if (!resource.used || resource.used.length <= 0) return true;
@@ -204,13 +257,43 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     });
   };
 
-  const updateAvailableResources = (start: Date, end: Date) => {
-    const available = resource.filter(r => {
-      // If this is the currently selected resource in edit mode, include it
-      if (state.editedEvent && r._id === state.editedEvent.resource) return true;
+  const getAvailableResources = (resources: ResourceModel[], start: Date, end: Date) => {
+    return resources.filter(r => {
+      const myBookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+      if (r.used.map(r => r._id === myBookId)) return true;
       return checkResourceAvailability(r, start, end);
     });
+  };
 
+  const initialState: State = {
+    isEditing: false,
+    editedEvent: null,
+    dateRange: null,
+    availableResources: getAvailableResources(
+      resource,
+      new Date(event.dtstart),
+      new Date(event.dtend)
+    ),
+  };
+
+  const [isOpen, setIsOpen] = useState(true);
+  const [state, dispatch] = useReducer(eventReducer, initialState);
+  const [notifications, setNotifications] = useState(selectedEvent?.notification.fromDate !== undefined);
+  const [errorTitle, setErrorTitle] = useState(false);
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<People | null>(null);
+  const [availableFriends, setAvailableFriends] = useState<People>(
+    getAvailableFriends(friends, event.participants)
+  );
+  const eventid = event._id;
+  const isOwner = user._id === event.uid ? true : false;
+  const { reloadEvents, setReloadEvents } = useReload();
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+
+  const updateAvailableResources = (start: Date, end: Date) => {
+    const available = getAvailableResources(resource, start, end);
+    console.log("libere", available);
     dispatch({ type: 'UPDATE_AVAILABLE_RESOURCES', payload: available });
   };
 
@@ -219,7 +302,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
       updateAvailableResources(state.dateRange.start, state.dateRange.end);
     }
   }, [state.dateRange]);
-
 
   const handleLocationSelect = (value: string) => {
     const selectedItem = locationSuggestions.find((item) => item.id === value);
@@ -264,7 +346,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
           );
           const data = await response.json();
 
-          // Usa un Set per tenere traccia degli elementi unici
           const uniqueItems = new Set();
 
           const suggestions = data.features
@@ -272,7 +353,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
               const lat = item.geometry.coordinates[1];
               const lon = item.geometry.coordinates[0];
 
-              // Usa street se c'è housenumber, altrimenti usa name
               const primaryName = item.properties.housenumber
                 ? item.properties.street
                 : item.properties.name;
@@ -290,7 +370,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 value: primaryName,
                 lat,
                 lon,
-                id: `${primaryName}|${lat}|${lon}`, // Crea un ID unico
+                id: `${primaryName}|${lat}|${lon}`,
               };
             })
             .filter((item: LocationSuggestion) => {
@@ -327,10 +407,30 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
   const handleReset = () => {
     if (selectedEvent) {
       dispatch({ type: 'CANCEL_EDITING', payload: selectedEvent });
+
+      setResourceValue(selectedEvent.resource || 'No resource booked');
+
+      setNotifications(selectedEvent.notification.fromDate !== undefined);
+
+      setErrorTitle(false);
+      setError(null);
+
+      setLocationSuggestions([]);
+
+      const originalResources = getAvailableResources(
+        resource,
+        new Date(selectedEvent.dtstart),
+        new Date(selectedEvent.dtend)
+      );
+      dispatch({
+        type: 'UPDATE_AVAILABLE_RESOURCES',
+        payload: originalResources
+      });
     }
   };
 
   const handleInputChange = (field: keyof SelfieEvent, value: any) => {
+    console.log("check input change", field, value);
     dispatch({ type: 'UPDATE_FIELD', payload: { field, value } });
   };
 
@@ -343,22 +443,132 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     updateAvailableResources(range.start, range.end);
   };
 
-  const handleNotificationChange = (field: keyof SelfieNotification, value: any) => {
+  const handleNotificationChange = (field: string, value: any) => {
     dispatch({ type: 'UPDATE_NOTIFICATION', payload: { field, value } });
+  };
+
+  const handleParticipantSelect = (friend: Person) => {
+    if (!state.editedEvent) return;
+
+    const updatedParticipants = [...(state.editedEvent.participants || []), friend._id];
+    handleInputChange('participants', updatedParticipants);
+    setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
+  };
+
+  const handleRemoveParticipant = (friend: Person) => {
+    if (!state.editedEvent) return;
+
+    const updatedParticipants = state.editedEvent.participants?.filter(
+      (id) => id !== friend._id
+    ) || [];
+    handleInputChange('participants', updatedParticipants);
+    setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
+  };
+
+  const handleRemoveAllParticipants = () => {
+    if (!state.editedEvent) return;
+
+    handleInputChange('participants', []);
+    setAvailableFriends(friends);
+  };
+
+  async function handleResource(updatedEvent: any, selectedEvent: SelfieEvent | null) {
+    // caso base: no action needed 
+    if (updatedEvent.resource === '' && '' === selectedEvent?.resource) {
+      console.log("nessuna modifica per le risorse, si esce");
+      handleClose();
+      return;
+    }
+
+    const oldR = resource.find(r => r.name === selectedEvent?.resource);
+    console.log("oldR", oldR)
+    const newR = resource.find(r => r.name === updatedEvent?.resource);
+    console.log("newR", newR)
+
+    const oldBookId = oldR?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+    console.log("oldBookId:", oldBookId, oldR?._id);
+
+    // caso 1: unbook risorsa (x -> 0)
+    var res;
+    if (updatedEvent.resource === '') {
+      res = await fetch(`${EVENTS_API_URL}/resource/${newR?._id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bookId: oldBookId }),
+        cache: "no-store",
+      });
+
+    } else {
+      // caso in cui è avvenuta una modifica all'evento che interessa anche la risorsa
+      // (y -> x || 0 -> x)
+      // (updatedEvent.resource !== selectedEvent?.resource
+      // || updatedEvent.dtstart !== selectedEvent!.dtstart
+      // || updatedEvent.dtend !== selectedEvent!.dtend) 
+
+      const q = `${EVENTS_API_URL}/resource/${newR?._id}` + (oldBookId !== undefined ? `?oldBookId=${oldBookId}` : "");
+      console.log("query", q);
+      res = await fetch(q, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ startDate: updatedEvent.dtstart, endDate: updatedEvent.dtend }),
+        cache: "no-store",
+      });
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to modify event: ${res.statusText}`);
+    }
+
   };
 
   async function modifyEvent() {
     try {
       if (!state.editedEvent) return;
 
-      const updatedEvent = {
-        ...state.editedEvent,
-        dtstart: state.dateRange?.start || state.editedEvent.dtstart,
-        dtend: state.dateRange?.end || state.editedEvent.dtend,
+      if (state.editedEvent.title === "") {
+        setErrorTitle(true);
+        return;
+      }
+
+      // Convert CalendarDate or ZonedDateTime to standard Date objects
+      const convertToStandardDate = (date: DateValue | Date | string): Date => {
+        if (date instanceof Date) return date;
+
+        if (date instanceof CalendarDate) {
+          // For CalendarDate, create a Date object
+          return new Date(date.year, date.month - 1, date.day);
+        }
+
+        if (typeof date === 'string') {
+          return new Date(date);
+        }
+
+        // For ZonedDateTime, convert to local Date
+        return new Date(date.toDate(getLocalTimeZone()));
       };
 
-      console.log("evento modificato: ", updatedEvent);
-      const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
+      const updatedEvent = {
+        ...state.editedEvent,
+        dtstart: state.editedEvent.allDay ?
+          convertToStandardDate(state.editedEvent.dtstart).setHours(0, 0) :
+          convertToStandardDate(state.editedEvent.dtstart),
+        dtend: state.editedEvent.allDay ?
+          convertToStandardDate(state.editedEvent.dtend).setHours(23, 59) :
+          convertToStandardDate(state.editedEvent.dtend),
+        // If notification has dates, convert them too
+        ...(state.editedEvent.notification?.fromDate && {
+          notification: {
+            ...state.editedEvent.notification,
+            fromDate: convertToStandardDate(state.editedEvent.notification.fromDate)
+          }
+        })
+      };
+
+      var res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -371,7 +581,11 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
         throw new Error(`Failed to modify event: ${res.statusText}`);
       }
 
+      console.log("bha??", updatedEvent?.resource);
+      handleResource(updatedEvent, selectedEvent);
+
       handleClose();
+      return;
     } catch (e: unknown) {
       console.error(`Error during modify event: ${(e as Error).message}`);
       setError((e as Error).message);
@@ -389,6 +603,23 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
       if (!res.ok) {
         throw new Error(`Failed to delete event: ${res.statusText}`);
+      }
+
+      if (selectedEvent?.resource !== "") {
+        const r = resource.find(r => r.name === selectedEvent?.resource);
+        const bookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+        const res = await fetch(`${EVENTS_API_URL}/resource/${r?._id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ bookId: bookId }),
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to unBook the resource: ${res.statusText}`);
+        }
       }
 
       dispatch({ type: 'RESET_STATE' });
@@ -421,7 +652,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
   }
 
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
-  console.log(displayEvent?.resource);
+  console.log("resource display.resource selectedEvent.resource", resource, displayEvent?.resource, selectedEvent?.resource);
+  console.log("forse", resource.find(m => m.name === displayEvent?.resource)?.name);
+
+  const [resourceValue, setResourceValue] = useState<string>(
+    displayEvent?.resource || 'No resource booked');
+  console.log("resourceValue", resourceValue);
 
   if (!isOpen) return null;
 
@@ -437,7 +673,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
           <div className="p-8 text-center text-red-500">
             <p>Error: {error}</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Chiudi
+              Close
             </Button>
           </div>
         ) : displayEvent ? (
@@ -446,6 +682,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
               <Input
                 isDisabled={!state.isEditing}
                 value={displayEvent?.title as string}
+                isInvalid={errorTitle}
+                isRequired={true}
+                errorMessage={"Title is mandatory"}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 className="max-w-xs"
               />
@@ -455,7 +694,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                   onClick={handleReset}
                   color="secondary"
                 >
-                  Annulla
+                  Cancel
                 </Button>
                 {user._id === displayEvent.uid && !state.isEditing &&
                   <Button
@@ -463,7 +702,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     onClick={handleEdit}
                     color="primary"
                   >
-                    Modifica
+                    Modify
                   </Button>
                 }
 
@@ -475,13 +714,15 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 className="max-w-[430px] mb-4"
                 hideTimeZone
                 defaultValue={{
-                  start: parseDate(displayEvent.dtstart.toString().split('T')[0]),
-                  end: parseDate(displayEvent.dtend.toString().split('T')[0]),
+                  start: getDateParsed(displayEvent.dtstart, displayEvent.allDay),
+                  end: getDateParsed(displayEvent.dtend, displayEvent.allDay),
                 }}
                 value={state.dateRange ? {
-                  start: parseDate(state.dateRange.start.toISOString().split('T')[0]),
-                  end: parseDate(state.dateRange.end.toISOString().split('T')[0])
-                } : undefined}
+                  start: getDateParsed(state.dateRange.start, displayEvent.allDay),
+                  end: getDateParsed(state.dateRange.end, displayEvent.allDay)
+                }
+                  : undefined}
+
                 onChange={handleDateRangeChange as any}
                 isDisabled={!state.isEditing}
                 visibleMonths={1}
@@ -512,19 +753,44 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                   )}
                 </Autocomplete>
               </div>
-              <Select
-                label="Resource"
-                className="mb-4"
-                isDisabled={!state.isEditing}
-                placeholder={displayEvent?.resource ? displayEvent.resource : ""}
-                onChange={(e) => handleInputChange('resource', e.target.value)}
-              >
-                {state.availableResources.map((res) => (
-                  <SelectItem key={res._id} value={res._id}>
-                    {res.name}
-                  </SelectItem>
-                ))}
-              </Select>
+              <div className="mb-2">
+                <div className="flex flex-row gap-2 items-center">
+                  <Select
+                    label="Resource"
+                    className="mb-2"
+                    isDisabled={!state.isEditing}
+                    placeholder={resourceValue}
+                    value={resourceValue}
+                    selectedKeys={resourceValue !== 'No resource booked' ? [resourceValue] : []}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setResourceValue(newValue);
+                      handleInputChange('resource', newValue);
+                    }}
+                  >
+                    {state.availableResources.map((res) => (
+                      <SelectItem key={res.name} value={res.name}>
+                        {res.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                  <Button
+                    size="md"
+                    className="mb-2"
+                    color="danger"
+                    variant="flat"
+                    isDisabled={!state.isEditing}
+                    onPress={handleRemoveResource}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                {state.isEditing && state.availableResources.length === 0 && (
+                  <p className="text-warning text-sm">
+                    There are not resources available for choosen period
+                  </p>
+                )}
+              </div>
               <Input
                 isDisabled={!state.isEditing}
                 label="Description"
@@ -533,16 +799,119 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 className="mb-4"
               />
 
-              {participants && participants.length > 0 &&
-                <Input
-                  isDisabled={!state.isEditing}
-                  label="Participants"
-                  value={[owner, ...participants.map(p => p.toString())].join(", ")}
+              <div aria-label="Participants" className="flex w-full gap-4 mb-4">
+                <Autocomplete
+                  variant="bordered"
+                  label="Friends"
+                  placeholder="Choose someone to invite"
+                  labelPlacement="inside"
+                  selectedKey=""
+                  className="max-w-sm"
+                  isDisabled={!state.isEditing || availableFriends.length === 0}
+                  onSelectionChange={(key) => {
+                    const selectedFriend = friends.find(
+                      (friend) => friend.email === key,
+                    );
+                    if (selectedFriend) handleParticipantSelect(selectedFriend);
+                  }}
+                >
+                  {availableFriends.map((friend) => (
+                    <AutocompleteItem
+                      key={friend.email}
+                      textValue={friend.username}
+                    >
+                      <div className="flex gap-2 items-center">
+                        <Avatar
+                          alt={friend.username}
+                          className="flex-shrink-0"
+                          size="sm"
+                          src={friend.avatar}
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-small">{friend.username}</span>
+                          <span className="text-tiny text-default-400">
+                            {friend.email}
+                          </span>
+                        </div>
+                      </div>
+                    </AutocompleteItem>
+                  ))}
+                </Autocomplete>
+                <div className="flex gap-2 w-full">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button variant="flat" className="min-w-[calc(10vw)]">
+                        Invited ({displayEvent?.participants?.length || 0})
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Invited participants"
+                      className="max-h-[300px] overflow-y-auto"
+                    >
+                      {displayEvent?.participants?.length ? (
+                        displayEvent.participants
+                          .map((participantId) => {
+                            const participant = friends.find(friend => friend._id === participantId);
+                            if (!participant) return null;
 
-                  onChange={(e) => handleInputChange('URL', e.target.value)}
-                  className="mb-4"
-                />
-              }
+                            return (
+                              <DropdownItem
+                                key={participantId}
+                                className="py-2"
+                                endContent={
+                                  state.isEditing ? (
+                                    <Button
+                                      size="sm"
+                                      color="danger"
+                                      variant="light"
+                                      onPress={() => handleRemoveParticipant(participant)}
+                                    >
+                                      Remove
+                                    </Button>
+                                  ) : null
+                                }
+                              >
+                                <div className="flex gap-2 items-center">
+                                  <Avatar
+                                    alt={participant.username}
+                                    className="flex-shrink-0"
+                                    size="sm"
+                                    src={participant.avatar}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-small">
+                                      {participant.username}
+                                    </span>
+                                    <span className="text-tiny text-default-400">
+                                      {participant.email}
+                                    </span>
+                                  </div>
+                                </div>
+                              </DropdownItem>
+                            );
+                          })
+                          .filter((item): item is JSX.Element => item !== null)
+                      ) : (
+                        <DropdownItem className="text-default-400">
+                          None invited yet
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                  {state.isEditing && (
+                    <Button
+                      size="md"
+                      color="danger"
+                      variant="flat"
+                      isDisabled={!displayEvent?.participants?.length}
+                      onPress={handleRemoveAllParticipants}
+                    >
+                      Remove All
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <Input
                 isDisabled={!state.isEditing}
                 label="URL"
@@ -557,21 +926,111 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 onChange={(e) => handleInputChange('categories', e.target.value.split(", "))}
                 className="mb-4"
               />
-              {displayEvent.notification && (
+
+              <Switch
+                className="w-fit min-w-[120px] mb-2"
+                isSelected={notifications}
+                isDisabled={!state.isEditing}
+                onValueChange={setNotifications}
+              >
+                Allow Notifications
+              </Switch>
+
+              {notifications && (
                 <>
                   <Input
                     isDisabled={!state.isEditing}
                     label="Notification Title"
                     value={displayEvent.notification.title as string}
                     onChange={(e) => handleNotificationChange('title', e.target.value)}
-                    className="mb-4"
+                    className="mb-2"
                   />
+                  <Input
+                    isDisabled={!state.isEditing}
+                    label="Notification Description"
+                    value={displayEvent.notification.description as string}
+                    onChange={(e) => handleNotificationChange('description', e.target.value)}
+                    className="mb-2"
+                  />
+                  <Select
+                    label="Notification type"
+                    isDisabled={!state.isEditing}
+                    placeholder={displayEvent.notification.type.toString()}
+                    className="mb-2"
+                    variant="bordered"
+                    selectedKeys={
+                      displayEvent.notification?.type?.toString() ? [displayEvent.notification.type.toString()] : []
+                    }
+                    onSelectionChange={(keys) =>
+                      handleNotificationChange('type', Array.from(keys)[0])
+                    }
+                  >
+                    <SelectItem key="email" value="email">
+                      Email
+                    </SelectItem>
+                    <SelectItem key="push" value="push">
+                      Push
+                    </SelectItem>
+                  </Select>
+
                   <DatePicker
+                    defaultValue={getDateParsed(displayEvent.dtstart, displayEvent.allDay)}
+                    maxValue={getDateParsed(displayEvent.dtstart, displayEvent.allDay)}
+                    isRequired
+                    hideTimeZone
                     isDisabled={!state.isEditing}
                     label="Notification Start Date"
                     onChange={(date) => handleNotificationChange('fromDate', date)}
-                    className="mb-4"
+                    className="mb-2"
                   />
+
+                  <div className="flex flex-row gap-4">
+                    <Select
+                      label="Frequency repetition"
+                      isDisabled={!state.isEditing}
+                      variant="bordered"
+                      classNames={{
+                        base: "data-[hover=true]:bg-yellow-300",
+                      }}
+                      selectedKeys={
+                        displayEvent?.notification.repetition?.freq?.toString()
+                          ? [displayEvent?.notification.repetition.freq.toString()]
+                          : []
+                      }
+                      onSelectionChange={(keys) =>
+                        handleNotificationChange("repetition.freq", Array.from(keys)[0])
+                      }
+                    >
+                      <SelectItem key="minutely" value="minutely">
+                        Minutely
+                      </SelectItem>
+                      <SelectItem key="hourly" value="hourly">
+                        Hourly
+                      </SelectItem>
+                      <SelectItem key="daily" value="daily">
+                        Daily
+                      </SelectItem>
+                      <SelectItem key="weekly" value="weekly">
+                        Weekly
+                      </SelectItem>
+                      <SelectItem key="monthly" value="monthly">
+                        Monthly
+                      </SelectItem>
+                      <SelectItem key="yearly" value="yearly">
+                        Yearly
+                      </SelectItem>
+                    </Select>
+
+                    <Input
+                      label="Interval repetition"
+                      isDisabled={!state.isEditing}
+                      type="number"
+                      value={displayEvent.notification.repetition?.interval?.toString() || ""}
+                      onChange={(e) => handleNotificationChange("repetition.interval", e.target.value)}
+                      placeholder="Set the frequency repetition"
+                    />
+
+                  </div>
                 </>
               )}
             </ModalBody>
@@ -585,14 +1044,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     className="border-1 border-danger mx-2"
                     onPress={deleteEvent}
                   >
-                    Cancella Evento
+                    Delete Event
                   </Button>
                   <Button
                     color={`${!state.isEditing ? "primary" : "success"}`}
                     className="mx-2"
                     onPress={state.isEditing ? modifyEvent : handleClose}
                   >
-                    {state.isEditing ? "Salva" : "Chiudi"}
+                    {state.isEditing ? "Save" : "Close"}
                   </Button>
                 </div>
               )}
@@ -604,13 +1063,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     variant="light"
                     onPress={dodgeEvent}
                   >
-                    Non Partecipare
+                    Dodge Event
                   </Button>
                   <Button
                     color="primary"
                     onPress={handleClose}
                   >
-                    Chiudi
+                    Close
                   </Button>
                 </div>
               )}
@@ -621,7 +1080,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
           <div className="p-8 text-center">
             <p>No event data found</p>
             <Button color="primary" className="mt-4" onClick={handleClose}>
-              Chiudi
+              Close
             </Button>
           </div>
         )}
