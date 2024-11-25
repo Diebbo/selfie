@@ -173,7 +173,6 @@ export const getDateParsed = (date: Date | string, allDay: Boolean): DateValue =
   if (allDay) {
     return convertToDate(date);
   }
-  console.log("prima");
   return convertToZonedDateTime(date);
 };
 
@@ -190,13 +189,14 @@ const convertToDate = (date: Date | string): DateValue => {
 const convertToZonedDateTime = (date: Date | string | ZonedDateTime): DateValue => {
   if (date instanceof ZonedDateTime) return date;
   const dateObj = date instanceof Date ? date : new Date(date);
+  const OFFSET_TO_MILLISECONDS = 60 * 1000;
 
   const year = dateObj.getFullYear();
   const month = dateObj.getMonth() + 1;
   const day = dateObj.getDate();
   const hour = dateObj.getHours();
   const min = dateObj.getMinutes();
-  const offset = 3600000;
+  const offset = -dateObj.getTimezoneOffset() * OFFSET_TO_MILLISECONDS;
   const zone = getLocalTimeZone();
 
   return new ZonedDateTime(year, month, day, zone, offset, hour, min);
@@ -293,7 +293,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
   const updateAvailableResources = (start: Date, end: Date) => {
     const available = getAvailableResources(resource, start, end);
-    console.log("libere", available);
     dispatch({ type: 'UPDATE_AVAILABLE_RESOURCES', payload: available });
   };
 
@@ -381,7 +380,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
               return false;
             });
 
-          console.log("suggestions: ", suggestions);
           setLocationSuggestions(suggestions);
         } catch (error) {
           console.error("Error fetching location suggestions:", error);
@@ -401,7 +399,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
   const handleClose = () => {
     setReloadEvents(true);
-    router.back();
+    router.push("/calendar");
   };
 
   const handleReset = () => {
