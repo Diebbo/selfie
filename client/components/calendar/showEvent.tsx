@@ -16,13 +16,18 @@ import {
   SelectItem,
   DateValue,
   Switch,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Avatar,
 } from "@nextui-org/react";
 import {
   CalendarDate,
   ZonedDateTime,
   getLocalTimeZone,
 } from "@internationalized/date";
-import { Person, ResourceModel, SelfieEvent, SelfieNotification } from "@/helpers/types";
+import { Person, ResourceModel, SelfieEvent, People } from "@/helpers/types";
 import { useRouter } from 'next/navigation';
 import { useReload } from "./contextStore";
 import { useDebouncedCallback } from "use-debounce";
@@ -211,13 +216,21 @@ interface ShowEventProps {
   user: Person;
   owner: string;
   resource: ResourceModel[];
+  friends: People;
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, friends }) => {
+  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
+
+  const getAvailableFriends = (friends: People, participants: string[] | undefined) => {
+    if (!participants) return friends;
+    return friends.filter(friend => !participants.includes(friend._id));
+  };
 
   const handleRemoveResource = () => {
     if (state.editedEvent) {
       handleInputChange('resource', '');
+      setResourceValue('No resource booked');
 
       const updatedResources = getAvailableResources(
         resource,
@@ -246,8 +259,8 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
   const getAvailableResources = (resources: ResourceModel[], start: Date, end: Date) => {
     return resources.filter(r => {
-      // Se questa è la risorsa attualmente selezionata nell'evento, includerla sempre
-      if (event.resource === r._id) return true;
+      const myBookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+      if (r.used.map(r => r._id === myBookId)) return true;
       return checkResourceAvailability(r, start, end);
     });
   };
@@ -263,14 +276,16 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     ),
   };
 
-  const [state, dispatch] = useReducer(eventReducer, initialState);
   const [isOpen, setIsOpen] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
+  const [state, dispatch] = useReducer(eventReducer, initialState);
   const [notifications, setNotifications] = useState(selectedEvent?.notification.fromDate !== undefined);
   const [errorTitle, setErrorTitle] = useState(false);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<Person[] | null>(null);
+  const [participants, setParticipants] = useState<People | null>(null);
+  const [availableFriends, setAvailableFriends] = useState<People>(
+    getAvailableFriends(friends, event.participants)
+  );
   const eventid = event._id;
   const isOwner = user._id === event.uid ? true : false;
   const { reloadEvents, setReloadEvents } = useReload();
@@ -392,6 +407,25 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
   const handleReset = () => {
     if (selectedEvent) {
       dispatch({ type: 'CANCEL_EDITING', payload: selectedEvent });
+
+      setResourceValue(selectedEvent.resource || 'No resource booked');
+
+      setNotifications(selectedEvent.notification.fromDate !== undefined);
+
+      setErrorTitle(false);
+      setError(null);
+
+      setLocationSuggestions([]);
+
+      const originalResources = getAvailableResources(
+        resource,
+        new Date(selectedEvent.dtstart),
+        new Date(selectedEvent.dtend)
+      );
+      dispatch({
+        type: 'UPDATE_AVAILABLE_RESOURCES',
+        payload: originalResources
+      });
     }
   };
 
@@ -413,6 +447,31 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     dispatch({ type: 'UPDATE_NOTIFICATION', payload: { field, value } });
   };
 
+  const handleParticipantSelect = (friend: Person) => {
+    if (!state.editedEvent) return;
+
+    const updatedParticipants = [...(state.editedEvent.participants || []), friend._id];
+    handleInputChange('participants', updatedParticipants);
+    setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
+  };
+
+  const handleRemoveParticipant = (friend: Person) => {
+    if (!state.editedEvent) return;
+
+    const updatedParticipants = state.editedEvent.participants?.filter(
+      (id) => id !== friend._id
+    ) || [];
+    handleInputChange('participants', updatedParticipants);
+    setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
+  };
+
+  const handleRemoveAllParticipants = () => {
+    if (!state.editedEvent) return;
+
+    handleInputChange('participants', []);
+    setAvailableFriends(friends);
+  };
+
   async function handleResource(updatedEvent: any, selectedEvent: SelfieEvent | null) {
     // caso base: no action needed 
     if (updatedEvent.resource === '' && '' === selectedEvent?.resource) {
@@ -421,15 +480,18 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
       return;
     }
 
-    console.log("salume e formaggio", updatedEvent.resource)
+    const oldR = resource.find(r => r.name === selectedEvent?.resource);
+    console.log("oldR", oldR)
+    const newR = resource.find(r => r.name === updatedEvent?.resource);
+    console.log("newR", newR)
+
+    const oldBookId = oldR?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+    console.log("oldBookId:", oldBookId, oldR?._id);
+
     // caso 1: unbook risorsa (x -> 0)
     var res;
     if (updatedEvent.resource === '') {
-      const r = resource.find(r => r._id === updatedEvent?.resource);
-      const oldBookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
-      console.log("r._id", r?._id)
-
-      res = await fetch(`${EVENTS_API_URL}/resource/${r?._id}`, {
+      res = await fetch(`${EVENTS_API_URL}/resource/${newR?._id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -440,11 +502,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
 
     } else {
       // caso in cui è avvenuta una modifica all'evento che interessa anche la risorsa
+      // (y -> x || 0 -> x)
       // (updatedEvent.resource !== selectedEvent?.resource
       // || updatedEvent.dtstart !== selectedEvent!.dtstart
       // || updatedEvent.dtend !== selectedEvent!.dtend) 
 
-      const q = `${EVENTS_API_URL}/resource/${r?._id}` + (oldBookId !== undefined ? `/oldBookId?=${oldBookId}` : "");
+      const q = `${EVENTS_API_URL}/resource/${newR?._id}` + (oldBookId !== undefined ? `?oldBookId=${oldBookId}` : "");
       console.log("query", q);
       res = await fetch(q, {
         method: "PATCH",
@@ -518,6 +581,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
         throw new Error(`Failed to modify event: ${res.statusText}`);
       }
 
+      console.log("bha??", updatedEvent?.resource);
       handleResource(updatedEvent, selectedEvent);
 
       handleClose();
@@ -587,10 +651,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
     }
   }
 
-
-
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
-  console.log("forse", resource.find(m => m._id === displayEvent?.resource)?.name, resource.find(m => m._id === state.editedEvent?.resource)?.name);
+  console.log("resource display.resource selectedEvent.resource", resource, displayEvent?.resource, selectedEvent?.resource);
+  console.log("forse", resource.find(m => m.name === displayEvent?.resource)?.name);
+
+  const [resourceValue, setResourceValue] = useState<string>(
+    displayEvent?.resource || 'No resource booked');
+  console.log("resourceValue", resourceValue);
 
   if (!isOpen) return null;
 
@@ -692,12 +759,17 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                     label="Resource"
                     className="mb-2"
                     isDisabled={!state.isEditing}
-                    placeholder={resource.find(m => m.name === displayEvent?.resource)?.name || 'No resource booked'}
-                    value={resource.find(m => m.name === displayEvent?.resource)?.name || 'No resource booked'}
-                    onChange={(e) => handleInputChange('resource', e.target.value)}
+                    placeholder={resourceValue}
+                    value={resourceValue}
+                    selectedKeys={resourceValue !== 'No resource booked' ? [resourceValue] : []}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setResourceValue(newValue);
+                      handleInputChange('resource', newValue);
+                    }}
                   >
                     {state.availableResources.map((res) => (
-                      <SelectItem key={res._id} value={res.name}>
+                      <SelectItem key={res.name} value={res.name}>
                         {res.name}
                       </SelectItem>
                     ))}
@@ -727,17 +799,118 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource }) =
                 className="mb-4"
               />
 
-              {/* aggiungere il componente dei partecipanti qui */}
+              <div aria-label="Participants" className="flex w-full gap-4 mb-4">
+                <Autocomplete
+                  variant="bordered"
+                  label="Friends"
+                  placeholder="Choose someone to invite"
+                  labelPlacement="inside"
+                  selectedKey=""
+                  className="max-w-sm"
+                  isDisabled={!state.isEditing || availableFriends.length === 0}
+                  onSelectionChange={(key) => {
+                    const selectedFriend = friends.find(
+                      (friend) => friend.email === key,
+                    );
+                    if (selectedFriend) handleParticipantSelect(selectedFriend);
+                  }}
+                >
+                  {availableFriends.map((friend) => (
+                    <AutocompleteItem
+                      key={friend.email}
+                      textValue={friend.username}
+                    >
+                      <div className="flex gap-2 items-center">
+                        <Avatar
+                          alt={friend.username}
+                          className="flex-shrink-0"
+                          size="sm"
+                          src={friend.avatar}
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-small">{friend.username}</span>
+                          <span className="text-tiny text-default-400">
+                            {friend.email}
+                          </span>
+                        </div>
+                      </div>
+                    </AutocompleteItem>
+                  ))}
+                </Autocomplete>
+                <div className="flex gap-2 w-full">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button variant="flat" className="min-w-[calc(10vw)]">
+                        Invited ({displayEvent?.participants?.length || 0})
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Invited participants"
+                      className="max-h-[300px] overflow-y-auto"
+                    >
+                      {displayEvent?.participants?.length ? (
+                        displayEvent.participants
+                          .map((participantId) => {
+                            const participant = friends.find(friend => friend._id === participantId);
+                            if (!participant) return null;
 
-              <Input
-                isDisabled={!state.isEditing}
-                label="Participants"
-                value={participants && participants?.length > 0 ? [owner, ...participants!.map(p => p.toString())].join(", ") : owner}
-
-                onChange={(e) => handleInputChange('participants', e.target.value)}
-                className="mb-4"
-              />
-
+                            return (
+                              <DropdownItem
+                                key={participantId}
+                                className="py-2"
+                                endContent={
+                                  state.isEditing ? (
+                                    <Button
+                                      size="sm"
+                                      color="danger"
+                                      variant="light"
+                                      onPress={() => handleRemoveParticipant(participant)}
+                                    >
+                                      Remove
+                                    </Button>
+                                  ) : null
+                                }
+                              >
+                                <div className="flex gap-2 items-center">
+                                  <Avatar
+                                    alt={participant.username}
+                                    className="flex-shrink-0"
+                                    size="sm"
+                                    src={participant.avatar}
+                                  />
+                                  <div className="flex flex-col">
+                                    <span className="text-small">
+                                      {participant.username}
+                                    </span>
+                                    <span className="text-tiny text-default-400">
+                                      {participant.email}
+                                    </span>
+                                  </div>
+                                </div>
+                              </DropdownItem>
+                            );
+                          })
+                          .filter((item): item is JSX.Element => item !== null)
+                      ) : (
+                        <DropdownItem className="text-default-400">
+                          None invited yet
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                  {state.isEditing && (
+                    <Button
+                      size="md"
+                      color="danger"
+                      variant="flat"
+                      isDisabled={!displayEvent?.participants?.length}
+                      onPress={handleRemoveAllParticipants}
+                    >
+                      Remove All
+                    </Button>
+                  )}
+                </div>
+              </div>
 
               <Input
                 isDisabled={!state.isEditing}

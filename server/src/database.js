@@ -599,6 +599,34 @@ export async function createDataBase(uri) {
     }
   };
 
+  const unBookResource = async (uid, bookId) => {
+    if (!uid || !bookId) {
+      throw new Error("Missing required parameters");
+    }
+
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    console.log("bookId da rimuovere: ", bookId);
+    const result = await resourceModel.findOneAndUpdate(
+      { "used._id": new mongoose.Types.ObjectId(bookId) },
+      { $pull: { used: { _id: new mongoose.Types.ObjectId(bookId) } } },
+      { new: true }
+    );
+    console.log("dopo findOneAndUpdate", result);
+    await result.save();
+
+    if (!result) {
+      throw new Error("Booking not found in any resource");
+    }
+
+    return {
+      success: true,
+      message: "Resource unbooked successfully",
+      resourceId: result._id
+    };
+  };
+
   const bookResource = async (uid, id, startDate, endDate) => {
     try {
       const user = await userModel.findById(uid);
@@ -679,7 +707,6 @@ export async function createDataBase(uri) {
 
     const event = await eventModel.findById(eventid);
     if (!event) throw new Error("Event not found");
-    console.log("capiamo meglio la cosa", event);
 
     return event;
   };
@@ -1982,6 +2009,7 @@ export async function createDataBase(uri) {
     createEvent,
     getResource,
     bookResource,
+    unBookResource,
     addResource,
     deleteResource,
     getEvent,

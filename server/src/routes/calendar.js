@@ -42,7 +42,6 @@ function createCalendarRouter(db, sendNotification) {
     if (!result)
       return res.status(404).json({ message: "Nessun evento trovato" });
 
-    console.log(result);
     return res.status(200).json(result);
   });
 
@@ -175,13 +174,22 @@ function createCalendarRouter(db, sendNotification) {
   });
 
   router.patch("/resource/:id", cookieJwtAuth, async function(req, res) {
-    const id = req.params.id;
     const uid = req.user._id;
+    const id = req.params.id;
     const endDate = req.body.endDate;
     const startDate = req.body.startDate;
+    const oldBookId = req.query.oldBookId ?? null;
     console.log("bookResource: ", startDate, endDate, id);
+    console.log("c'è il bookId?", oldBookId);
     try {
+      if (oldBookId) {
+        console.log("Unbooking let's go!");
+        const result = await db.unBookResource(uid, oldBookId);
+        if (!result) return res.status(400).json({ message: "Error unbooking the resource" });
+        console.log("risorsa unbookata", result);
+      }
       const result = await db.bookResource(uid, id, startDate, endDate);
+      console.log("risorsa bookata", result);
       if (result) {
         return res.status(200).json(result);
       }
@@ -193,6 +201,23 @@ function createCalendarRouter(db, sendNotification) {
     }
   });
 
+  // route per rimuovere il book di una risorsa 
+  router.delete("/resource/:id", cookieJwtAuth, async function(req, res) {
+    const uid = req.user._id;
+    const resourceId = req.params.id;
+    const bookId = req.body.bookId;
+
+    try {
+      const result = await db.unBookResource(uid, bookId);
+      console.log("risorsa unbookata", result);
+      return res.status(200).json(result);
+    } catch (e) {
+      return res.status(500).json({ message: "Server Error" + e })
+    }
+
+  });
+
+  // route per cancellare totalmente una risorsa se admin
   router.delete("/resource/delete", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const resourceName = req.body.name;
