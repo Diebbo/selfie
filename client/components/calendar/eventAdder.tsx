@@ -41,7 +41,6 @@ import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
 import { serializeWithLocalDates } from "@/public/date-serializer"
-import { selectClasses } from "@mui/material";
 
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
