@@ -45,8 +45,6 @@ import { serializeWithLocalDates } from "@/public/date-serializer"
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
     console.log("evento aggiunto", event);
-    console.log("date saporite", event.dtstart, event.dtend)
-
     var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
