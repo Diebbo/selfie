@@ -205,7 +205,6 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                     <>
                       <span className={"text-" + AppointmentButtonColor.EVENT}>
                         {!item.event?.allDay && formatEventTime(item.event!, date.getDate())}
-                        {item.event?.allDay}
                       </span>
                     </>
                   )}
