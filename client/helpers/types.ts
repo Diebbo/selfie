@@ -211,6 +211,7 @@ export interface ResourceModel {
   _id: string;
   name: string;
   used: [{
+    _id: string,
     startTime: Date,
     endTime: Date,
     claimant: string,

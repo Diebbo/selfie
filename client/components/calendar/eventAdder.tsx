@@ -40,6 +40,7 @@ import {
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
+import { serializeWithLocalDates } from "@/public/date-serializer"
 
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
@@ -49,7 +50,7 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ event: event }),
+      body: serializeWithLocalDates({ event: event }),
       cache: "no-store",
     });
 
@@ -68,13 +69,16 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ startDate: event.dtstart, endDate: event.dtend }),
+        body: serializeWithLocalDates({
+          startDate: event.dtstart,
+          endDate: event.dtend
+        }),
         cache: "no-store",
       });
     }
 
   } catch (e) {
-    throw new Error(`Error during modify event: ${(e as Error).message}`);
+    throw new Error(`Error during adding event: ${(e as Error).message}`);
   }
   return true;
 }
@@ -132,7 +136,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   isMobile,
   resource,
 }) => {
-  console.log("risorse", resource);
+  console.log("eventAdder risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
   const [availableResources, setAvailableResources] = useState<ResourceModel[]>([]);
   const [selectedResource, setSelectedResource] = useState<ResourceModel | undefined>(undefined);
@@ -474,7 +478,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
       } as SelfieEvent;
 
       try {
-        console.log("Saving event with rrule:", newEvent.rrule);
+        console.log("aggiungo la risorsa _id", selectedResource?._id);
         const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
           console.log("Event created successfully");
@@ -558,8 +562,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
               <div className={`${isMobile ? "max-w-fit" : "flex gap-4 mb-4 "}`}>
                 <EventDatePicker
                   isAllDay={allDayEvent}
-                  startDate={eventData.dtstart as Date}
-                  endDate={eventData.dtend as Date}
                   onChange={handleDateChange}
                   setDateError={setDateError}
                 />
@@ -645,7 +647,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 </Select>
                 {availableResources.length === 0 && (
                   <p className="text-warning text-sm mt-1">
-                    Nessuna risorsa disponibile per il periodo selezionato
+                    There are not resources available for choosen period
                   </p>
                 )}
               </div>
@@ -810,7 +812,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
             </ModalBody>
             <ModalFooter>
               <Button color="primary" type="submit" onClick={handleSave}>
-                Salva
+                Save
               </Button>
             </ModalFooter>
           </form>
