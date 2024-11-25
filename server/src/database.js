@@ -607,13 +607,11 @@ export async function createDataBase(uri) {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    console.log("bookId da rimuovere: ", bookId);
     const result = await resourceModel.findOneAndUpdate(
       { "used._id": new mongoose.Types.ObjectId(bookId) },
       { $pull: { used: { _id: new mongoose.Types.ObjectId(bookId) } } },
       { new: true }
     );
-    console.log("dopo findOneAndUpdate", result);
     await result.save();
 
     if (!result) {
@@ -712,7 +710,6 @@ export async function createDataBase(uri) {
   };
 
   const createEvent = async (uid, event) => {
-    // Validazione iniziale dell'utente
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -722,29 +719,19 @@ export async function createDataBase(uri) {
       throw new Error("Event must have a date");
 
     try {
-      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      // Aggiungi la timezone ai campi temporali
-      console.log("timezone", userTimeZone);
-
-      // Creazione evento
       const addedEvent = await eventModel.create({ ...event, uid: uid });
       if (!addedEvent) throw new Error("Failed to create event");
 
-
-      // Aggiungi l'evento all'utente creatore
       await userModel.findByIdAndUpdate(
         uid,
         { $push: { events: addedEvent._id } },
         { new: true },
       );
 
-      // Gestione partecipanti
       if (addedEvent.participants && addedEvent.participants.length > 0) {
         var notifications = [];
         for (const participant of addedEvent.participants) {
           try {
-            // Usa findOneAndUpdate invece di find + save
             const updated = await userModel.findByIdAndUpdate(
               participant,
               { $push: { invitedEvents: addedEvent._id } },
@@ -844,14 +831,12 @@ export async function createDataBase(uri) {
 
   // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
   const dodgeEvent = async (uid, eventId) => {
-    console.log("guma is gliding");
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
     const event = await eventModel.findById(eventId);
     if (!event) throw new Error("Event not found");
 
-    // togliere l'evento dalla lista degli eventi dello user
     const res = await userModel.findByIdAndUpdate(uid, {
       $pull: { participatingEvents: eventId },
     });
@@ -859,7 +844,7 @@ export async function createDataBase(uri) {
     return res;
   };
 
-  // accetto la proposta dell'evento [componente participateevent]
+  // accetto la proposta dell'evento [componente participateEvent]
   const participateEvent = async (uid, eventId) => {
     console.log("prova");
     const user = await userModel.findById(uid);
@@ -885,7 +870,7 @@ export async function createDataBase(uri) {
     return user.invitedEvents;
   };
 
-  // rifiuto la proposta dell'evento [componente participateevent]
+  // rifiuto la proposta dell'evento [componente participateEvent]
   const rejectEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
