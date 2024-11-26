@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Input,
@@ -55,6 +55,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const [errorMessageNotification, setErrorMessageNotification] = useState("");
   const [errorMessageDelete, setErrorMessageDelete] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [resources, setResources] = useState<ResourceModel[] | null>(props.resource);
   const validateEmail = (email: string) =>
     email.match(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,4}$/i);
 
@@ -63,6 +64,30 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
     return validateEmail(email) ? false : true;
   }, [email]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (resourceResponse) {
+      timeoutId = setTimeout(() => {
+        setResourceResponse("");
+      }, 3500);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [resourceResponse]);
+
+  const fetchAllResources = async () => {
+    try {
+      const res = await fetch("/api/events/resource/all");
+      if (res.ok) {
+        const data = await res.json();
+        setResources(data);
+      }
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+    }
+  };
 
   const handleSave = async (type: string) => {
     setErrorMessageNotification(""); // Resetta il messaggio di errore all'inizio
@@ -170,6 +195,32 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     });
   };
 
+  const handleDeleteResource = async (name: string) => {
+    try {
+      const res = await fetch("/api/events/resource/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: name }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Update local resources by removing the deleted resource
+        setResources(prevResources =>
+          prevResources ? prevResources.filter(resource => resource.name !== name) : null
+        );
+        setResourceResponse(data.message || "Resource deleted successfully");
+      } else {
+        setResourceResponse(data.message || "Failed to delete resource");
+      }
+    } catch (error) {
+      console.error("Error deleting resource:", error);
+      setResourceResponse("An error occurred while deleting the resource");
+    }
+  };
+
   const handleNewResource = async (name: string) => {
     const res = await fetch("/api/events/resource", {
       method: "PUT",
@@ -181,8 +232,19 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
           name: name,
         }
       }),
-    })
-    setResourceResponse(await res.json());
+    });
+
+    const responseData = await res.json();
+
+    if (res.ok) {
+      setResourceResponse(responseData.message || "Resource added successfully");
+      // Fetch updated resources after adding a new one
+      await fetchAllResources();
+      return responseData.resource;
+    } else {
+      setResourceResponse("Failed to add resource, you need to insert a name");
+      return null;
+    }
   };
 
   return (
@@ -379,13 +441,14 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
         <ImportExportCal events={props.events} />
 
-        <div>
+        <div className="mb-4">
           <ResourceHandler
             isAdmin={props.isAdmin}
             handleNewResource={handleNewResource}
-            allResources={props.resource}
+            handleDeleteResource={handleDeleteResource}
+            allResources={resources}
           />
-          <span> {resourceResponse} </span>
+          <span className="transition-opacity duration-500 text-green-400">{resourceResponse}</span>
         </div>
 
         <Button color="danger" onPress={onOpen} className="w-full">

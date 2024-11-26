@@ -165,8 +165,8 @@ function createCalendarRouter(db, sendNotification) {
   router.put("/resource", cookieJwtAuth, async function(req, res) {
     try {
       const newResource = req.body.resource;
-      const result = await db.addResource(newResource, req.user._id);
-      return res.status(201).json({ message: "Resource added succesfully" + result });
+      await db.addResource(newResource, req.user._id);
+      return res.status(201).json({ message: "Resource added succesfully" });
     } catch (e) {
       return res.status(500).json({ message: "Server error, " + e.message });
     }
