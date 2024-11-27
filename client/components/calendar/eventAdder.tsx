@@ -40,7 +40,6 @@ import {
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
-import { serializeWithLocalDates } from "@/public/date-serializer"
 
 async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
   try {
@@ -50,7 +49,7 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
       headers: {
         "Content-Type": "application/json",
       },
-      body: serializeWithLocalDates({ event: event }),
+      body: JSON.stringify({ event: event }),
       cache: "no-store",
     });
 
@@ -69,7 +68,7 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
         headers: {
           "Content-Type": "application/json",
         },
-        body: serializeWithLocalDates({
+        body: JSON.stringify({
           startDate: event.dtstart,
           endDate: event.dtend
         }),
