@@ -197,17 +197,17 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
   const handleDeleteResource = async (name: string) => {
     try {
-      const res = await fetch("/api/events/resource/delete", {
+      const res = await fetch("/api/events/admin/resource", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ name: name }),
+        cache: "no-store",
       });
       const data = await res.json();
 
       if (res.ok) {
-        // Update local resources by removing the deleted resource
         setResources(prevResources =>
           prevResources ? prevResources.filter(resource => resource.name !== name) : null
         );

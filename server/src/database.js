@@ -14,7 +14,6 @@ import { resourceSchema } from "./models/event-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
-import e from "express";
 
 export async function createDataBase(uri) {
   // creating a model

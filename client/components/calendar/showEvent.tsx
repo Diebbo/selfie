@@ -579,7 +579,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
         throw new Error(`Failed to modify event: ${res.statusText}`);
       }
 
-      console.log("bha??", updatedEvent?.resource);
       handleResource(updatedEvent, selectedEvent);
 
       handleClose();

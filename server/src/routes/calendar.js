@@ -211,7 +211,7 @@ function createCalendarRouter(db, sendNotification) {
   });
 
   // route per cancellare totalmente una risorsa se admin
-  router.delete("/resource/delete", cookieJwtAuth, async function(req, res) {
+  router.delete("/admin/resource", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const resourceName = req.body.name;
 
