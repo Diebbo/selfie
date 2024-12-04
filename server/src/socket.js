@@ -139,7 +139,7 @@ export function createWebSocket(io, database, sendNotification) {
           const payload = {
             title: "📨 New Message from " + sender.username,
             body: messageToSend.message,
-            link: "/chats/" + sender.username,
+            link: "chats/" + sender.username,
           };
           await sendNotification(user, payload);
         }
