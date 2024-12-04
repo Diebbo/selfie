@@ -90,11 +90,11 @@ function createCalendarRouter(db, sendNotification) {
     const response = req.body.response === "accept" ? true : false;
 
     try {
-      console.log("prova");
       var result = await (response
         ? db.participateEvent(uid, eventId)
         : db.rejectEvent(uid, eventId));
     } catch (e) {
+      console.error(`error while ${response} an event:`, e);
       return res.status(400).json({ message: e.message });
     }
 
