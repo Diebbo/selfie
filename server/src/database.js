@@ -845,7 +845,6 @@ export async function createDataBase(uri) {
 
   // accetto la proposta dell'evento [componente participateEvent]
   const participateEvent = async (uid, eventId) => {
-    console.log("prova");
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -853,18 +852,18 @@ export async function createDataBase(uri) {
     if (!event) throw new Error("Event not found");
 
     // Check if user is already participating
-    if (user.participatingEvents.includes(eventId))
+    if (user.participatingEvents?.includes(eventId))
       throw new Error("User is already participating in this event");
-    else if (!user.invitedUser.includes(eventId))
+    else if (!user.invitedEvents?.includes(eventId))
       throw new Error("User is not invited to the event");
+
+
+    if (!user.participatingEvents) user.participatingEvents = [];
     user.participatingEvents.push(eventId);
     user.invitedEvents = user.invitedEvents.filter(
       (e) => e.toString() !== eventId.toString(),
     );
     await user.save();
-
-    //devo fare altro per mandare le notifiche dell'evento?
-    //non credo tanto l'evento c'è già nello user
 
     return user.invitedEvents;
   };
