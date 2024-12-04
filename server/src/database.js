@@ -74,7 +74,7 @@ export async function createDataBase(uri) {
     const payload = {
       title: "Verify your email",
       body: `Click here to verify your email:`,
-      link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
+      link: `verification?emailToken=${user.emailtoken}`,
     };
 
     return { dbuser: res, payload };

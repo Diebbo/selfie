@@ -216,7 +216,7 @@ export default function createNotificationWorker(db) {
       return;
     }
 
-    transporter.sendMail(mailOptions, function (error, info) {
+    transporter.sendMail(mailOptions, function(error, info) {
       if (error) {
         console.error("Error sending email:", error);
       } else {
@@ -264,7 +264,7 @@ export default function createNotificationWorker(db) {
         const emailPayload = {
           email: user.email,
           title: payload.title,
-          body: `${payload.body}\n\nFor more information: ${payload.link}`,
+          body: `${payload.body}\n\n<a href="http://site232454.tw.cs.unibo/${payload.link}>Click here to view</a>`,
         };
 
         await sendEmailNotification(emailPayload);
