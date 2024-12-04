@@ -73,7 +73,7 @@ export const Register = () => {
 
   return (
     <>
-      <div className="text-center text-[25px] font-bold mb-6">Register</div>
+      <div className="mb-6 font-bold text-center text-[25px]">Register</div>
 
       <Stepper currentStep={currentStep} steps={steps} goToStep={goToStep} />
 
@@ -85,7 +85,7 @@ export const Register = () => {
         {({ values, errors, touched, handleChange, handleSubmit }) => (
           <>
             {currentStep === 0 && (
-              <div className="flex flex-col w-1/2 gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 w-1/2">
                 <div className="flex flex-row gap-4">
                   <Input
                     variant="bordered"
@@ -128,7 +128,7 @@ export const Register = () => {
               </div>
             )}
             {currentStep === 1 && (
-              <div className="flex flex-col w-1/2 gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 w-1/2">
                 <Input
                   variant="bordered"
                   label="Password"
@@ -152,8 +152,12 @@ export const Register = () => {
                 <Input
                   variant="bordered"
                   label="Birth Date"
-                  type="date"
-                  value={new Date(values.birthDate).toString()}
+                  type="Date"
+                  value={
+                    values.birthDate instanceof Date
+                      ? values.birthDate.toISOString().split("T")[0]
+                      : values.birthDate
+                  }
                   isInvalid={!!errors.birthDate && !!touched.birthDate}
                   onChange={handleChange("birthDate")}
                 />
@@ -168,7 +172,7 @@ export const Register = () => {
               </div>
             )}
             {currentStep === 2 && (
-              <div className="flex flex-col w-1/2 gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 w-1/2">
                 <Input
                   variant="bordered"
                   label="Address"
@@ -215,9 +219,7 @@ export const Register = () => {
             )}
 
             {error && (
-              <div className="font-bold mt-4 text-sm text-red-500">
-                {error}
-              </div>
+              <div className="mt-4 text-sm font-bold text-red-500">{error}</div>
             )}
             <div className="flex flex-row gap-4">
               <Button
@@ -246,13 +248,8 @@ export const Register = () => {
         )}
       </Formik>
 
-      <div className="font-light text-slate-400 mt-4 text-sm">
-        <Button
-          variant="flat"
-          color="secondary"
-          as={Link}
-          href="/login"
-        >
+      <div className="mt-4 text-sm font-light text-slate-400">
+        <Button variant="flat" color="secondary" as={Link} href="/login">
           Already have an account? <b>Login</b>
         </Button>
       </div>
