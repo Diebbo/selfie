@@ -12,27 +12,10 @@ With Selfie, university students can effortlessly plan their private, social, an
 - Simple (exam on June 12th at 11 AM) or more structured (study theory from May 10-21, prepare the project from May 22 to June 5, group demo on June 6, debugging from June 7-11, written exam preparation, followed by the written exam on June 12). Often, these events overlap.
 
 
-## Installation
-To install the application, follow these steps:
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/selfie.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd client
-   ```
-3. Install the dependencies:
-   ```bash
-   npm install
-   ```
-you will need to do the same steps for the server folder
-
-## Usage
+## Develop
 To start using the application:
 
-1. Run the application:
+1. Run the application (both client and server):
    ```bash
    npm run dev
    ```
@@ -40,9 +23,9 @@ To start using the application:
    ```
    http://localhost:3000
    ```
-3. Start capturing and editing your selfies!
+3. Contribute to the project.
 
-> **Note:** 3000 is default client and 3001 is default server port, you can change them in the .env file
+> **Note:** 3000 is default client and 3001 is default server port, you can change them in the .env file. You will also need to add others environment variables in the .env file.
 
 ## Contributing
 We welcome contributions from the community! To contribute, please follow these steps:
