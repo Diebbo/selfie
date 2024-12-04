@@ -333,24 +333,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
                 />
               )}
 
-              <Switch
-                className="w-fit min-w-[120px] mb-1"
-                isSelected={notifications}
-                onValueChange={setNotifications}
-              >
-                Abilita Notifiche
-              </Switch>
-              <NotificationMenu
-                value={notifications}
-                notification={notificationData as SelfieNotification}
-                onChange={handleInputChange}
-                startEventDate={event?.dtstart as Date}
-                notificationError={notificationError}
-                setNotificationError={setNotificationError}
-                isAllDay={event?.allDay as boolean}
-              />
-
-
             </CardBody>
           </Card>
         </ModalBody>
