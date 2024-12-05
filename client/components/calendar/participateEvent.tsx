@@ -10,28 +10,16 @@ import {
   Button,
   Card,
   Input,
-  Switch,
   CardBody,
   Skeleton,
   DateRangePicker,
 } from "@nextui-org/react";
 import {
-  SelfieEvent, SelfieNotification,
+  SelfieEvent,
 } from "@/helpers/types";
-import NotificationMenu from "@/components/calendar/notificationMenu";
 import { useRouter } from 'next/navigation';
 import { parseDateTime } from "@internationalized/date";
 
-const initialNotification = {
-  title: "",
-  description: "",
-  type: "",
-  repetition: {
-    freq: "",
-    interval: 0,
-  },
-  fromDate: new Date(),
-};
 
 interface ParticipantContentProps {
   event: SelfieEvent;
@@ -43,10 +31,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
   const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
   const [participants, setParticipants] = useState<string[]>([""]);
-  const [notificationError, setNotificationError] = useState(false);
-  const [notifications, setNotifications] = useState(false);
-  const [notificationData, setNotificationData] =
-    useState<Partial<SelfieNotification>>(initialNotification);
   const [trueParticipant, setTrueParticipant] = useState(false);
   const eventid = event?._id;
 
@@ -57,47 +41,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
     router.refresh();
     router.push("/calendar");
   };
-
-  const handleInputChange = (
-    e:
-      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-      | { target: { name: string; value: any } },
-  ) => {
-    const { name, value } = e.target;
-
-    const [_, notificationField, repetitionField] = name.split(".");
-
-    setNotificationData((prev: any) => {
-      if (notificationField === "repetition") {
-        return {
-          ...prev,
-          notification: {
-            ...prev.notification,
-            repetition: {
-              ...prev.notification.repetition,
-              [repetitionField]: value,
-            },
-          },
-        };
-      }
-      if (notificationField === "fromDate") {
-        return {
-          ...prev,
-          notification: {
-            ...prev.notification,
-            fromDate: new Date(value).toISOString(),
-          },
-        };
-      }
-      return {
-        ...prev,
-        notification: {
-          ...prev.notification,
-          [notificationField]: value,
-        },
-      };
-    });
-  }
 
   //da rivedere e mettere serverside, dopo il merge con develop
   useEffect(() => {
@@ -157,7 +100,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({ owner, event, p
 
       const link = `/calendar/${eventid}/${participant}`;
 
-      const del = await fetch(`/api/users/inbox/link`, {
+      await fetch(`/api/users/inbox/link`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
