@@ -119,7 +119,7 @@ export interface SelfieEvent {
   };
   description: String;
   URL: String;
-  participants: string[];
+  participants: Partial<Person>[];
   notification: SelfieNotification;
   _id: string;
   resource: string;

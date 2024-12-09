@@ -105,7 +105,7 @@ const initialEvent = {
   location: "",
   description: "",
   URL: "",
-  participants: [] as string[],
+  participants: [] as Partial<Person>[],
   isRrule: false,
   rrule: {
     freq: "weekly" as FrequencyType,
@@ -158,7 +158,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useReload();
   const availableFriends = friends.filter(
-    (friend) => !eventData.participants?.includes(friend._id),
+    (friend) => !eventData.participants?.map(p => p?._id).includes(friend._id),
   );
 
   useEffect(() => {
@@ -416,7 +416,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const handleParticipantSelect = (friend: Person) => {
     setEventData((prev) => ({
       ...prev,
-      participants: [...(prev.participants || []), friend._id],
+      participants: [...(prev.participants || []), { _id: friend._id } as Partial<Person>],
     }));
     console.log(eventData.participants);
   };
@@ -425,7 +425,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
     setEventData((prev) => ({
       ...prev,
       participants: (prev.participants || []).filter(
-        (participantId) => participantId !== friendToRemove._id,
+        (p) => p?._id !== friendToRemove._id,
       ),
     }));
   };
@@ -744,15 +744,15 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     >
                       {eventData.participants?.length ? (
                         eventData.participants
-                          .map((participantId) => {
+                          .map((p) => {
                             const participant = friends.find(
-                              (friend) => friend._id === participantId,
+                              (friend) => friend._id === p?._id,
                             );
                             if (!participant) return null;
 
                             return (
                               <DropdownItem
-                                key={participantId}
+                                key={participant._id}
                                 className="py-2"
                                 endContent={
                                   <Button
