@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { useDisclosure, Card, CardBody } from "@nextui-org/react";
 import Wave from "react-wavify";
-import { BookOpenIcon, BeakerIcon } from "@heroicons/react/24/solid";
+
+import { BookOpenText, Coffee } from "lucide-react";
 import usePomodoroTimer from "../hooks/usePomodoroTimer";
 import TimerDisplay from "./TimerDisplay";
 import Controls from "./Controls";
@@ -74,7 +75,7 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
         backgroundColor = "#FFF3E2";
         borderColor = "#FFD700";
         icon = (
-          <BookOpenIcon
+          <BookOpenText
             style={{ width: 20, height: 20, marginRight: 10 }}
             className="text-black"
           />
@@ -85,7 +86,7 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
         backgroundColor = "#F0FFF0";
         borderColor = "#32CD32";
         icon = (
-          <BeakerIcon
+          <Coffee
             style={{ width: 20, height: 20, marginRight: 10 }}
             className="text-black"
           />
@@ -96,7 +97,7 @@ const Pomodoro: React.FC<PomodoroProps> = ({ settings }) => {
         backgroundColor = "#FFDAB9";
         borderColor = "#FF6347";
         icon = (
-          <BeakerIcon
+          <Coffee
             style={{ width: 20, height: 20, marginRight: 10 }}
             className="text-black"
           />
