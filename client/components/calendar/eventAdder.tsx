@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { areIntervalsOverlapping, parseISO } from 'date-fns';
-import { Interval } from 'date-fns';
+import React, { useState, useEffect, ReactElement } from "react";
+import { areIntervalsOverlapping, parseISO } from "date-fns";
+import { Interval } from "date-fns";
 import {
   Button,
   Modal,
@@ -41,7 +41,10 @@ import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
 import { useReload } from "./contextStore";
 
-async function createEvent(event: SelfieEvent, resourceId: string | undefined): Promise<boolean> {
+async function createEvent(
+  event: SelfieEvent,
+  resourceId: string | undefined,
+): Promise<boolean> {
   try {
     console.log("evento aggiunto", event);
     var res = await fetch(`${EVENTS_API_URL}`, {
@@ -70,12 +73,11 @@ async function createEvent(event: SelfieEvent, resourceId: string | undefined): 
         },
         body: JSON.stringify({
           startDate: event.dtstart,
-          endDate: event.dtend
+          endDate: event.dtend,
         }),
         cache: "no-store",
       });
     }
-
   } catch (e) {
     throw new Error(`Error during adding event: ${(e as Error).message}`);
   }
@@ -137,11 +139,17 @@ const EventAdder: React.FC<EventAdderProps> = ({
 }) => {
   console.log("eventAdder risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
-  const [availableResources, setAvailableResources] = useState<ResourceModel[]>([]);
-  const [selectedResource, setSelectedResource] = useState<ResourceModel | undefined>(undefined);
+  const [availableResources, setAvailableResources] = useState<ResourceModel[]>(
+    [],
+  );
+  const [selectedResource, setSelectedResource] = useState<
+    ResourceModel | undefined
+  >(undefined);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<
+    LocationSuggestion[]
+  >([]);
   const [repeatEvent, setRepeatEvent] = useState(false);
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
@@ -150,7 +158,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [notificationError, setNotificationError] = useState(false);
   const { reloadEvents, setReloadEvents } = useReload();
   const availableFriends = friends.filter(
-    (friend) => !eventData.participants?.includes(friend._id)
+    (friend) => !eventData.participants?.includes(friend._id),
   );
 
   useEffect(() => {
@@ -177,32 +185,43 @@ const EventAdder: React.FC<EventAdderProps> = ({
       return;
     }
 
-    const available = resource.filter(r =>
-      checkResourceAvailability(r, eventData.dtstart as Date, eventData.dtend as Date)
+    const available = resource.filter((r) =>
+      checkResourceAvailability(
+        r,
+        eventData.dtstart as Date,
+        eventData.dtend as Date,
+      ),
     );
     console.log("available: ", available);
     setAvailableResources(available);
   }, [eventData.dtstart, eventData.dtend, resource]);
 
   // Risorsa è disponibile nel periodo selezionato
-  const checkResourceAvailability = (resource: ResourceModel, startDate: Date, endDate: Date): boolean => {
-    return !resource.used.some(usage => {
+  const checkResourceAvailability = (
+    resource: ResourceModel,
+    startDate: Date,
+    endDate: Date,
+  ): boolean => {
+    return !resource.used.some((usage) => {
       const usageStart = new Date(usage.startTime);
       const usageEnd = new Date(usage.endTime);
-      return (
-        checkOverlap(startDate, endDate, usageStart, usageEnd)
-      );
+      return checkOverlap(startDate, endDate, usageStart, usageEnd);
     });
   };
 
-  function checkOverlap(start1: string | Date, end1: string | Date, start2: string | Date, end2: string | Date): boolean {
+  function checkOverlap(
+    start1: string | Date,
+    end1: string | Date,
+    start2: string | Date,
+    end2: string | Date,
+  ): boolean {
     const interval1: Interval = {
       start: start1 instanceof Date ? start1 : parseISO(start1),
-      end: end1 instanceof Date ? end1 : parseISO(end1)
+      end: end1 instanceof Date ? end1 : parseISO(end1),
     };
     const interval2: Interval = {
       start: start2 instanceof Date ? start2 : parseISO(start2),
-      end: end2 instanceof Date ? end2 : parseISO(end2)
+      end: end2 instanceof Date ? end2 : parseISO(end2),
     };
 
     return areIntervalsOverlapping(interval1, interval2);
@@ -346,14 +365,17 @@ const EventAdder: React.FC<EventAdderProps> = ({
     setEventData((prev) => {
       //keep resource if possible
       if (prev.resource) {
-        const selectedResource = resource.find(r => r.name === prev.resource);
-        if (selectedResource && !checkResourceAvailability(selectedResource, startDate, endDate)) {
+        const selectedResource = resource.find((r) => r.name === prev.resource);
+        if (
+          selectedResource &&
+          !checkResourceAvailability(selectedResource, startDate, endDate)
+        ) {
           //remove old resource
           return {
             ...prev,
             dtstart: startDate,
             dtend: endDate,
-            resource: ""
+            resource: "",
           };
         }
       }
@@ -361,7 +383,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
       return {
         ...prev,
         dtstart: startDate,
-        dtend: endDate
+        dtend: endDate,
       };
     });
   };
@@ -399,12 +421,11 @@ const EventAdder: React.FC<EventAdderProps> = ({
     console.log(eventData.participants);
   };
 
-
   const handleRemoveParticipant = (friendToRemove: Person) => {
     setEventData((prev) => ({
       ...prev,
       participants: (prev.participants || []).filter(
-        (participantId) => participantId !== friendToRemove._id
+        (participantId) => participantId !== friendToRemove._id,
       ),
     }));
   };
@@ -450,7 +471,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
     if (rrule.freq === "monthly") {
       // Must have either bymonthday or byday with position, not both
       if (rrule.bymonthday && rrule.byday) return false;
-      if (!rrule.bymonthday && (!rrule.byday || !rrule.byday[0].position)) return false;
+      if (!rrule.bymonthday && (!rrule.byday || !rrule.byday[0].position))
+        return false;
     }
 
     return true;
@@ -504,7 +526,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
         <span className="text-2xl font-bold text-white">+</span>
       </Button>
 
-
       <Modal
         isOpen={isOpen}
         onClose={handleExit}
@@ -529,7 +550,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 className={`${isMobile ? "" : "mb-4"}`}
               />
 
-              {isMobile &&
+              {isMobile && (
                 <Switch
                   isSelected={allDayEvent}
                   onValueChange={setAllDayEvent}
@@ -540,7 +561,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       "justify-between rounded-lg gap-2 p-2 border-2 border-transparent",
                     ),
                     wrapper: "p-0 h-4 overflow-visible",
-                    thumb: cn("w-5 h-5 border-2 shadow-lg",
+                    thumb: cn(
+                      "w-5 h-5 border-2 shadow-lg",
                       "group-data-[hover=true]:border-secondary",
                       //selected
                       "group-data-[selected=true]:ml-6",
@@ -551,12 +573,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   }}
                 >
                   <div className="flex flex-col gap-1">
-                    <p className="text-medium">
-                      Tutto il giorno
-                    </p>
+                    <p className="text-medium">Tutto il giorno</p>
                   </div>
                 </Switch>
-              }
+              )}
 
               <div className={`${isMobile ? "max-w-fit" : "flex gap-4 mb-4 "}`}>
                 <EventDatePicker
@@ -565,16 +585,16 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   setDateError={setDateError}
                 />
 
-                {!isMobile && <Switch
-                  isSelected={allDayEvent}
-                  onValueChange={() => {
-                    setAllDayEvent(!allDayEvent);
-                  }}
-                >
-                  All Day Long
-                </Switch>
-                }
-
+                {!isMobile && (
+                  <Switch
+                    isSelected={allDayEvent}
+                    onValueChange={() => {
+                      setAllDayEvent(!allDayEvent);
+                    }}
+                  >
+                    All Day Long
+                  </Switch>
+                )}
               </div>
               <div className="flex flex-wrap gap-4 ">
                 <div className="flex items-center gap-4 w-full md:w-auto max-h-[50px]">
@@ -583,9 +603,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     isSelected={repeatEvent}
                     onValueChange={handleRepeatChange}
                   >
-                    <span className="pl-2">
-                      Repeat
-                    </span>
+                    <span className="pl-2">Repeat</span>
                   </Switch>
                   <RepetitionMenu
                     value={repeatEvent}
@@ -627,19 +645,30 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 <Select
                   label="Resources Avaiable"
                   placeholder="Select a resource"
-                  selectedKeys={eventData.resource ? new Set([eventData.resource.toString()]) : new Set()}
+                  selectedKeys={
+                    eventData.resource
+                      ? new Set([eventData.resource.toString()])
+                      : new Set()
+                  }
                   onSelectionChange={(keys) => {
                     const selectedKey = Array.from(keys)[0]?.toString() || "";
-                    setSelectedResource(availableResources.find(res => res.name === selectedKey));
-                    setEventData(prev => ({
+                    setSelectedResource(
+                      availableResources.find(
+                        (res) => res.name === selectedKey,
+                      ),
+                    );
+                    setEventData((prev) => ({
                       ...prev,
-                      resource: selectedKey
+                      resource: selectedKey,
                     }));
                   }}
                   className={`${isMobile ? "" : "mb-4"}`}
                 >
                   {availableResources.map((res) => (
-                    <SelectItem key={res.name.toString()} value={res.name.toString()}>
+                    <SelectItem
+                      key={res.name.toString()}
+                      value={res.name.toString()}
+                    >
                       {res.name.toString()}
                     </SelectItem>
                   ))}
@@ -702,7 +731,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 <div className="flex gap-2 w-full">
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button variant="flat" className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}>
+                      <Button
+                        variant="flat"
+                        className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}
+                      >
                         Invited ({eventData.participants?.length || 0})
                       </Button>
                     </DropdownTrigger>
@@ -713,7 +745,9 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       {eventData.participants?.length ? (
                         eventData.participants
                           .map((participantId) => {
-                            const participant = friends.find(friend => friend._id === participantId);
+                            const participant = friends.find(
+                              (friend) => friend._id === participantId,
+                            );
                             if (!participant) return null;
 
                             return (
@@ -725,7 +759,9 @@ const EventAdder: React.FC<EventAdderProps> = ({
                                     size="sm"
                                     color="danger"
                                     variant="light"
-                                    onPress={() => handleRemoveParticipant(participant)}
+                                    onPress={() =>
+                                      handleRemoveParticipant(participant)
+                                    }
                                   >
                                     Remove
                                   </Button>
@@ -750,9 +786,9 @@ const EventAdder: React.FC<EventAdderProps> = ({
                               </DropdownItem>
                             );
                           })
-                          .filter((item): item is JSX.Element => item !== null)
+                          .filter((item) => !!item)
                       ) : (
-                        <DropdownItem className="text-default-400">
+                        <DropdownItem className="text-default-400" key="none">
                           None invited yet
                         </DropdownItem>
                       )}
