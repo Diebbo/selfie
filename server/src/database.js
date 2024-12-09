@@ -836,11 +836,15 @@ export async function createDataBase(uri) {
     const event = await eventModel.findById(eventId);
     if (!event) throw new Error("Event not found");
 
-    const res = await userModel.findByIdAndUpdate(uid, {
+    const userRes = await userModel.findByIdAndUpdate(uid, {
       $pull: { participatingEvents: eventId },
     });
 
-    return res;
+    const eventRes = await eventModel.findByIdAndUpdate(eventId, {
+      $pull: { participants: uid.toString() },
+    });
+
+    return { userRes, eventRes };
   };
 
   // accetto la proposta dell'evento [componente participateEvent]
