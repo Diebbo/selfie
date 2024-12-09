@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useContext } from "react";
-import {
-  DateRangePicker,
-  RangeValue,
-  DateValue,
-} from "@nextui-org/react";
+import { DateRangePicker, RangeValue, DateValue } from "@nextui-org/react";
 import { mobileContext } from "./contextStore";
-import { getLocalTimeZone, parseAbsoluteToLocal, parseDateTime, TimeFields } from "@internationalized/date";
-
+import {
+  getLocalTimeZone,
+  parseAbsoluteToLocal,
+  parseDateTime,
+  TimeFields,
+} from "@internationalized/date";
 
 export const getDefaultDateRange = (isAllDay: boolean) => {
   const today = new Date();
@@ -45,7 +45,7 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
 }) => {
   const { isMobile } = useContext(mobileContext) as any;
 
-  const handleDateRangeChange = (value: RangeValue<DateValue>) => {
+  const handleDateRangeChange = (value: RangeValue<DateValue> | null) => {
     if (value?.start && value?.end) {
       const start: TimeFields = { hour: 0, minute: 0 };
       const end: TimeFields = { hour: 23, minute: 59 };
@@ -64,7 +64,6 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
       }
       console.log("ma questo sono sapotite", startDate, endDate);
 
-
       if (startDate.getTime() > endDate.getTime()) {
         setDateError(true);
         return;
@@ -76,14 +75,14 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
     }
   };
 
-
   return (
     <DateRangePicker
       label="Event duration"
-      className={`${isMobile
-        ? "w-full max-w-[95vw] mx-auto flex flex-col space-y-2 overflow-hidden"
-        : "max-w-[430px] flex flex-row space-x-2"
-        }`}
+      className={`${
+        isMobile
+          ? "w-full max-w-[95vw] mx-auto flex flex-col space-y-2 overflow-hidden"
+          : "max-w-[430px] flex flex-row space-x-2"
+      }`}
       isRequired
       hideTimeZone
       visibleMonths={isMobile ? 1 : 2}
@@ -95,4 +94,3 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
 };
 
 export default EventDatePicker;
-

@@ -1,12 +1,7 @@
 import React from "react";
 import { Button } from "@nextui-org/react";
-import {
-  PlayIcon,
-  PauseIcon,
-  CogIcon,
-  ForwardIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/solid";
+
+import { Cog, Play, Pause, SkipForward, RotateCcw } from "lucide-react";
 
 interface ControlsProps {
   isRunning: boolean;
@@ -33,19 +28,20 @@ const Controls: React.FC<ControlsProps> = ({
   >
     <Button onClick={toggleRunning}>
       {isRunning ? (
-        <PauseIcon style={{ width: 20, height: 20 }} />
+        <Pause size={20} strokeWidth={1.5} />
       ) : (
-        <PlayIcon style={{ width: 20, height: 20 }} />
+        <Play size={20} strokeWidth={1.5} />
       )}
     </Button>
     <Button onClick={handleSkip}>
-      <ForwardIcon style={{ width: 20, height: 20 }} />
+      <SkipForward size={20} strokeWidth={1.5} />
     </Button>
+
     <Button onClick={handleReset}>
-      <ArrowPathIcon style={{ width: 20, height: 20 }} />
+      <RotateCcw size={20} strokeWidth={1.5} />
     </Button>
     <Button onClick={onOpen}>
-      <CogIcon style={{ width: 20, height: 20 }} />
+      <Cog size={20} strokeWidth={1.5} />
     </Button>
   </div>
 );

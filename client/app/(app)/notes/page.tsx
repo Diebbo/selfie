@@ -1,7 +1,6 @@
 "use server";
 import { getNotes } from "@/actions/notes";
 import Content from "@/components/notes/content";
-import { NoteModel } from "@/helpers/types";
 
 // import { getSettings } from '@/actions/pomodoro';
 

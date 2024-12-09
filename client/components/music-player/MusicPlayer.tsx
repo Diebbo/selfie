@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Card, CardBody, Image, Button, Slider } from "@nextui-org/react";
 import { HeartIcon } from "./HeartIcon";
 import { Song } from "../../helpers/types";
-import AudioVisualizer from "./AudioVisualizer";
 import { VolumeDownIcon, VolumeUpIcon } from "./VolumeIcons";
 import Controls from "./Controls";
 import { musicPlayerService } from "./musicPlayerService";
