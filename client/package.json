@@ -10,6 +10,7 @@
   "dependencies": {
     "@nextui-org/react": "^2.6.5",
     "@tailwindcss/typography": "^0.5.15",
+    "@types/file-saver": "^2.0.7",
     "@types/leaflet": "^1.9.15",
     "@types/react-dom": "^19.0.1",
     "autoprefixer": "^10.4.20",
@@ -17,6 +18,7 @@
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.0.4",
     "file-saver": "^2.0.5",
+    "file-server": "^2.2.1",
     "formik": "^2.4.6",
     "framer-motion": "^11.13.1",
     "ical-generator": "^8.0.1",

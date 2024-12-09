@@ -1,7 +1,12 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext", "es2016"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext",
+      "es2016"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -20,7 +25,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -28,13 +35,13 @@
     "**/*.ts",
     "**/*.tsx",
     "helpers/**/*.ts",
+    "@/helpers/*.ts",
+    "@/helpers/*.d.ts",
     ".next/types/**/*.ts",
     "nextbuild/types/**/*.ts"
   ],
-  "exclude": ["node_modules"],
-  "typeRoots": [
-    "helpers/types.ts",
-    "./node_modules/@types",
-    "helpers/custom-types.d.ts"
-  ]
+  "exclude": [
+    "node_modules"
+  ],
+  "typeRoots": ["helpers/types.ts", "./node_modules/@types", "helpers/custom-types.d.ts"]
 }

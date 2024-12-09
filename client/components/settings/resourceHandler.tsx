@@ -94,7 +94,7 @@ const ResourceHandler: React.FC<ResourceHandlerProps> = ({
                         </DropdownItem>
                       ))
                     ) : (
-                      <DropdownItem>No resources available</DropdownItem>
+                      <DropdownItem key="none">No resources available</DropdownItem>
                     )}
                   </DropdownMenu>
                 </Dropdown>
