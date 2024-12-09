@@ -73,7 +73,7 @@ const NotesSidebar: React.FC<NotesSidebarProps> = ({
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
             variant="bordered"
-            defaultSelectedKeys={"date"}
+            aria-label="Sort notes"
           >
             <SelectItem key="date" value="date">
               Date
