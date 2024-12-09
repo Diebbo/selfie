@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
-import { DateValue, Input, Select, SelectItem } from "@nextui-org/react"; import { DatePicker } from "@nextui-org/react";
+import { DateValue, Input, Select, SelectItem } from "@nextui-org/react";
+import { DatePicker } from "@nextui-org/react";
 import { SelfieNotification } from "@/helpers/types";
 import { now, getLocalTimeZone } from "@internationalized/date";
-import { getDateParsed } from "./showEvent"
+import { getDateParsed } from "./showEvent";
 
 interface NotificationMenuProps {
   value: boolean;
@@ -23,7 +24,6 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
   notificationError,
   setNotificationError,
 }) => {
-
   useEffect(() => {
     console.log("nofitication check");
     setNotificationError(checkValidDate(value));
@@ -94,9 +94,17 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
         isRequired
         maxValue={getMaxDate()}
         hideTimeZone
-        onChange={(date) => handleNotificationChange("fromDate", date.toDate(getLocalTimeZone()))}
+        onChange={(date) =>
+          handleNotificationChange("fromDate", date?.toDate(getLocalTimeZone()))
+        }
         isInvalid={notificationError}
-        granularity={notification.repetition.freq == "minutely" ? "minute" : notification.repetition.freq == "hourly" ? "hour" : "day"}
+        granularity={
+          notification.repetition.freq == "minutely"
+            ? "minute"
+            : notification.repetition.freq == "hourly"
+              ? "hour"
+              : "day"
+        }
         errorMessage="You need to insert a date before the starts of the event"
       />
 
@@ -139,11 +147,12 @@ const NotificationMenu: React.FC<NotificationMenuProps> = ({
           label="Interval repetition"
           type="number"
           value={notification?.repetition?.interval?.toString() || ""}
-          onChange={(e) => handleNotificationChange("repetition.interval", e.target.value)}
+          onChange={(e) =>
+            handleNotificationChange("repetition.interval", e.target.value)
+          }
           placeholder="Set the frequency repetition"
         />
       </div>
-
     </div>
   );
 };

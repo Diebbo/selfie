@@ -3,8 +3,8 @@
 const nextConfig = {
   reactStrictMode: false,
   distDir: "nextbuild",
-  experimental: {
-  },
+
+  experimental: {},
   async rewrites() {
     return [
       {
