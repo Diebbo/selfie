@@ -18,7 +18,7 @@ declare global {
   }
 
   // Provide JSX support for custom elements
-  namespace JSX {
+  namespace React.JSX {
     interface IntrinsicElements {
       'project-component': React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLProjectComponentElement>,

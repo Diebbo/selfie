@@ -64,7 +64,7 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
           hideTimeZone
           showMonthAndYearPickers
           value={time}
-          onChange={(date: ZonedDateTime) => {
+          onChange={(date: ZonedDateTime | null) : void => {
             if (date) {
               setTime(date);
             }
