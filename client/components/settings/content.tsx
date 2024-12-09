@@ -268,6 +268,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 handleSave("avatar");
               }
             }}
+            description="premi enter per salvare"
             className="mr-3 w-full"
           />
         </div>
