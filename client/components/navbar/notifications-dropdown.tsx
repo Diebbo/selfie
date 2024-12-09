@@ -10,7 +10,7 @@ import {
 import React, { useEffect, useState, useRef } from "react";
 import { NotificationIcon } from "../icons/navbar/notificationIcon";
 import { io } from "socket.io-client";
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster, toast } from "react-hot-toast";
 import { CloseIcon } from "../icons/close-icon";
 import { getUser } from "@/actions/user";
 
@@ -44,7 +44,7 @@ export const NotificationsDropdown = () => {
       setNotifications(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error fetching notifications"
+        err instanceof Error ? err.message : "Error fetching notifications",
       );
     } finally {
       setIsLoading(false);
@@ -96,23 +96,30 @@ export const NotificationsDropdown = () => {
         });
 
         // Ascolta per nuove notifiche
-        socketRef.current.on("new_notification", (notification: Notification) => {
-          console.log("Received new notification", notification);
-          setNotifications((prev) => [notification, ...prev]);
-          
-          toast(
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-              <div className="p-4">
-                <h4 className="font-semibold text-gray-900 dark:text-white">{notification.title}</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{notification.body}</p>
-              </div>
-            </div>,
-            {
-              duration: 5000  ,
-              position: 'top-right',
-            }
-          );
-        });
+        socketRef.current.on(
+          "new_notification",
+          (notification: Notification) => {
+            console.log("Received new notification", notification);
+            setNotifications((prev) => [notification, ...prev]);
+
+            toast(
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                <div className="p-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    {notification.title}
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    {notification.body}
+                  </p>
+                </div>
+              </div>,
+              {
+                duration: 5000,
+                position: "top-right",
+              },
+            );
+          },
+        );
 
         // Gestione errori di connessione
         socketRef.current.on("connect_error", (error: any) => {
@@ -122,7 +129,7 @@ export const NotificationsDropdown = () => {
       } catch (error) {
         console.error("Error initializing socket:", error);
         setError(
-          error instanceof Error ? error.message : "Error initializing socket"
+          error instanceof Error ? error.message : "Error initializing socket",
         );
       } finally {
         setIsLoading(false);
@@ -158,7 +165,7 @@ export const NotificationsDropdown = () => {
       setNotifications([]); // Aggiorna lo stato locale dopo la cancellazione
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error clearing notifications"
+        err instanceof Error ? err.message : "Error clearing notifications",
       );
     }
   };
@@ -175,11 +182,11 @@ export const NotificationsDropdown = () => {
       }
 
       setNotifications((prev) =>
-        prev.filter((n) => n._id !== notification._id)
+        prev.filter((n) => n._id !== notification._id),
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error deleting notification"
+        err instanceof Error ? err.message : "Error deleting notification",
       );
     }
   };
@@ -187,21 +194,19 @@ export const NotificationsDropdown = () => {
   return (
     <div className="flex items-center">
       <div className="top-10">
-      <Toaster 
-        containerStyle={
-          {
-            marginTop: '5.5vh',
-          }
-        }
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: 'transparent',
-            boxShadow: 'none',
-            padding: '0',
-          },
-        }}
-    />
+        <Toaster
+          containerStyle={{
+            marginTop: "5.5vh",
+          }}
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "transparent",
+              boxShadow: "none",
+              padding: "0",
+            },
+          }}
+        />
       </div>
       <Dropdown
         className="overflow-y-auto scrollbar-hide"
@@ -229,6 +234,7 @@ export const NotificationsDropdown = () => {
         >
           <DropdownSection title="Notifiche" showDivider>
             <DropdownItem
+              key="clear-all"
               className="text-danger"
               color="danger"
               onClick={handleClearAll}
@@ -239,11 +245,17 @@ export const NotificationsDropdown = () => {
 
           <DropdownSection>
             {isLoading ? (
-              <DropdownItem>Loading...</DropdownItem>
+              <DropdownItem key="loading" className="px-2 py-2">
+                Loading...
+              </DropdownItem>
             ) : error ? (
-              <DropdownItem>Error: {error}</DropdownItem>
+              <DropdownItem key="error" className="px-2 py-2">
+                {error}
+              </DropdownItem>
             ) : notifications.length === 0 ? (
-              <DropdownItem>No notifications</DropdownItem>
+              <DropdownItem key="empty" className="px-2 py-2">
+                No notifications
+              </DropdownItem>
             ) : (
               notifications.map((notification, index) => (
                 <DropdownItem

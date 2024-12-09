@@ -21,7 +21,7 @@ import { PomodoroStatistics } from "./pomodoro-stats";
 import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
-import { ReactJSXElement } from "@emotion/react/types/jsx-namespace";
+import { ReactElement } from "react";
 import { useRouter } from "next/navigation";
 
 interface UserEvents {
@@ -38,7 +38,7 @@ interface ContentProps {
   user: Person;
 }
 
-export const Content = (props: ContentProps): ReactJSXElement => {
+export const Content = (props: ContentProps): ReactElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">(
     "today",
@@ -261,7 +261,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
         <div className="mt-6 gap-2 flex flex-col xl:max-w-md w-full">
           <WeatherCard position={user.position} />
 
-        <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
+          <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
             <PomodoroStatistics stats={user.pomodoro} />
           </div>
 

@@ -28,7 +28,7 @@ import {
   getLocalTimeZone,
 } from "@internationalized/date";
 import { Person, ResourceModel, SelfieEvent, People } from "@/helpers/types";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { useReload } from "./contextStore";
 import { useDebouncedCallback } from "use-debounce";
 
@@ -47,91 +47,99 @@ type State = {
 };
 
 type Action =
-  | { type: 'START_EDITING'; payload: SelfieEvent }
-  | { type: 'CANCEL_EDITING'; payload: SelfieEvent }
-  | { type: 'UPDATE_FIELD'; payload: { field: keyof SelfieEvent; value: any } }
-  | { type: 'UPDATE_DATE_RANGE'; payload: { start: Date; end: Date } }
-  | { type: 'UPDATE_NOTIFICATION'; payload: { field: string; value: any } }
-  | { type: 'UPDATE_GEO'; payload: Geo }
-  | { type: 'UPDATE_AVAILABLE_RESOURCES'; payload: ResourceModel[] }
-  | { type: 'RESET_STATE' };
+  | { type: "START_EDITING"; payload: SelfieEvent }
+  | { type: "CANCEL_EDITING"; payload: SelfieEvent }
+  | { type: "UPDATE_FIELD"; payload: { field: keyof SelfieEvent; value: any } }
+  | { type: "UPDATE_DATE_RANGE"; payload: { start: Date; end: Date } }
+  | { type: "UPDATE_NOTIFICATION"; payload: { field: string; value: any } }
+  | { type: "UPDATE_GEO"; payload: Geo }
+  | { type: "UPDATE_AVAILABLE_RESOURCES"; payload: ResourceModel[] }
+  | { type: "RESET_STATE" };
 
 function eventReducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'START_EDITING':
+    case "START_EDITING":
       return {
         ...state,
         isEditing: true,
         editedEvent: { ...action.payload },
         dateRange: {
           start: new Date(action.payload.dtstart),
-          end: new Date(action.payload.dtend)
-        }
+          end: new Date(action.payload.dtend),
+        },
       };
 
-    case 'UPDATE_AVAILABLE_RESOURCES':
+    case "UPDATE_AVAILABLE_RESOURCES":
       return {
         ...state,
-        availableResources: action.payload
+        availableResources: action.payload,
       };
 
-    case 'CANCEL_EDITING':
+    case "CANCEL_EDITING":
       return {
         isEditing: false,
         editedEvent: { ...action.payload },
         dateRange: {
           start: new Date(action.payload.dtstart),
-          end: new Date(action.payload.dtend)
+          end: new Date(action.payload.dtend),
         },
         availableResources: state.availableResources,
       };
 
-    case 'UPDATE_FIELD':
+    case "UPDATE_FIELD":
       return {
         ...state,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          [action.payload.field]: action.payload.value
-        } : null
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              [action.payload.field]: action.payload.value,
+            }
+          : null,
       };
 
-    case 'UPDATE_DATE_RANGE':
+    case "UPDATE_DATE_RANGE":
       return {
         ...state,
         dateRange: action.payload,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          dtstart: action.payload.start,
-          dtend: action.payload.end
-        } : null
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              dtstart: action.payload.start,
+              dtend: action.payload.end,
+            }
+          : null,
       };
 
-    case 'UPDATE_NOTIFICATION':
+    case "UPDATE_NOTIFICATION":
       return {
         ...state,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          notification: {
-            ...state.editedEvent.notification,
-            [action.payload.field]: action.payload.value
-          }
-        } : null
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              notification: {
+                ...state.editedEvent.notification,
+                [action.payload.field]: action.payload.value,
+              },
+            }
+          : null,
       };
 
-    case 'UPDATE_GEO':
+    case "UPDATE_GEO":
       console.log("update_geo action", action);
       return {
         ...state,
-        editedEvent: state.editedEvent ? {
-          ...state.editedEvent,
-          geo: {
-            lat: action.payload.lat,
-            lon: action.payload.lon,
-          }
-        } : null
-      }
+        editedEvent: state.editedEvent
+          ? {
+              ...state.editedEvent,
+              geo: {
+                lat: action.payload.lat,
+                lon: action.payload.lon,
+              },
+            }
+          : null,
+      };
 
-    case 'RESET_STATE':
+    case "RESET_STATE":
       return {
         isEditing: false,
         editedEvent: null,
@@ -151,7 +159,7 @@ async function fetchParticipants(eventid: string) {
       headers: {
         "Content-Type": "application/json",
       },
-      cache: "no-store"
+      cache: "no-store",
     });
 
     if (res.status === 401) {
@@ -169,7 +177,10 @@ async function fetchParticipants(eventid: string) {
   }
 }
 
-export const getDateParsed = (date: Date | string, allDay: Boolean): DateValue => {
+export const getDateParsed = (
+  date: Date | string,
+  allDay: Boolean,
+): DateValue => {
   if (allDay) {
     return convertToDate(date);
   }
@@ -186,7 +197,9 @@ const convertToDate = (date: Date | string): DateValue => {
   return new CalendarDate(year, month, day);
 };
 
-const convertToZonedDateTime = (date: Date | string | ZonedDateTime): DateValue => {
+const convertToZonedDateTime = (
+  date: Date | string | ZonedDateTime,
+): DateValue => {
   if (date instanceof ZonedDateTime) return date;
   const dateObj = date instanceof Date ? date : new Date(date);
   const OFFSET_TO_MILLISECONDS = 60 * 1000;
@@ -201,7 +214,6 @@ const convertToZonedDateTime = (date: Date | string | ZonedDateTime): DateValue 
 
   return new ZonedDateTime(year, month, day, zone, offset, hour, min);
 };
-
 
 interface LocationSuggestion {
   label: string;
@@ -219,36 +231,49 @@ interface ShowEventProps {
   friends: People;
 }
 
-const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, friends }) => {
+const ShowEvent: React.FC<ShowEventProps> = ({
+  owner,
+  event,
+  user,
+  resource,
+  friends,
+}) => {
   const [selectedEvent, setSelectedEvent] = useState<SelfieEvent | null>(event);
 
-  const getAvailableFriends = (friends: People, participants: string[] | undefined) => {
+  const getAvailableFriends = (
+    friends: People,
+    participants: string[] | undefined,
+  ) => {
     if (!participants) return friends;
-    return friends.filter(friend => !participants.includes(friend._id));
+    return friends.filter((friend) => !participants.includes(friend._id));
   };
 
   const handleRemoveResource = () => {
     if (state.editedEvent) {
-      handleInputChange('resource', '');
-      setResourceValue('No resource booked');
+      handleInputChange("resource", "");
+      setResourceValue("No resource booked");
 
       const updatedResources = getAvailableResources(
         resource,
         state.dateRange?.start || new Date(state.editedEvent.dtstart),
-        state.dateRange?.end || new Date(state.editedEvent.dtend)
+        state.dateRange?.end || new Date(state.editedEvent.dtend),
       );
 
       dispatch({
-        type: 'UPDATE_AVAILABLE_RESOURCES',
-        payload: updatedResources
+        type: "UPDATE_AVAILABLE_RESOURCES",
+        payload: updatedResources,
       });
     }
   };
 
-  const checkResourceAvailability = (resource: ResourceModel, start: Date, end: Date) => {
+  const checkResourceAvailability = (
+    resource: ResourceModel,
+    start: Date,
+    end: Date,
+  ) => {
     if (!resource.used || resource.used.length <= 0) return true;
 
-    return !resource.used.some(usage => {
+    return !resource.used.some((usage) => {
       const usageStart = new Date(usage.startTime);
       const usageEnd = new Date(usage.endTime);
 
@@ -257,10 +282,18 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
     });
   };
 
-  const getAvailableResources = (resources: ResourceModel[], start: Date, end: Date) => {
-    return resources.filter(r => {
-      const myBookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
-      if (r.used.map(r => r._id === myBookId)) return true;
+  const getAvailableResources = (
+    resources: ResourceModel[],
+    start: Date,
+    end: Date,
+  ) => {
+    return resources.filter((r) => {
+      const myBookId = r?.used.find(
+        (r) =>
+          r.startTime === selectedEvent?.dtstart &&
+          r.endTime === selectedEvent.dtend,
+      )?._id;
+      if (r.used.map((r) => r._id === myBookId)) return true;
       return checkResourceAvailability(r, start, end);
     });
   };
@@ -272,28 +305,32 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
     availableResources: getAvailableResources(
       resource,
       new Date(event.dtstart),
-      new Date(event.dtend)
+      new Date(event.dtend),
     ),
   };
 
   const [isOpen, setIsOpen] = useState(true);
   const [state, dispatch] = useReducer(eventReducer, initialState);
-  const [notifications, setNotifications] = useState(selectedEvent?.notification.fromDate !== undefined);
+  const [notifications, setNotifications] = useState(
+    selectedEvent?.notification.fromDate !== undefined,
+  );
   const [errorTitle, setErrorTitle] = useState(false);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<People | null>(null);
   const [availableFriends, setAvailableFriends] = useState<People>(
-    getAvailableFriends(friends, event.participants)
+    getAvailableFriends(friends, event.participants),
   );
   const eventid = event._id;
   const isOwner = user._id === event.uid ? true : false;
   const { reloadEvents, setReloadEvents } = useReload();
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<
+    LocationSuggestion[]
+  >([]);
 
   const updateAvailableResources = (start: Date, end: Date) => {
     const available = getAvailableResources(resource, start, end);
-    dispatch({ type: 'UPDATE_AVAILABLE_RESOURCES', payload: available });
+    dispatch({ type: "UPDATE_AVAILABLE_RESOURCES", payload: available });
   };
 
   useEffect(() => {
@@ -305,10 +342,10 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
   const handleLocationSelect = (value: string) => {
     const selectedItem = locationSuggestions.find((item) => item.id === value);
     if (selectedItem) {
-      handleInputChange('location', selectedItem.label);
+      handleInputChange("location", selectedItem.label);
       handleGeoChange({
         lat: selectedItem.lat,
-        lon: selectedItem.lon
+        lon: selectedItem.lon,
       });
     }
   };
@@ -323,9 +360,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
           setParticipants(result.usernames);
         }
       } catch (e: unknown) {
-        console.log("Error fetching participants", e)
+        console.log("Error fetching participants", e);
       }
-    }
+    };
 
     if (eventid) {
       getParticipants();
@@ -393,7 +430,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
   const handleEdit = () => {
     if (selectedEvent) {
-      dispatch({ type: 'START_EDITING', payload: selectedEvent });
+      dispatch({ type: "START_EDITING", payload: selectedEvent });
     }
   };
 
@@ -404,9 +441,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
   const handleReset = () => {
     if (selectedEvent) {
-      dispatch({ type: 'CANCEL_EDITING', payload: selectedEvent });
+      dispatch({ type: "CANCEL_EDITING", payload: selectedEvent });
 
-      setResourceValue(selectedEvent.resource || 'No resource booked');
+      setResourceValue(selectedEvent.resource || "No resource booked");
 
       setNotifications(selectedEvent.notification.fromDate !== undefined);
 
@@ -418,77 +455,86 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
       const originalResources = getAvailableResources(
         resource,
         new Date(selectedEvent.dtstart),
-        new Date(selectedEvent.dtend)
+        new Date(selectedEvent.dtend),
       );
       dispatch({
-        type: 'UPDATE_AVAILABLE_RESOURCES',
-        payload: originalResources
+        type: "UPDATE_AVAILABLE_RESOURCES",
+        payload: originalResources,
       });
     }
   };
 
   const handleInputChange = (field: keyof SelfieEvent, value: any) => {
     console.log("check input change", field, value);
-    dispatch({ type: 'UPDATE_FIELD', payload: { field, value } });
+    dispatch({ type: "UPDATE_FIELD", payload: { field, value } });
   };
 
   const handleGeoChange = (coordinates: Geo) => {
-    dispatch({ type: 'UPDATE_GEO', payload: coordinates });
-  }
+    dispatch({ type: "UPDATE_GEO", payload: coordinates });
+  };
 
   const handleDateRangeChange = (range: { start: Date; end: Date }) => {
-    dispatch({ type: 'UPDATE_DATE_RANGE', payload: range });
+    dispatch({ type: "UPDATE_DATE_RANGE", payload: range });
     updateAvailableResources(range.start, range.end);
   };
 
   const handleNotificationChange = (field: string, value: any) => {
-    dispatch({ type: 'UPDATE_NOTIFICATION', payload: { field, value } });
+    dispatch({ type: "UPDATE_NOTIFICATION", payload: { field, value } });
   };
 
   const handleParticipantSelect = (friend: Person) => {
     if (!state.editedEvent) return;
 
-    const updatedParticipants = [...(state.editedEvent.participants || []), friend._id];
-    handleInputChange('participants', updatedParticipants);
+    const updatedParticipants = [
+      ...(state.editedEvent.participants || []),
+      friend._id,
+    ];
+    handleInputChange("participants", updatedParticipants);
     setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
   };
 
   const handleRemoveParticipant = (friend: Person) => {
     if (!state.editedEvent) return;
 
-    const updatedParticipants = state.editedEvent.participants?.filter(
-      (id) => id !== friend._id
-    ) || [];
-    handleInputChange('participants', updatedParticipants);
+    const updatedParticipants =
+      state.editedEvent.participants?.filter((id) => id !== friend._id) || [];
+    handleInputChange("participants", updatedParticipants);
     setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
   };
 
   const handleRemoveAllParticipants = () => {
     if (!state.editedEvent) return;
 
-    handleInputChange('participants', []);
+    handleInputChange("participants", []);
     setAvailableFriends(friends);
   };
 
-  async function handleResource(updatedEvent: any, selectedEvent: SelfieEvent | null) {
-    // caso base: no action needed 
-    if (updatedEvent.resource === '' && '' === selectedEvent?.resource) {
+  async function handleResource(
+    updatedEvent: any,
+    selectedEvent: SelfieEvent | null,
+  ) {
+    // caso base: no action needed
+    if (updatedEvent.resource === "" && "" === selectedEvent?.resource) {
       console.log("nessuna modifica per le risorse, si esce");
       handleClose();
       return;
     }
 
-    const oldR = resource.find(r => r.name === selectedEvent?.resource);
-    console.log("oldR", oldR)
-    const newR = resource.find(r => r.name === updatedEvent?.resource);
-    console.log("newR", newR)
+    const oldR = resource.find((r) => r.name === selectedEvent?.resource);
+    console.log("oldR", oldR);
+    const newR = resource.find((r) => r.name === updatedEvent?.resource);
+    console.log("newR", newR);
 
-    const oldBookId = oldR?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+    const oldBookId = oldR?.used.find(
+      (r) =>
+        r.startTime === selectedEvent?.dtstart &&
+        r.endTime === selectedEvent.dtend,
+    )?._id;
     console.log("oldBookId:", oldBookId, oldR?._id);
 
     // caso 1: unbook risorsa (x -> 0)
     var res;
-    if (updatedEvent.resource === '') {
+    if (updatedEvent.resource === "") {
       res = await fetch(`${EVENTS_API_URL}/resource/${newR?._id}`, {
         method: "DELETE",
         headers: {
@@ -497,22 +543,26 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
         body: JSON.stringify({ bookId: oldBookId }),
         cache: "no-store",
       });
-
     } else {
       // caso in cui è avvenuta una modifica all'evento che interessa anche la risorsa
       // (y -> x || 0 -> x)
       // (updatedEvent.resource !== selectedEvent?.resource
       // || updatedEvent.dtstart !== selectedEvent!.dtstart
-      // || updatedEvent.dtend !== selectedEvent!.dtend) 
+      // || updatedEvent.dtend !== selectedEvent!.dtend)
 
-      const q = `${EVENTS_API_URL}/resource/${newR?._id}` + (oldBookId !== undefined ? `?oldBookId=${oldBookId}` : "");
+      const q =
+        `${EVENTS_API_URL}/resource/${newR?._id}` +
+        (oldBookId !== undefined ? `?oldBookId=${oldBookId}` : "");
       console.log("query", q);
       res = await fetch(q, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ startDate: updatedEvent.dtstart, endDate: updatedEvent.dtend }),
+        body: JSON.stringify({
+          startDate: updatedEvent.dtstart,
+          endDate: updatedEvent.dtend,
+        }),
         cache: "no-store",
       });
     }
@@ -520,8 +570,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
     if (!res.ok) {
       throw new Error(`Failed to modify event: ${res.statusText}`);
     }
-
-  };
+  }
 
   async function modifyEvent() {
     try {
@@ -541,7 +590,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
           return new Date(date.year, date.month - 1, date.day);
         }
 
-        if (typeof date === 'string') {
+        if (typeof date === "string") {
           return new Date(date);
         }
 
@@ -551,19 +600,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
       const updatedEvent = {
         ...state.editedEvent,
-        dtstart: state.editedEvent.allDay ?
-          convertToStandardDate(state.editedEvent.dtstart).setHours(0, 0) :
-          convertToStandardDate(state.editedEvent.dtstart),
-        dtend: state.editedEvent.allDay ?
-          convertToStandardDate(state.editedEvent.dtend).setHours(23, 59) :
-          convertToStandardDate(state.editedEvent.dtend),
+        dtstart: state.editedEvent.allDay
+          ? convertToStandardDate(state.editedEvent.dtstart).setHours(0, 0)
+          : convertToStandardDate(state.editedEvent.dtstart),
+        dtend: state.editedEvent.allDay
+          ? convertToStandardDate(state.editedEvent.dtend).setHours(23, 59)
+          : convertToStandardDate(state.editedEvent.dtend),
         // If notification has dates, convert them too
         ...(state.editedEvent.notification?.fromDate && {
           notification: {
             ...state.editedEvent.notification,
-            fromDate: convertToStandardDate(state.editedEvent.notification.fromDate)
-          }
-        })
+            fromDate: convertToStandardDate(
+              state.editedEvent.notification.fromDate,
+            ),
+          },
+        }),
       };
 
       var res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
@@ -603,8 +654,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
       }
 
       if (selectedEvent?.resource !== "") {
-        const r = resource.find(r => r.name === selectedEvent?.resource);
-        const bookId = r?.used.find(r => (r.startTime === selectedEvent?.dtstart) && r.endTime === selectedEvent.dtend)?._id;
+        const r = resource.find((r) => r.name === selectedEvent?.resource);
+        const bookId = r?.used.find(
+          (r) =>
+            r.startTime === selectedEvent?.dtstart &&
+            r.endTime === selectedEvent.dtend,
+        )?._id;
         const res = await fetch(`${EVENTS_API_URL}/resource/${r?._id}`, {
           method: "DELETE",
           headers: {
@@ -619,7 +674,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
         }
       }
 
-      dispatch({ type: 'RESET_STATE' });
+      dispatch({ type: "RESET_STATE" });
       handleClose();
     } catch (e: unknown) {
       console.error(`Error during delete event: ${(e as Error).message}`);
@@ -629,18 +684,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
   async function dodgeEvent() {
     try {
-      const res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}/?fields=true`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `${EVENTS_API_URL}/${selectedEvent?._id}/?fields=true`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!res.ok) {
         throw new Error(`Failed to delete event: ${res.statusText}`);
       }
 
-      dispatch({ type: 'RESET_STATE' });
+      dispatch({ type: "RESET_STATE" });
       handleClose();
     } catch (e: unknown) {
       console.error(`Error during delete event: ${(e as Error).message}`);
@@ -649,11 +707,20 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
   }
 
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
-  console.log("resource display.resource selectedEvent.resource", resource, displayEvent?.resource, selectedEvent?.resource);
-  console.log("forse", resource.find(m => m.name === displayEvent?.resource)?.name);
+  console.log(
+    "resource display.resource selectedEvent.resource",
+    resource,
+    displayEvent?.resource,
+    selectedEvent?.resource,
+  );
+  console.log(
+    "forse",
+    resource.find((m) => m.name === displayEvent?.resource)?.name,
+  );
 
   const [resourceValue, setResourceValue] = useState<string>(
-    displayEvent?.resource || 'No resource booked');
+    displayEvent?.resource || "No resource booked",
+  );
   console.log("resourceValue", resourceValue);
 
   if (!isOpen) return null;
@@ -682,7 +749,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                 isInvalid={errorTitle}
                 isRequired={true}
                 errorMessage={"Title is mandatory"}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 className="max-w-xs"
               />
               <div className="justify-end">
@@ -693,7 +760,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                 >
                   Cancel
                 </Button>
-                {user._id === displayEvent.uid && !state.isEditing &&
+                {user._id === displayEvent.uid && !state.isEditing && (
                   <Button
                     className="mx-2 mr-4"
                     onClick={handleEdit}
@@ -701,8 +768,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                   >
                     Modify
                   </Button>
-                }
-
+                )}
               </div>
             </ModalHeader>
             <ModalBody>
@@ -711,15 +777,26 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                 className="max-w-[430px] mb-4"
                 hideTimeZone
                 defaultValue={{
-                  start: getDateParsed(displayEvent.dtstart, displayEvent.allDay),
+                  start: getDateParsed(
+                    displayEvent.dtstart,
+                    displayEvent.allDay,
+                  ),
                   end: getDateParsed(displayEvent.dtend, displayEvent.allDay),
                 }}
-                value={state.dateRange ? {
-                  start: getDateParsed(state.dateRange.start, displayEvent.allDay),
-                  end: getDateParsed(state.dateRange.end, displayEvent.allDay)
+                value={
+                  state.dateRange
+                    ? {
+                        start: getDateParsed(
+                          state.dateRange.start,
+                          displayEvent.allDay,
+                        ),
+                        end: getDateParsed(
+                          state.dateRange.end,
+                          displayEvent.allDay,
+                        ),
+                      }
+                    : undefined
                 }
-                  : undefined}
-
                 onChange={handleDateRangeChange as any}
                 isDisabled={!state.isEditing}
                 visibleMonths={1}
@@ -734,12 +811,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                     handleInputChange("location", value);
                     fetchLocationSuggestions(value);
                   }}
-                  onSelectionChange={(value) => handleLocationSelect(value as string)}
+                  onSelectionChange={(value) =>
+                    handleLocationSelect(value as string)
+                  }
                   defaultFilter={(textValue, inputValue) => {
                     const lowerCaseInput = inputValue.toLowerCase().trim();
                     const searchWords = lowerCaseInput.split(/\s+/);
                     return searchWords.every((word) =>
-                      textValue.toLowerCase().includes(word)
+                      textValue.toLowerCase().includes(word),
                     );
                   }}
                 >
@@ -758,11 +837,15 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                     isDisabled={!state.isEditing}
                     placeholder={resourceValue}
                     value={resourceValue}
-                    selectedKeys={resourceValue !== 'No resource booked' ? [resourceValue] : []}
+                    selectedKeys={
+                      resourceValue !== "No resource booked"
+                        ? [resourceValue]
+                        : []
+                    }
                     onChange={(e) => {
                       const newValue = e.target.value;
                       setResourceValue(newValue);
-                      handleInputChange('resource', newValue);
+                      handleInputChange("resource", newValue);
                     }}
                   >
                     {state.availableResources.map((res) => (
@@ -792,7 +875,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                 isDisabled={!state.isEditing}
                 label="Description"
                 value={displayEvent.description as string}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 className="mb-4"
               />
 
@@ -848,7 +933,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                       {displayEvent?.participants?.length ? (
                         displayEvent.participants
                           .map((participantId) => {
-                            const participant = friends.find(friend => friend._id === participantId);
+                            const participant = friends.find(
+                              (friend) => friend._id === participantId,
+                            );
                             if (!participant) return null;
 
                             return (
@@ -861,7 +948,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                                       size="sm"
                                       color="danger"
                                       variant="light"
-                                      onPress={() => handleRemoveParticipant(participant)}
+                                      onPress={() =>
+                                        handleRemoveParticipant(participant)
+                                      }
                                     >
                                       Remove
                                     </Button>
@@ -887,9 +976,9 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                               </DropdownItem>
                             );
                           })
-                          .filter((item): item is JSX.Element => item !== null)
+                          .filter((item) => !!item)
                       ) : (
-                        <DropdownItem className="text-default-400">
+                        <DropdownItem className="text-default-400" key="none">
                           None invited yet
                         </DropdownItem>
                       )}
@@ -913,14 +1002,16 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                 isDisabled={!state.isEditing}
                 label="URL"
                 value={displayEvent.URL as string}
-                onChange={(e) => handleInputChange('URL', e.target.value)}
+                onChange={(e) => handleInputChange("URL", e.target.value)}
                 className="mb-4"
               />
               <Input
                 isDisabled={!state.isEditing}
                 label="Categories"
                 value={displayEvent.categories?.join(", ")}
-                onChange={(e) => handleInputChange('categories', e.target.value.split(", "))}
+                onChange={(e) =>
+                  handleInputChange("categories", e.target.value.split(", "))
+                }
                 className="mb-4"
               />
 
@@ -939,14 +1030,18 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                     isDisabled={!state.isEditing}
                     label="Notification Title"
                     value={displayEvent.notification.title as string}
-                    onChange={(e) => handleNotificationChange('title', e.target.value)}
+                    onChange={(e) =>
+                      handleNotificationChange("title", e.target.value)
+                    }
                     className="mb-2"
                   />
                   <Input
                     isDisabled={!state.isEditing}
                     label="Notification Description"
                     value={displayEvent.notification.description as string}
-                    onChange={(e) => handleNotificationChange('description', e.target.value)}
+                    onChange={(e) =>
+                      handleNotificationChange("description", e.target.value)
+                    }
                     className="mb-2"
                   />
                   <Select
@@ -956,10 +1051,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                     className="mb-2"
                     variant="bordered"
                     selectedKeys={
-                      displayEvent.notification?.type?.toString() ? [displayEvent.notification.type.toString()] : []
+                      displayEvent.notification?.type?.toString()
+                        ? [displayEvent.notification.type.toString()]
+                        : []
                     }
                     onSelectionChange={(keys) =>
-                      handleNotificationChange('type', Array.from(keys)[0])
+                      handleNotificationChange("type", Array.from(keys)[0])
                     }
                   >
                     <SelectItem key="email" value="email">
@@ -971,13 +1068,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                   </Select>
 
                   <DatePicker
-                    defaultValue={getDateParsed(displayEvent.dtstart, displayEvent.allDay)}
-                    maxValue={getDateParsed(displayEvent.dtstart, displayEvent.allDay)}
+                    defaultValue={getDateParsed(
+                      displayEvent.dtstart,
+                      displayEvent.allDay,
+                    )}
+                    maxValue={getDateParsed(
+                      displayEvent.dtstart,
+                      displayEvent.allDay,
+                    )}
                     isRequired
                     hideTimeZone
                     isDisabled={!state.isEditing}
                     label="Notification Start Date"
-                    onChange={(date) => handleNotificationChange('fromDate', date)}
+                    onChange={(date) =>
+                      handleNotificationChange("fromDate", date)
+                    }
                     className="mb-2"
                   />
 
@@ -991,11 +1096,16 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                       }}
                       selectedKeys={
                         displayEvent?.notification.repetition?.freq?.toString()
-                          ? [displayEvent?.notification.repetition.freq.toString()]
+                          ? [
+                              displayEvent?.notification.repetition.freq.toString(),
+                            ]
                           : []
                       }
                       onSelectionChange={(keys) =>
-                        handleNotificationChange("repetition.freq", Array.from(keys)[0])
+                        handleNotificationChange(
+                          "repetition.freq",
+                          Array.from(keys)[0],
+                        )
                       }
                     >
                       <SelectItem key="minutely" value="minutely">
@@ -1022,17 +1132,23 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
                       label="Interval repetition"
                       isDisabled={!state.isEditing}
                       type="number"
-                      value={displayEvent.notification.repetition?.interval?.toString() || ""}
-                      onChange={(e) => handleNotificationChange("repetition.interval", e.target.value)}
+                      value={
+                        displayEvent.notification.repetition?.interval?.toString() ||
+                        ""
+                      }
+                      onChange={(e) =>
+                        handleNotificationChange(
+                          "repetition.interval",
+                          e.target.value,
+                        )
+                      }
                       placeholder="Set the frequency repetition"
                     />
-
                   </div>
                 </>
               )}
             </ModalBody>
             <ModalFooter className="justify-end">
-
               {isOwner && (
                 <div>
                   <Button
@@ -1055,22 +1171,14 @@ const ShowEvent: React.FC<ShowEventProps> = ({ owner, event, user, resource, fri
 
               {!isOwner && (
                 <div>
-                  <Button
-                    color="danger"
-                    variant="light"
-                    onPress={dodgeEvent}
-                  >
+                  <Button color="danger" variant="light" onPress={dodgeEvent}>
                     Dodge Event
                   </Button>
-                  <Button
-                    color="primary"
-                    onPress={handleClose}
-                  >
+                  <Button color="primary" onPress={handleClose}>
                     Close
                   </Button>
                 </div>
               )}
-
             </ModalFooter>
           </>
         ) : (

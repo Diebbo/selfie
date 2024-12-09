@@ -34,7 +34,7 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
   const [isTyping, setIsTyping] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const socketRef = useRef<any>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,9 +42,13 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
 
   // Function to add message to the chat
   function addMessage(newMessage: MessageModel) {
-    setMessages((prev) => [...prev, newMessage].sort((a, b) => {
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    }));
+    setMessages((prev) =>
+      [...prev, newMessage].sort((a, b) => {
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      }),
+    );
   }
   // Function to update user status in the UI
   function updateUserStatus(username: string, isOnline: boolean) {
@@ -55,7 +59,6 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
 
   // start socket connection
   useEffect(() => {
-
     // Initialize socket connection
     if (!process.env.NEXT_PUBLIC_SOCKET_URL) {
       throw new Error("Socket URL not found");
@@ -95,7 +98,7 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
           if (data.username === receiverUsername) {
             setIsTyping(false);
           }
-        }
+        },
       );
 
       socketRef.current.on(
@@ -107,9 +110,9 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
                 return { ...msg, status: data.status as StatusEnum };
               }
               return msg;
-            })
+            }),
           );
-        }
+        },
       );
 
       // Listen for online/offline events
@@ -122,7 +125,6 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
         const { username } = data;
         updateUserStatus(username, false);
       });
-
 
       socketRef.current.on("message_sent", (data: MessageModel) => {
         addMessage(data);
@@ -273,21 +275,24 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
             {messages.map((msg, idx) => (
               <React.Fragment key={msg._id || idx}>
                 {/* show hr when date changes */}
-                {idx > 0 && new Date(messages[idx - 1].createdAt).getDate() !== new Date(msg.createdAt).getDate() && (
-                  <>
-                    <hr className="my-2" />
-                    <p className="text-center text-sm text-gray-500">
-                      {new Date(msg.createdAt).toDateString()}
-                    </p>
-                  </>
-                )}
+                {idx > 0 &&
+                  new Date(messages[idx - 1].createdAt).getDate() !==
+                    new Date(msg.createdAt).getDate() && (
+                    <>
+                      <hr className="my-2" />
+                      <p className="text-center text-sm text-gray-500">
+                        {new Date(msg.createdAt).toDateString()}
+                      </p>
+                    </>
+                  )}
 
                 <div
                   key={msg._id || idx}
-                  className={`flex gap-5 ${msg.sender === currentUser.username
-                    ? "flex-row-reverse"
-                    : "flex-row"
-                    }`}
+                  className={`flex gap-5 ${
+                    msg.sender === currentUser.username
+                      ? "flex-row-reverse"
+                      : "flex-row"
+                  }`}
                 >
                   <Avatar
                     isBordered
@@ -300,16 +305,18 @@ const ChatModal: React.FC<ChatModalProps> = (props) => {
                     }
                   />
                   <div
-                    className={`flex flex-col gap-1 max-w-[70%] ${msg.sender === currentUser.username
-                      ? "items-end"
-                      : "items-start"
-                      }`}
+                    className={`flex flex-col gap-1 max-w-[70%] ${
+                      msg.sender === currentUser.username
+                        ? "items-end"
+                        : "items-start"
+                    }`}
                   >
                     <p
-                      className={`px-4 py-2 rounded-lg overflow-x-auto w-full ${msg.sender === currentUser.username
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 dark:bg-gray-800"
-                        }`}
+                      className={`px-4 py-2 rounded-lg overflow-x-auto w-full ${
+                        msg.sender === currentUser.username
+                          ? "bg-primary text-white"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
                     >
                       {msg.message}
                     </p>
