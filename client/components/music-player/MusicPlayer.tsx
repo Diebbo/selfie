@@ -29,7 +29,7 @@ export default function MusicPlayer() {
       try {
         const song = await musicPlayerService.fetchCurrentSong();
         setCurrentSong(song);
-        audioElement.src = "/song/" + song.title + ".wav";
+        audioElement.src = "/song/" + song.title + ".mp3";
       } catch (error) {
         console.error("Error initializing player:", error);
       }
