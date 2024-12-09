@@ -695,7 +695,10 @@ export async function createDataBase(uri) {
     // Recupera tutti gli eventi in una sola query
     const events = await eventModel.find({ _id: { $in: allEventIds } });
 
-    return events;
+    return await events.populate({
+      path: "participants",
+      select: "username _id",
+    });
   };
 
   const getEvent = async (uid, eventid) => {
@@ -1902,8 +1905,20 @@ export async function createDataBase(uri) {
     async getById(id) {
       const user = await userModel
         .findById(id, "-__v -password -createdAt -updatedAt")
-        .populate("participatingEvents")
-        .populate("events") // convert  id to event object
+        .populate({
+          path: "participatingEvents",
+          populate: {
+            path: "participants",
+            select: "username _id",
+          },
+        })
+        .populate({
+          path: "events",
+          populate: {
+            path: "participants",
+            select: "username _id",
+          },
+        })
         .populate("projects")
         .populate({
           path: "projects",
