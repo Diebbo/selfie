@@ -2,7 +2,15 @@
 import React, { useEffect, useState } from "react";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
-import { Link, Button } from "@nextui-org/react";
+import {
+  Link,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Button,
+  Tooltip,
+} from "@nextui-org/react";
 import NextLink from "next/link";
 import { useTime } from "../contexts/TimeContext";
 
@@ -97,55 +105,68 @@ export const Content = (props: ContentProps): ReactElement => {
 
   return (
     <div className="h-full lg:px-6">
-      <div className="flex justify-center gap-5 pt-4 px-4 xl:px-3 2xl:px-5 flex-wrap xl:flex-nowrap max-w-[100rem] mx-auto w-full">
-        <div className="mt-6 gap-6 flex flex-col w-full">
+      <div className="flex flex-wrap gap-5 justify-center px-4 pt-4 mx-auto w-full 2xl:flex-nowrap xl:px-3 2xl:px-5 max-w-[100rem]">
+        <div className="flex flex-col gap-6 mt-6 w-full">
           {/* Card Section Top */}
-          <div className="grid grid-cols-1 l:grid-cols-2 gap-3">
-            <div className="flex flex-col border rounded-lg p-4 h-[500px]">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            <div className="flex flex-col p-4 rounded-lg border h-[500px]">
               <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    className="px-2 min-w-10"
-                    variant={eventType === "your" ? "solid" : "flat"}
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      className="capitalize"
+                      variant="flat"
+                      color="primary"
+                    >
+                      {eventType === "your" ? "Your" : "Group"} Events
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    disallowEmptySelection
+                    selectionMode="single"
+                    variant="solid"
                     color="primary"
-                    onClick={() => setEventType("your")}
+                    onSelectionChange={(selectedKeys) => {
+                      const key = Array.from(selectedKeys)[0];
+                      setEventType(key as "your" | "group");
+                    }}
                   >
-                    Your Events
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="px-2 min-w-10"
-                    variant={eventType === "group" ? "solid" : "flat"}
+                    <DropdownItem key="your">Your Events</DropdownItem>
+                    <DropdownItem key="group">Group Events</DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      className="capitalize"
+                      variant="flat"
+                      color="primary"
+                    >
+                      {timeFilter === "today"
+                        ? "Today"
+                        : timeFilter === "week"
+                          ? "This Week"
+                          : "All"}
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    disallowEmptySelection
+                    selectionMode="single"
+                    variant="solid"
                     color="primary"
-                    onClick={() => setEventType("group")}
+                    onSelectionChange={(selectedKeys) => {
+                      const key = Array.from(selectedKeys)[0];
+                      setTimeFilter(key as "today" | "week" | "all");
+                    }}
                   >
-                    Group Events
-                  </Button>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="sm"
-                    className="px-3 min-w-10"
-                    variant={timeFilter === "today" ? "solid" : "flat"}
-                    color="primary"
-                    onClick={() => setTimeFilter("today")}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="px-2 min-w-10"
-                    variant={timeFilter === "week" ? "solid" : "flat"}
-                    color="primary"
-                    onClick={() => setTimeFilter("week")}
-                  >
-                    This Week
-                  </Button>
-                </div>
+                    <DropdownItem key="today">Today</DropdownItem>
+                    <DropdownItem key="week">This Week</DropdownItem>
+                    <DropdownItem key="all">All</DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
               </div>
-              <div className="overflow-y-hidden hover:overflow-y-auto h-full pr-2 border-t scrollbar-hide">
-                <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="overflow-y-hidden pr-2 h-full border-t hover:overflow-y-auto scrollbar-hide">
+                <div className="grid grid-cols-1 gap-4 pt-4 2xl:grid-cols-2">
                   {Array.isArray(
                     eventType === "your"
                       ? user.events.created
@@ -175,34 +196,45 @@ export const Content = (props: ContentProps): ReactElement => {
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="bg-default-100 shadow-lg rounded-2xl p-4 h-[500px] flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-semibold text-foreground-900">
-                    Notes Preview
-                  </h3>
-                  <Button
-                    size="sm"
-                    variant="shadow"
-                    onClick={() => setShowPublicNotes(!showPublicNotes)}
-                    className={` transition-colors ${
-                      showPublicNotes ? "bg-emerald-600" : "bg-blue-500"
-                    } text-white`}
-                  >
-                    {showPublicNotes ? "Pubbliche" : "Private"}
-                  </Button>
-                  <Link
-                    href="/notes"
-                    as={NextLink}
-                    color="primary"
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    View All
-                  </Link>
+              <div className="flex flex-col p-4 rounded-2xl shadow-lg bg-default-100 h-[500px]">
+                <div className="flex items-center mb-4 md:justify-between">
+                    <Link
+                      href="/notes"
+                      as={NextLink}
+                      color="primary"
+                      className="cursor-pointer"
+                    >
+                  <Tooltip content="Go to Notes">
+                      <h3 className="text-xl font-semibold text-foreground-900 hover:text-primary">
+                        Notes Preview
+                      </h3>
+                  </Tooltip>
+                    </Link>
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button size="sm" variant="shadow" className="capitalize">
+                        {showPublicNotes ? "Public" : "Private"}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      disallowEmptySelection
+                      selectionMode="single"
+                      variant="solid"
+                      color="primary"
+                      onSelectionChange={(selectedKeys) => {
+                        const key = Array.from(selectedKeys)[0];
+                        setShowPublicNotes(key === "public");
+                      }}
+                    >
+                      <DropdownItem key="public">Public</DropdownItem>
+                      <DropdownItem key="private">Private</DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
                 </div>
-                <div className="flex-1 overflow-hidden">
-                  <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-hide">
+                <div className="overflow-hidden flex-1">
+                  <div className="overflow-y-hidden h-full hover:overflow-y-auto scrollbar-hide">
                     {filteredNotes && filteredNotes.length > 0 ? (
-                      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
                         {filteredNotes
                           ?.sort(
                             (a: NoteModel, b: NoteModel) =>
@@ -222,8 +254,8 @@ export const Content = (props: ContentProps): ReactElement => {
                           ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <p className="text-xl text-center font-medium mb-2">
+                      <div className="flex flex-col justify-center items-center h-full text-gray-500">
+                        <p className="mb-2 text-xl font-medium text-center">
                           Nessuna nota{" "}
                           {showPublicNotes ? "pubblica" : "privata"} disponibile
                         </p>
@@ -239,9 +271,9 @@ export const Content = (props: ContentProps): ReactElement => {
           </div>
 
           {/* Table Of Projects */}
-          <div className="flex flex-col justify-center w-full px-4 lg:px-0 max-w-[90rem] gap-2">
-            <div className="flex  flex-wrap justify-between">
-              <h3 className="text-center text-xl font-semibold">Projects</h3>
+          <div className="flex flex-col gap-2 justify-center px-4 w-full lg:px-0 max-w-[90rem]">
+            <div className="flex flex-wrap justify-between">
+              <h3 className="text-xl font-semibold text-center">Projects</h3>
               <Link
                 href="/projects"
                 as={NextLink}
@@ -256,15 +288,15 @@ export const Content = (props: ContentProps): ReactElement => {
         </div>
 
         {/* Left Section */}
-        <div className="mt-6 gap-2 flex flex-col xl:max-w-md w-full">
+        <div className="flex flex-col gap-2 mt-6 w-full xl:max-w-md">
           <WeatherCard position={user.position} />
 
-          <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
+          <div className="flex flex-col gap-2 mt-4 w-full xl:max-w-md">
             <PomodoroStatistics stats={user.pomodoro} />
           </div>
 
-          <h3 className="text-xl font-semibold mb-3">Friends</h3>
-          <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
+          <h3 className="mb-3 text-xl font-semibold">Friends</h3>
+          <div className="flex flex-col flex-wrap gap-4 justify-center md:flex-col md:flex-nowrap max-w-[90rem]">
             <CardFriends
               friends={friends as People}
               setFriends={setFriends}
