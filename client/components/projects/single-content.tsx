@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import './project-card';
 import './project-modal';
 import { Button } from '@nextui-org/react';
+import { useTime } from '../contexts/TimeContext';
 
 interface ContentProps {
   projects: ProjectModel[];
@@ -18,6 +19,7 @@ export default function Content({ projects, user, id }: ContentProps) {
     projects.find((p) => p._id === id)
   );
   const router = useRouter();
+  const { currentTime } = useTime();
   
   // Change the ref type to HTMLElement
   const projectCardRef = useRef<HTMLElement | null>(null);
@@ -36,10 +38,11 @@ export default function Content({ projects, user, id }: ContentProps) {
 
   // Effetto per assegnare attributi e aggiungere listener dopo il montaggio
   useEffect(() => {
-    if (projectCardRef.current && project && user) {
+    if (projectCardRef.current && project && user && currentTime) {
       // Imposta gli attributi project e user in modo sicuro
       projectCardRef.current.setAttribute('project', JSON.stringify(project));
       projectCardRef.current.setAttribute('user', JSON.stringify(user));
+      projectCardRef.current.setAttribute('time', currentTime.toISOString());
       
       // Aggiunge i listener per gli eventi custom
       const deleteHandler = () => handleDeleteProject();
@@ -59,7 +62,7 @@ export default function Content({ projects, user, id }: ContentProps) {
       };
     }
     console.log('Rendering content', { project, user, projectCardRef });
-  }, [project, user]);
+  }, [project, user, currentTime]);
 
   if (!project || !user) {
     return <div>Project not found</div>;

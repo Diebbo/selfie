@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect, ReactElement } from "react";
+import { areIntervalsOverlapping, parseISO } from "date-fns";
+import { Interval } from "date-fns";
 import {
   Button,
   Modal,
@@ -19,6 +21,8 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
 import { useDebouncedCallback } from "use-debounce";
 import RepetitionMenu from "@/components/calendar/repetitionMenu";
@@ -29,14 +33,21 @@ import {
   FrequencyType,
   People,
   Person,
+  DayType,
+  RRule,
+  ResourceModel,
 } from "@/helpers/types";
 import NotificationMenu from "./notificationMenu";
 const EVENTS_API_URL = "/api/events";
-import { reloadContext } from "./contextStore";
+import { useReload } from "./contextStore";
 
-async function createEvent(event: SelfieEvent): Promise<boolean> {
+async function createEvent(
+  event: SelfieEvent,
+  resourceId: string | undefined,
+): Promise<boolean> {
   try {
-    const res = await fetch(`${EVENTS_API_URL}`, {
+    console.log("evento aggiunto", event);
+    var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -52,8 +63,23 @@ async function createEvent(event: SelfieEvent): Promise<boolean> {
     } else if (!res.ok) {
       throw new Error("Failed to create events");
     }
+
+    console.log("aggiungo la risorsa con Id: ", resourceId);
+    if (resourceId !== undefined) {
+      res = await fetch(`${EVENTS_API_URL}/resource/${resourceId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate: event.dtstart,
+          endDate: event.dtend,
+        }),
+        cache: "no-store",
+      });
+    }
   } catch (e) {
-    throw new Error(`Error during modify event: ${(e as Error).message}`);
+    throw new Error(`Error during adding event: ${(e as Error).message}`);
   }
   return true;
 }
@@ -79,13 +105,14 @@ const initialEvent = {
   location: "",
   description: "",
   URL: "",
-  participants: [] as string[],
+  participants: [] as Partial<Person>[],
+  isRrule: false,
   rrule: {
     freq: "weekly" as FrequencyType,
     interval: 1,
-    bymonth: 1,
-    bymonthday: 1,
-  },
+    count: 1,
+    byday: [{ day: "MO" as DayType }],
+  } as RRule,
   notification: {
     title: "",
     description: "",
@@ -96,19 +123,28 @@ const initialEvent = {
     },
     fromDate: new Date(),
   },
+  resource: "" as string,
 };
 
 interface EventAdderProps {
   friends: People;
   isMobile: Boolean;
-
+  resource: ResourceModel[];
 }
 
 const EventAdder: React.FC<EventAdderProps> = ({
   friends,
   isMobile,
+  resource,
 }) => {
+  console.log("eventAdder risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
+  const [availableResources, setAvailableResources] = useState<ResourceModel[]>(
+    [],
+  );
+  const [selectedResource, setSelectedResource] = useState<
+    ResourceModel | undefined
+  >(undefined);
   const [eventData, setEventData] =
     useState<Partial<SelfieEvent>>(initialEvent);
   const [locationSuggestions, setLocationSuggestions] = useState<
@@ -118,10 +154,11 @@ const EventAdder: React.FC<EventAdderProps> = ({
   const [allDayEvent, setAllDayEvent] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [dateError, setDateError] = useState(false);
   const [notificationError, setNotificationError] = useState(false);
-  const { reloadEvents, setReloadEvents } = useContext(reloadContext) as any;
+  const { reloadEvents, setReloadEvents } = useReload();
   const availableFriends = friends.filter(
-    (friend) => !eventData.participants?.includes(friend._id)
+    (friend) => !eventData.participants?.map(p => p?._id).includes(friend._id),
   );
 
   useEffect(() => {
@@ -140,6 +177,55 @@ const EventAdder: React.FC<EventAdderProps> = ({
       },
     }));
   }, [eventData.dtstart, eventData.dtend]);
+
+  // Aggiorna le risorse disponibili quando cambiano le date dell'evento
+  useEffect(() => {
+    if (!resource || !Array.isArray(resource)) {
+      setAvailableResources([]);
+      return;
+    }
+
+    const available = resource.filter((r) =>
+      checkResourceAvailability(
+        r,
+        eventData.dtstart as Date,
+        eventData.dtend as Date,
+      ),
+    );
+    console.log("available: ", available);
+    setAvailableResources(available);
+  }, [eventData.dtstart, eventData.dtend, resource]);
+
+  // Risorsa è disponibile nel periodo selezionato
+  const checkResourceAvailability = (
+    resource: ResourceModel,
+    startDate: Date,
+    endDate: Date,
+  ): boolean => {
+    return !resource.used.some((usage) => {
+      const usageStart = new Date(usage.startTime);
+      const usageEnd = new Date(usage.endTime);
+      return checkOverlap(startDate, endDate, usageStart, usageEnd);
+    });
+  };
+
+  function checkOverlap(
+    start1: string | Date,
+    end1: string | Date,
+    start2: string | Date,
+    end2: string | Date,
+  ): boolean {
+    const interval1: Interval = {
+      start: start1 instanceof Date ? start1 : parseISO(start1),
+      end: end1 instanceof Date ? end1 : parseISO(end1),
+    };
+    const interval2: Interval = {
+      start: start2 instanceof Date ? start2 : parseISO(start2),
+      end: end2 instanceof Date ? end2 : parseISO(end2),
+    };
+
+    return areIntervalsOverlapping(interval1, interval2);
+  }
 
   const fetchLocationSuggestions = useDebouncedCallback(
     async (query: string) => {
@@ -252,7 +338,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
             ...prev,
             notification: {
               ...prev.notification,
-              fromDate: new Date(value).toISOString(),
+              fromDate: new Date(value),
             },
           };
         }
@@ -273,11 +359,33 @@ const EventAdder: React.FC<EventAdderProps> = ({
   };
 
   const handleDateChange = (start: Date | string, end: Date | string) => {
-    setEventData((prev) => ({
-      ...prev,
-      dtstart: new Date(start),
-      dtend: new Date(end),
-    }));
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    setEventData((prev) => {
+      //keep resource if possible
+      if (prev.resource) {
+        const selectedResource = resource.find((r) => r.name === prev.resource);
+        if (
+          selectedResource &&
+          !checkResourceAvailability(selectedResource, startDate, endDate)
+        ) {
+          //remove old resource
+          return {
+            ...prev,
+            dtstart: startDate,
+            dtend: endDate,
+            resource: "",
+          };
+        }
+      }
+
+      return {
+        ...prev,
+        dtstart: startDate,
+        dtend: endDate,
+      };
+    });
   };
 
   const handleRepeatChange = (value: boolean) => {
@@ -288,42 +396,36 @@ const EventAdder: React.FC<EventAdderProps> = ({
       setEventData((prev) => ({
         ...prev,
         rrule: {
-          freq: "weekly" as FrequencyType,
+          freq: "weekly",
           interval: 1,
-          bymonth: 1,
-          bymonthday: 1,
+          count: 1,
+          byday: [{ day: "MO" as DayType }],
         },
       }));
     }
   };
 
-  const handleRruleChange = (frequency: FrequencyType) => {
+  const handleRruleChange = (newRrule: RRule) => {
     setEventData((prev) => ({
       ...prev,
-      rrule: {
-        ...prev.rrule,
-        freq: frequency,
-        interval: prev.rrule?.interval ?? 1,
-        bymonth: prev.rrule?.bymonth ?? 1,
-        bymonthday: prev.rrule?.bymonthday ?? 1,
-      },
+      rrule: newRrule,
     }));
+    console.log("newRrule", newRrule);
   };
 
   const handleParticipantSelect = (friend: Person) => {
     setEventData((prev) => ({
       ...prev,
-      participants: [...(prev.participants || []), friend._id],
+      participants: [...(prev.participants || []), { _id: friend._id } as Partial<Person>],
     }));
     console.log(eventData.participants);
   };
-
 
   const handleRemoveParticipant = (friendToRemove: Person) => {
     setEventData((prev) => ({
       ...prev,
       participants: (prev.participants || []).filter(
-        (participantId) => participantId !== friendToRemove._id
+        (p) => p?._id !== friendToRemove._id,
       ),
     }));
   };
@@ -350,21 +452,55 @@ const EventAdder: React.FC<EventAdderProps> = ({
     }
   };
 
+  const validateRrule = (rrule: RRule | undefined): boolean => {
+    if (!rrule) return true;
+
+    // Basic validation
+    if (!rrule.freq || rrule.interval < 1) return false;
+
+    // Validate count or until if present
+    if (rrule.count && rrule.count < 1) return false;
+    if (rrule.until && new Date(rrule.until) < new Date()) return false;
+
+    // Validate weekly frequency
+    if (rrule.freq === "weekly" && (!rrule.byday || rrule.byday.length === 0)) {
+      return false;
+    }
+
+    // Validate monthly frequency
+    if (rrule.freq === "monthly") {
+      // Must have either bymonthday or byday with position, not both
+      if (rrule.bymonthday && rrule.byday) return false;
+      if (!rrule.bymonthday && (!rrule.byday || !rrule.byday[0].position))
+        return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(isError, notificationError);
-    if (!isError && !notificationError) {
+
+    if (repeatEvent && !validateRrule(eventData.rrule)) {
+      console.error("Invalid recurrence rule");
+      return;
+    }
+
+    console.log("isError", isError, "dateError", dateError);
+    if (!isError && !notificationError && !dateError) {
       const newEvent: SelfieEvent = {
         ...eventData,
         sequence: 0,
+        isRrule: repeatEvent,
+        rrule: repeatEvent ? eventData.rrule : undefined,
         categories: eventData.categories || [],
         participants: eventData.participants || [],
         allDay: allDayEvent,
       } as SelfieEvent;
 
       try {
-        console.log("partecipanti ", newEvent.participants);
-        const success = await createEvent(newEvent);
+        console.log("aggiungo la risorsa _id", selectedResource?._id);
+        const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
           console.log("Event created successfully");
           handleExit();
@@ -390,7 +526,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
         <span className="text-2xl font-bold text-white">+</span>
       </Button>
 
-
       <Modal
         isOpen={isOpen}
         onClose={handleExit}
@@ -400,22 +535,22 @@ const EventAdder: React.FC<EventAdderProps> = ({
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader className="flex flex-col gap-1">
-              Creazione Evento
+              Creation of a New Event
             </ModalHeader>
             <ModalBody>
               <Input
                 isRequired
-                label="Titolo"
+                label="Title"
                 isInvalid={isError}
                 errorMessage="You need to insert the title before submit the event"
                 name="title"
                 value={eventData.title as string}
                 onChange={handleInputChange}
-                placeholder="Inserisci il titolo"
+                placeholder="Insert new title"
                 className={`${isMobile ? "" : "mb-4"}`}
               />
 
-              {isMobile &&
+              {isMobile && (
                 <Switch
                   isSelected={allDayEvent}
                   onValueChange={setAllDayEvent}
@@ -426,7 +561,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
                       "justify-between rounded-lg gap-2 p-2 border-2 border-transparent",
                     ),
                     wrapper: "p-0 h-4 overflow-visible",
-                    thumb: cn("w-5 h-5 border-2 shadow-lg",
+                    thumb: cn(
+                      "w-5 h-5 border-2 shadow-lg",
                       "group-data-[hover=true]:border-secondary",
                       //selected
                       "group-data-[selected=true]:ml-6",
@@ -437,29 +573,28 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   }}
                 >
                   <div className="flex flex-col gap-1">
-                    <p className="text-medium">
-                      Tutto il giorno
-                    </p>
+                    <p className="text-medium">Tutto il giorno</p>
                   </div>
                 </Switch>
-              }
+              )}
 
               <div className={`${isMobile ? "max-w-fit" : "flex gap-4 mb-4 "}`}>
                 <EventDatePicker
                   isAllDay={allDayEvent}
-                  startDate={eventData.dtstart as Date}
-                  endDate={eventData.dtend as Date}
                   onChange={handleDateChange}
+                  setDateError={setDateError}
                 />
 
-                {!isMobile && <Switch
-                  isSelected={allDayEvent}
-                  onValueChange={setAllDayEvent}
-                >
-                  Tutto il giorno
-                </Switch>
-                }
-
+                {!isMobile && (
+                  <Switch
+                    isSelected={allDayEvent}
+                    onValueChange={() => {
+                      setAllDayEvent(!allDayEvent);
+                    }}
+                  >
+                    All Day Long
+                  </Switch>
+                )}
               </div>
               <div className="flex flex-wrap gap-4 ">
                 <div className="flex items-center gap-4 w-full md:w-auto max-h-[50px]">
@@ -468,37 +603,20 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     isSelected={repeatEvent}
                     onValueChange={handleRepeatChange}
                   >
-                    Si ripete
+                    <span className="pl-2">Repeat</span>
                   </Switch>
                   <RepetitionMenu
                     value={repeatEvent}
-                    frequency={eventData.rrule?.freq}
+                    rrule={eventData.rrule}
                     isMobile={isMobile}
                     onChange={handleRruleChange}
                   />
                 </div>
-                <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                  <Input
-                    className={`${eventData.rrule?.freq ? "w-full sm:w-48" : "hidden"}`}
-                    label="Intervallo fra eventi"
-                    value={eventData.rrule?.interval.toString()}
-                  />
-                  <Input
-                    className={`${eventData.rrule?.freq === "monthly" ? "w-full sm:w-48" : "hidden"}`}
-                    label="Per giorno del mese"
-                    value={eventData.rrule?.bymonthday.toString()}
-                  />
-                  <Input
-                    className={`${eventData.rrule?.freq === "yearly" ? "w-full sm:w-48" : "hidden"}`}
-                    label="Per mese"
-                    value={eventData.rrule?.bymonth.toString()}
-                  />
-                </div>
               </div>
-              <div className={`${isMobile ? "" : "mb-4"}`}>
+              <div>
                 <Autocomplete
-                  label="Luogo"
-                  placeholder="Inserisci il luogo"
+                  label="Event Location"
+                  placeholder="Search where the event will take place"
                   defaultItems={locationSuggestions}
                   onInputChange={(value) => {
                     handleInputChange({ target: { name: "location", value } });
@@ -522,12 +640,52 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   )}
                 </Autocomplete>
               </div>
+
+              <div>
+                <Select
+                  label="Resources Avaiable"
+                  placeholder="Select a resource"
+                  selectedKeys={
+                    eventData.resource
+                      ? new Set([eventData.resource.toString()])
+                      : new Set()
+                  }
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0]?.toString() || "";
+                    setSelectedResource(
+                      availableResources.find(
+                        (res) => res.name === selectedKey,
+                      ),
+                    );
+                    setEventData((prev) => ({
+                      ...prev,
+                      resource: selectedKey,
+                    }));
+                  }}
+                  className={`${isMobile ? "" : "mb-4"}`}
+                >
+                  {availableResources.map((res) => (
+                    <SelectItem
+                      key={res.name.toString()}
+                      value={res.name.toString()}
+                    >
+                      {res.name.toString()}
+                    </SelectItem>
+                  ))}
+                </Select>
+                {availableResources.length === 0 && (
+                  <p className="text-warning text-sm mt-1">
+                    There are not resources available for choosen period
+                  </p>
+                )}
+              </div>
+
               <Textarea
-                label="Descrizione"
+                label="Description"
                 name="description"
                 value={eventData.description?.toString()}
                 onChange={handleInputChange}
-                placeholder="Inserisci una descrizione"
+                placeholder="Insert a description"
                 className={`${isMobile ? "" : "mb-4"}`}
               />
               <div
@@ -535,8 +693,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
               >
                 <Autocomplete
                   variant="bordered"
-                  label="Amici"
-                  placeholder="Seleziona un utente da invitare"
+                  label="Friends"
+                  placeholder="Choose someone to invite"
                   labelPlacement="inside"
                   selectedKey=""
                   className="max-w-sm"
@@ -573,8 +731,11 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 <div className="flex gap-2 w-full">
                   <Dropdown>
                     <DropdownTrigger>
-                      <Button variant="flat" className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}>
-                        Invitati ({eventData.participants?.length || 0})
+                      <Button
+                        variant="flat"
+                        className={`${isMobile ? "min-w-[200px] w-[calc(65vw)]" : "min-w-[calc(10vw)]"}`}
+                      >
+                        Invited ({eventData.participants?.length || 0})
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -583,22 +744,26 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     >
                       {eventData.participants?.length ? (
                         eventData.participants
-                          .map((participantId) => {
-                            const participant = friends.find(friend => friend._id === participantId);
+                          .map((p) => {
+                            const participant = friends.find(
+                              (friend) => friend._id === p?._id,
+                            );
                             if (!participant) return null;
 
                             return (
                               <DropdownItem
-                                key={participantId}
+                                key={participant._id}
                                 className="py-2"
                                 endContent={
                                   <Button
                                     size="sm"
                                     color="danger"
                                     variant="light"
-                                    onPress={() => handleRemoveParticipant(participant)}
+                                    onPress={() =>
+                                      handleRemoveParticipant(participant)
+                                    }
                                   >
-                                    Rimuovi
+                                    Remove
                                   </Button>
                                 }
                               >
@@ -621,10 +786,10 @@ const EventAdder: React.FC<EventAdderProps> = ({
                               </DropdownItem>
                             );
                           })
-                          .filter((item): item is JSX.Element => item !== null)
+                          .filter((item) => !!item)
                       ) : (
-                        <DropdownItem className="text-default-400">
-                          Nessun invitato
+                        <DropdownItem className="text-default-400" key="none">
+                          None invited yet
                         </DropdownItem>
                       )}
                     </DropdownMenu>
@@ -636,7 +801,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     isDisabled={!eventData.participants?.length}
                     onPress={handleRemoveAllParticipants}
                   >
-                    Rimuovi tutti
+                    Remove All
                   </Button>
                 </div>
               </div>
@@ -650,7 +815,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                     categories: e.target.value.split(",").map((c) => c.trim()),
                   }))
                 }
-                placeholder="Inserisci le categorie (separate da virgola)"
+                placeholder="Choose categories (separete them with commas)"
                 className="mb-4"
               />
               <Input
@@ -658,7 +823,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                 name="URL"
                 value={eventData.URL?.toString()}
                 onChange={handleInputChange}
-                placeholder="Inserisci l'URL dell'evento"
+                placeholder="Insert URL for your event"
                 className="mb-4"
               />
               <div className="flex flex-col pb-4 gap-4 ">
@@ -667,7 +832,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   isSelected={notifications}
                   onValueChange={setNotifications}
                 >
-                  Abilita le notifiche
+                  Allow Notifications
                 </Switch>
                 <NotificationMenu
                   value={notifications}
@@ -682,7 +847,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
             </ModalBody>
             <ModalFooter>
               <Button color="primary" type="submit" onClick={handleSave}>
-                Salva
+                Save
               </Button>
             </ModalFooter>
           </form>

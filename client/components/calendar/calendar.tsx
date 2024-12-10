@@ -1,13 +1,16 @@
+//client/components/calendar/calendar.tsx
 "use client";
 
 import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import EventAdder from "@/components/calendar/eventAdder";
 import CalendarCell from "@/components/calendar/calendarCell";
-import { SelfieEvent, People, ProjectModel } from "@/helpers/types";
-import { reloadContext, mobileContext } from "./contextStore";
+import { SelfieEvent, People, ProjectModel, ResourceModel } from "@/helpers/types";
+import { useReload, mobileContext } from "./contextStore";
 import { getEvents } from "@/actions/events";
-import { getCurrentTime } from "@/actions/setTime";
+import { useTime } from "../contexts/TimeContext";
+import { TaskMutiResponse } from "@/helpers/api-types";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface CalendarPageProps {
   createdEvents: SelfieEvent[];
@@ -15,36 +18,58 @@ interface CalendarPageProps {
   dbdate: Date;
   friends: People;
   projects: ProjectModel[];
+  tasks: TaskMutiResponse;
+  resource: ResourceModel[];
 }
 
 const CalendarPage = (props: CalendarPageProps) => {
   //concat of 2 events arraies
-  const [events, setEvents] = useState<SelfieEvent[]>(props.createdEvents.concat(props.participatingEvents));
-  const [today, setToday] = useState(props.dbdate);
+  const [events, setEvents] = useState<SelfieEvent[]>(
+    props.createdEvents.concat(props.participatingEvents),
+  );
+  const { currentTime } = useTime();
   const [isMobile, setIsMobile] = useState(false);
-  const [currentDate, setCurrentDate] = useState(props.dbdate);
-  const [reloadEvents, setReloadEvents] = useState(false);
+  const tmp = new Date(currentTime);
+  tmp.setHours(0, 0, 0, 0);
+  const [currentDate, setCurrentDate] = useState(tmp);
+
   const [isMonthView, setIsMonthView] = useState(true);
+  const { reloadEvents, setReloadEvents } = useReload();
+  const prevTimeRef = useRef<Date>(currentTime);
 
   const setCurrentTime = async () => {
-    const date = await getCurrentTime();
-    console.log("date", date);
-    setToday(new Date(date));
-    setCurrentDate(new Date(date));
+    // set the current date to midnight
+    const tmp = new Date(currentTime);
+    tmp.setHours(0, 0, 0, 0);
+    setCurrentDate(tmp);
   };
 
   useEffect(() => {
     if (reloadEvents) {
-      console.log("sto fetchando gli eventi");
       const e = getEvents();
       e.then((events) => {
         setEvents(events);
       });
-      setCurrentTime();
       setReloadEvents(false);
     }
   }, [reloadEvents]);
 
+  // Move month view when Time changes in time machine
+  useEffect(() => {
+    // Calcola la differenza in ore tra il nuovo currentTime e il precedente
+    const hoursDifference = Math.abs(
+      (currentTime.getTime() - prevTimeRef.current.getTime()) /
+      (1000 * 60 * 60),
+    );
+
+    // Aggiorna currentDate solo se la differenza è maggiore di 24 ore
+    if (hoursDifference >= 1) {
+      setCurrentDate(currentTime);
+    }
+
+    // Aggiorna il riferimento al tempo precedente
+    prevTimeRef.current = currentTime;
+  }, [currentTime]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -63,10 +88,8 @@ const CalendarPage = (props: CalendarPageProps) => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-
   const renderCalendarWeek = () => {
-
-    if (!currentDate) return <span>  testo </span>;
+    if (!currentDate) return <span> testo </span>;
 
     const daysOfWeek = [];
     const currentWeekStart = new Date(currentDate);
@@ -79,14 +102,14 @@ const CalendarPage = (props: CalendarPageProps) => {
       dayDate.setDate(currentWeekStart.getDate() + i);
 
       const isToday =
-        dayDate.getDate() === today?.getDate() &&
-        dayDate.getMonth() === today.getMonth() &&
-        dayDate.getFullYear() === today.getFullYear();
+        dayDate.getDate() === currentTime?.getDate() &&
+        dayDate.getMonth() === currentTime.getMonth() &&
+        dayDate.getFullYear() === currentTime.getFullYear();
 
       daysOfWeek.push(
         <td
           key={`week-cell-${i}`}
-          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-24 md:h-32 lg:h-40`}
+          className={`border bg-white w-full dark:bg-black border-gray-400 p-1 md:p-2 align-top h-full`}
         >
           <CalendarCell
             isMonthView={isMonthView}
@@ -95,16 +118,13 @@ const CalendarPage = (props: CalendarPageProps) => {
             isToday={isToday}
             events={events}
             projects={props.projects}
+            tasks={props.tasks}
           />
-        </td>
+        </td>,
       );
     }
 
-    return (
-      <tr>
-        {daysOfWeek}
-      </tr>);
-
+    return <tr>{daysOfWeek}</tr>;
   };
 
   const renderCalendarMonth = () => {
@@ -122,9 +142,9 @@ const CalendarPage = (props: CalendarPageProps) => {
 
         const isToday =
           isValidDay &&
-          dayIndex === today.getDate() &&
-          currentDate.getMonth() === today.getMonth() &&
-          currentDate.getFullYear() === today.getFullYear();
+          dayIndex === currentTime.getDate() &&
+          currentDate.getMonth() === currentTime.getMonth() &&
+          currentDate.getFullYear() === currentTime.getFullYear();
 
         week.push(
           <td
@@ -139,33 +159,38 @@ const CalendarPage = (props: CalendarPageProps) => {
                 isToday={isToday}
                 events={events}
                 projects={props.projects}
+                tasks={props.tasks}
               />
             ) : null}
           </td>,
         );
       }
-      days.push(<tr
-        key={`row-${i}`}
-        className="overflow-y-auto scrollbar max-h-[calc(85vh)]"
-      >{week}</tr>);
+      days.push(
+        <tr
+          key={`row-${i}`}
+          className="overflow-y-auto scrollbar max-h-[calc(77vh)]"
+        >
+          {week}
+        </tr>,
+      );
     }
 
     return days;
   };
 
   const monthNames = [
-    "Gennaio",
-    "Febbraio",
-    "Marzo",
-    "Aprile",
-    "Maggio",
-    "Giugno",
-    "Luglio",
-    "Agosto",
-    "Settembre",
-    "Ottobre",
-    "Novembre",
-    "Dicembre",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const handleToday = () => {
@@ -180,7 +205,7 @@ const CalendarPage = (props: CalendarPageProps) => {
     setCurrentDate(
       new Date(
         currentDate.getFullYear() as number,
-        currentDate.getMonth() as number + increment,
+        (currentDate.getMonth() as number) + increment,
         1,
       ),
     );
@@ -189,120 +214,123 @@ const CalendarPage = (props: CalendarPageProps) => {
   const changeWeek = (increment: number) => {
     if (currentDate) {
       const newDate = new Date(currentDate);
-      newDate.setDate(currentDate.getDate() + (increment));
+      newDate.setDate(currentDate.getDate() + increment);
       setCurrentDate(newDate);
     }
   };
 
   return (
     <mobileContext.Provider value={{ isMobile, setIsMobile }}>
-      <reloadContext.Provider value={{ reloadEvents, setReloadEvents }}>
-        <div
-          className="flex flex-col md:flex-row min-h-screen relative"
-          aria-label="Back Ground Calendar"
-        >
-          <div className="flex-grow">
-            <div className="bg-white dark:bg-black h-screen flex flex-col">
-              <div className="flex items-center justify-between px-2 md:px-4 py-2 bg-slate-300 dark:bg-zinc-900">
+      <div
+        className="flex flex-col md:flex-row relative h-full overflow-y-hidden"
+        aria-label="Back Ground Calendar"
+      >
+        <div className="flex-grow">
+          <div className="bg-white dark:bg-black flex flex-col">
+            <div className="flex items-center justify-between px-2 md:px-4 py-2 gap-0 bg-slate-300 dark:bg-zinc-900 w-full">
+              <EventAdder
+                friends={props.friends}
+                isMobile={isMobile}
+                resource={props.resource}
+                aria-label="Event Adder Button"
+              />
 
-                <EventAdder
-                  friends={props.friends}
-                  isMobile={isMobile}
-                  aria-label="Event Adder Button"
+              <Button
+                onClick={() => {
+                  isMonthView ? changeMonth(-1) : changeWeek(-7);
+                }}
+                variant="flat"
+                color="primary"
+                isIconOnly
+              >
+                <ArrowLeft />
+              </Button>
+              <div className="flex items-center mr-0">
+                <Switch
+                  defaultSelected={true}
+                  onValueChange={handleToggle}
+                  color="primary"
+                  startContent={<span> M </span>}
+                  endContent={<span> W </span>}
+                  aria-label="Change visualization"
+                  className={`data-[state=checked]:bg-primary [&>*]:mr-0`}
                 />
+              </div>
 
-                <button
-                  onClick={() => { isMonthView ? changeMonth(-1) : changeWeek(-7) }}
-                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-                >
-                  &lt;
-                </button>
-
-                <div className="flex items-center gap-4">
-                  <Switch
-                    defaultSelected={true}
-                    onValueChange={handleToggle}
-                    color="primary"
-                    startContent={<span> M </span>}
-                    endContent={<span> W </span>}
-                    className="data-[state=checked]:bg-primary"
-                    aria-label="Cambia visualizzazione"
-                  />
-                </div>
-
-                <Tooltip
-                  content={today.toISOString().split('T')[0]}
-                  showArrow
-                  key="tooltip day"
-                  delay={0}
-                  closeDelay={0}
-                  placement="top"
-                  classNames={{
-                    base: [
-                      "before:bg-neutral-400 dark:before:bg-white",
-                    ],
-                    content: [
-                      "py-2 px-4 shadow-xl",
-                      "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
-                    ],
-                  }}>
-                  <Chip
-                    variant="solid"
-                    className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
-                  >
-                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                  </Chip>
-                </Tooltip>
-                <Button
+              <Tooltip
+                content={currentTime.toISOString().split("T")[0]}
+                showArrow
+                key="tooltip day"
+                delay={0}
+                closeDelay={0}
+                placement="top"
+                classNames={{
+                  base: ["before:bg-neutral-400 dark:before:bg-white"],
+                  content: [
+                    "py-2 px-4 shadow-xl",
+                    "text-black bg-gradient-to-br from-white to-violet-500 dark:bg-gradient-to-br dark:from-white dark:to-neutral-600",
+                  ],
+                }}
+              >
+                <Chip
                   variant="solid"
-                  onClick={handleToday}
-                  className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
+                  className={`${isMobile ? "h-1" : ""} text-base rounded-xl py-5 text-white bg-secondary dark:text-white dark:bg-default`}
                 >
-                  Oggi
-                </Button>
-                <button
-                  onClick={() => { isMonthView ? changeMonth(1) : changeWeek(7) }}
-                  className="text-white hover:text-yellow-300 text-xl md:text-2xl"
-                >
-                  &gt;
-                </button>
-              </div>
-              <div className="flex-grow overflow-auto">
-                <table className="w-full h-full table-fixed">
-                  <thead>
-                    <tr className="h-2">
-                      {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
-                        (day) => (
-                          <th
-                            key={day}
-                            aria-label="day line"
-                            className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
-                          >
-                            {day}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  {
-                    isMonthView &&
-                    <tbody className="scrollbar-hide max-h-[calc(50vh)] bg-slate-500 dark:bg-black text-xs md:text-sm">
-                      {renderCalendarMonth()}
-                    </tbody>
-                  }
+                  {monthNames[currentDate.getMonth()]}{" "}
+                  {currentDate.getFullYear()}
+                </Chip>
+              </Tooltip>
+              <Button
+                variant="solid"
+                onClick={handleToday}
+                className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
+              >
+                Today
+              </Button>
+              <Button
+                onClick={() => {
+                  isMonthView ? changeMonth(1) : changeWeek(7);
+                }}
+                variant="flat"
+                color="primary"
+                isIconOnly
+              >
+                <ArrowRight />
+              </Button>
+            </div>
+            <div className="flex overflow-auto">
+              <table className="w-full h-full table-fixed">
+                <thead>
+                  <tr className="h-2">
+                    {["Sun", "Mon", "Tus", "Wed", "Thr", "Fri", "Sat"].map(
+                      (day) => (
+                        <th
+                          key={day}
+                          aria-label="day line"
+                          className={`max-h-1 border border-black dark:border-white text-center bg-slate-400 dark:bg-black text-white dark:text-white text-xs md:text-sm w-1/7`}
+                        >
+                          {day}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                {isMonthView && (
+                  <tbody className="scrollbar-hide bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    {renderCalendarMonth()}
+                  </tbody>
+                )}
 
-                  {!isMonthView &&
-                    <tbody
-                      className="h-full bg-slate-500 dark:bg-black text-xs md:text-sm">
-                      {renderCalendarWeek()}
-                    </tbody>
-                  }
-                </table>
-              </div>
+                {!isMonthView && (
+                  <tbody className="bg-slate-500 dark:bg-black text-xs md:text-sm">
+                    {renderCalendarWeek()}
+                  </tbody>
+                )}
+              </table>
             </div>
           </div>
         </div>
-      </reloadContext.Provider>
+      </div>
     </mobileContext.Provider>
   );
 };

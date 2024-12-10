@@ -1,26 +1,23 @@
 "use client";
 import React from "react";
 import { Sidebar } from "./sidebar.styles";
-import { Avatar, Tooltip } from "@nextui-org/react";
-import { CompaniesDropdown } from "./companies-dropdown";
+import { Avatar } from "@nextui-org/react";
 import { HomeIcon } from "../icons/sidebar/home-icon";
 import { PomodoroIcon } from "../icons/sidebar/pomodoro-icon";
-import { BalanceIcon } from "../icons/sidebar/balance-icon";
 import { NotesIcon } from "../icons/sidebar/notes-icon";
 import ChatsIcon from "../icons/sidebar/chats-icon";
 import MusicalNoteIcon from "../icons/sidebar/music-icon";
 import { ReportsIcon } from "../icons/sidebar/reports-icon";
 import { DevIcon } from "../icons/sidebar/dev-icon";
-import { ViewIcon } from "../icons/sidebar/view-icon";
 import { SettingsIcon } from "../icons/sidebar/settings-icon";
-import { CollapseItems } from "./collapse-items";
 import { SidebarItem } from "./sidebar-item";
 import { SidebarMenu } from "./sidebar-menu";
-import { FilterIcon } from "../icons/sidebar/filter-icon";
 import { useSidebarContext } from "../layout/layout-context";
-import { ChangeLogIcon } from "../icons/sidebar/changelog-icon";
 import { usePathname } from "next/navigation";
 import { ProjectsIcon } from "../icons/sidebar/projects-icon";
+import { SquareCheckBig, Timer } from 'lucide-react';
+import { CalendarIcon } from "../icons/sidebar/calendar-icon";
+import Link from "next/link";
 
 export const SidebarWrapper = () => {
   const pathname = usePathname();
@@ -37,14 +34,16 @@ export const SidebarWrapper = () => {
         })}
       >
         <div className={Sidebar.Header()}>
-          <div className="flex items-center justify-between p-2">
-            <Avatar
-              src="https://i.imgur.com/2LFuJor.jpeg"
-              size="md"
-              className="mr-2"
-            />
-            <h1 className="text-xl font-bold">Selfie App</h1>
-          </div>
+          <Link href="/">
+            <div className="flex items-center justify-between p-2">
+              <Avatar
+                src="/adventurer1.png"
+                size="md"
+                className="mr-2"
+              />
+              <h1 className="text-xl font-bold">Selfie App</h1>
+            </div>
+          </Link>
         </div>
         <div className="flex flex-col justify-between h-full">
           <div className={Sidebar.Body()}>
@@ -56,40 +55,46 @@ export const SidebarWrapper = () => {
             />
             <SidebarMenu title="Main Menu">
               <SidebarItem
-                isActive={pathname === "/notes"}
+                isActive={pathname.includes("/calendar")}
+                title="Calendar"
+                icon={<CalendarIcon />}
+                href="/calendar"
+              />
+              <SidebarItem
+                isActive={pathname.includes("/notes")}
                 title="Notes"
                 icon={<NotesIcon />}
-                href="notes"
+                href="/notes"
               />
               <SidebarItem
                 isActive={pathname === "/pomodoro"}
                 title="Pomodoro"
                 icon={<PomodoroIcon />}
-                href="pomodoro"
+                href="/pomodoro"
               />
               <SidebarItem
                 icon={<ProjectsIcon />}
                 title="Projects"
-                isActive={pathname === "/projects"}
-                href="projects"
+                isActive={pathname.includes("/projects")}
+                href="/projects"
               />
               <SidebarItem
-                isActive={pathname === "/chats"}
+                isActive={pathname.includes("/chats")}
                 title="Chats"
                 icon={<ChatsIcon />}
-                href="chats"
+                href="/chats"
               />
               <SidebarItem
                 isActive={pathname === "/music-player"}
                 title="Music Player"
                 icon={<MusicalNoteIcon />}
-                href="music-player"
+                href="/music-player"
               />
               <SidebarItem
-                isActive={pathname === "/calendar"}
-                title="Calendar"
-                icon={<ReportsIcon />}
-                href="calendar"
+                isActive={pathname === "/task"}
+                title="Task"
+                icon={<SquareCheckBig color="#969696" />}
+                href="/task"
               />
             </SidebarMenu>
 
@@ -98,14 +103,14 @@ export const SidebarWrapper = () => {
                 isActive={pathname === "/maps"}
                 title="Maps"
                 icon={<DevIcon />}
-                href="maps"
+                href="/maps"
               />
 
               <SidebarItem
                 isActive={pathname === "/settings"}
                 title="Settings"
                 icon={<SettingsIcon />}
-                href="settings"
+                href="/settings"
               />
             </SidebarMenu>
 
@@ -114,4 +119,5 @@ export const SidebarWrapper = () => {
       </div>
     </aside>
   );
-};
+}; import TaskIcon from "../icons/sidebar/task-icon";
+

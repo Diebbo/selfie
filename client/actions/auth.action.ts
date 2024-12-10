@@ -20,48 +20,50 @@ export const deleteAuthCookie = async () => {
 };
 
 // Purpose: Handles the login process.
-export async function login(user: LoginFormType) {
-  const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(user),
-    credentials: "include",
-  });
+export async function login(user: LoginFormType | Error) : Promise<{token: string} | Error> {
+  try {
+    const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+      credentials: "include",
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    // WE need this to show the error message in the login page
-    // Doesn't work with throw new Error in production 
-    if (response.status === 401) {
-      const err = {
-        message: error.message,
-        success: false,
-      }
-      return err;
+    if (!response.ok) {
+      const error = await response.json();
+      console.log(response);
+      // WE need this to show the error message in the login page
+      // Doesn't work with throw new Error in production
+      return new Error(error.message || "Login failed");
     }
-    throw new Error(error.message || "Login failed");
-  }
 
-  return await response.json();
+    return await response.json();
+  } catch (error) {
+    return new Error("Login failed");
+  }
 }
 
-export async function register(user: RegisterType) {
-  const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(user),
-  });
+export async function register(user: RegisterType | Error) {
+  try {
+    const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Registration failed");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Registration failed");
+    }
+
+    return response.json();
+  } catch (error: any) {
+    return new Error(error?.message || "Registration failed");
   }
-
-  return response.json();
 }
 
 export async function verification(emailToken: string) {
@@ -72,7 +74,7 @@ export async function verification(emailToken: string) {
       headers: {
         "Content-Type": "application/json",
       },
-    },
+    }
   );
 
   return await response.json();

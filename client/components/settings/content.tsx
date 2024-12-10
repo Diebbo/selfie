@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  NextUIProvider,
   Card,
   Input,
   Button,
@@ -15,25 +14,29 @@ import {
   useDisclosure,
   ModalContent,
   Avatar,
-  Autocomplete,
 } from "@nextui-org/react";
 import { DarkModeSwitch } from "../navbar/darkmodeswitch";
 import { PassLockIcon } from "../auth/PassLockIcon";
-import { createAuthCookie, deleteAuthCookie } from "@/actions/auth.action";
 import NotificationSettings from "../auth/NotificationSettings";
 import { useRouter } from "next/navigation";
+import { ResourceModel, SelfieEvent } from "@/helpers/types";
+import ImportExportCal from "./importExportCal"
+import ResourceHandler from './resourceHandler'
 
 interface SettingsPageProps {
   username: string;
   email: string;
+  events: SelfieEvent[] | null;
   pushNotifications: boolean;
   emailNotifications: boolean;
   avatar: string;
+  resource: ResourceModel[] | null;
+  isAdmin: Boolean;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const router = useRouter();
-  console.log("avatar", props.avatar);
+  const [resourceResponse, setResourceResponse] = useState("");
   const [avatar, setAvatar] = useState(props.avatar);
   const [username, setUsername] = useState(props.username);
   const [usernameEdit, setUsernameEdit] = useState(false);
@@ -52,6 +55,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
   const [errorMessageNotification, setErrorMessageNotification] = useState("");
   const [errorMessageDelete, setErrorMessageDelete] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const [resources, setResources] = useState<ResourceModel[] | null>(props.resource);
   const validateEmail = (email: string) =>
     email.match(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,4}$/i);
 
@@ -60,6 +64,30 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
     return validateEmail(email) ? false : true;
   }, [email]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (resourceResponse) {
+      timeoutId = setTimeout(() => {
+        setResourceResponse("");
+      }, 3500);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [resourceResponse]);
+
+  const fetchAllResources = async () => {
+    try {
+      const res = await fetch("/api/events/resource/all");
+      if (res.ok) {
+        const data = await res.json();
+        setResources(data);
+      }
+    } catch (error) {
+      console.error("Error fetching resources:", error);
+    }
+  };
 
   const handleSave = async (type: string) => {
     setErrorMessageNotification(""); // Resetta il messaggio di errore all'inizio
@@ -119,10 +147,14 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
       setStatusPasswordChange("Password cambiata con successo");
     } else if (type === "email") {
       setEmailEdit(false);
-      const event = new CustomEvent("emailUpdated", { detail: { updatedEmail: email }});
+      const event = new CustomEvent("emailUpdated", {
+        detail: { updatedEmail: email },
+      });
       window.dispatchEvent(event);
     } else if (type === "avatar") {
-      const event = new CustomEvent("avatarUpdated", { detail: { updatedAvatar: avatar }});
+      const event = new CustomEvent("avatarUpdated", {
+        detail: { updatedAvatar: avatar },
+      });
       window.dispatchEvent(event);
     }
   };
@@ -147,16 +179,14 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     let body = {};
     if (type === "push") {
       body = { enable: !pushNotifications };
-      
     } else if (type === "email") {
       body = { enable: !emailNotifications };
-      
     } else {
       console.error("Tipo non supportato:", type);
       return;
     }
 
-    const res = await fetch("/api/auth/notifications/" + type, {
+    await fetch("/api/auth/notifications/" + type, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -165,8 +195,60 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     });
   };
 
+  const handleDeleteResource = async (name: string) => {
+    try {
+      const res = await fetch("/api/events/admin/resource", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: name }),
+        cache: "no-store",
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setResources(prevResources =>
+          prevResources ? prevResources.filter(resource => resource.name !== name) : null
+        );
+        setResourceResponse(data.message || "Resource deleted successfully");
+      } else {
+        setResourceResponse(data.message || "Failed to delete resource");
+      }
+    } catch (error) {
+      console.error("Error deleting resource:", error);
+      setResourceResponse("An error occurred while deleting the resource");
+    }
+  };
+
+  const handleNewResource = async (name: string) => {
+    const res = await fetch("/api/events/resource", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        resource: {
+          name: name,
+        }
+      }),
+    });
+
+    const responseData = await res.json();
+
+    if (res.ok) {
+      setResourceResponse(responseData.message || "Resource added successfully");
+      // Fetch updated resources after adding a new one
+      await fetchAllResources();
+      return responseData.resource;
+    } else {
+      setResourceResponse("Failed to add resource, you need to insert a name");
+      return null;
+    }
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center h-full">
       <Card className="max-w-[600px] mx-auto m-auto p-5 w-full">
         <h1 className="flex text-2xl font-bold text-foreground mb-5 justify-center">
           Impostazioni Account
@@ -174,12 +256,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         <Spacer y={1} />
         <h3 className="text-lg mb-5">Cambia Avatar</h3>
         <div className="flex f-row justify-between gap-2">
-          <Avatar
-            src={avatar}
-            size="lg"
-            alt="avatar"
-          />
-          <Input 
+          <Avatar src={avatar} size="lg" alt="avatar" />
+          <Input
             variant="faded"
             label="Avatar"
             placeholder="Inserisci il tuo link avatar"
@@ -190,6 +268,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 handleSave("avatar");
               }
             }}
+            description="premi enter per salvare"
             className="mr-3 w-full"
           />
         </div>
@@ -354,11 +433,24 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
 
         <NotificationSettings />
         <Spacer y={4} />
-        <h3 className="mb-3">Cambia Tema</h3>
-        <div>
-          <DarkModeSwitch />
+        <div className="flex flex-row mb-4 gap-10">
+          <div className="flex flex-col w-[150px]">
+            <h3 className="mb-3">Change Theme</h3>
+            <DarkModeSwitch />
+          </div>
         </div>
-        <Spacer y={4} />
+
+        <ImportExportCal events={props.events} />
+
+        <div className="mb-4">
+          <ResourceHandler
+            isAdmin={props.isAdmin}
+            handleNewResource={handleNewResource}
+            handleDeleteResource={handleDeleteResource}
+            allResources={resources}
+          />
+          <span className="transition-opacity duration-500 text-green-400">{resourceResponse}</span>
+        </div>
 
         <Button color="danger" onPress={onOpen} className="w-full">
           Elimina Account

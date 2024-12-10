@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody } from "@nextui-org/react";
 import TimeModifierClient from "@/components/timemachine/content";
-import {
-  changeCurrentTime,
-  resetTime,
-} from "@/actions/setTime";
+import { changeCurrentTime, resetTime } from "@/actions/setTime";
 
-interface ClockProps {
-  currentTime: Date;
-}
+import { useTime } from "../contexts/TimeContext";
 
-export const Clock = ({ currentTime }: ClockProps) => {
-  const [time, setTime] = useState<Date | null>(new Date(currentTime));
+const oneDayPassed = (date1: Date, date2: Date) : boolean => {
+  return date1.getDate() !== date2.getDate();
+};
+
+export const Clock = () => {
+  const { currentTime: time, setCurrentTime } = useTime();
+  const [currentTimerTime, setCurrentTimerTime] = useState(time.getTime() ? new Date(time) : new Date());
   const [isOpen, setIsOpen] = useState(false);
+  const ONE_HOUR = 3600000;
 
   // Update the timer every second
   useEffect(() => {
     const timer = setInterval(() => {
-      setTime((prevTime) => {
-        if (prevTime) {
-          return new Date(prevTime.getTime() + 1000);
-        }
-        return prevTime;
-      });
+      setCurrentTimerTime((prevTime: Date) => new Date(prevTime.getTime() + 1000));
+      // if the timer is greather than one hour from the current time, update it
+      if (currentTimerTime.getTime() - time.getTime() > ONE_HOUR || oneDayPassed(currentTimerTime, time)) {
+        setCurrentTime(currentTimerTime);
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen]);
+  }, []);
 
   if (!time) {
     return <div>Loading...</div>;
@@ -36,7 +36,8 @@ export const Clock = ({ currentTime }: ClockProps) => {
     const time = formData.get("time") as string;
     try {
       await changeCurrentTime(new Date(time));
-      setTime(new Date(time));
+      setCurrentTime(new Date(time));
+      setCurrentTimerTime(new Date(time));
       return { success: true };
     } catch (error: any) {
       console.log(error);
@@ -47,7 +48,8 @@ export const Clock = ({ currentTime }: ClockProps) => {
   const handleTimeReset = async () => {
     try {
       await resetTime();
-      setTime(new Date());
+      setCurrentTime(new Date());
+      setCurrentTimerTime(new Date());
       return { success: true };
     } catch (error: any) {
       console.log(error);
@@ -68,8 +70,8 @@ export const Clock = ({ currentTime }: ClockProps) => {
         className="text-md font-light flex flex-col items-center leading-tight cursor-pointer hover:opacity-80"
         onClick={() => setIsOpen(true)}
       >
-        <div>{formatDate(time)}</div>
-        <div>{time.toLocaleTimeString()}</div>
+        <div>{formatDate(currentTimerTime)}</div>
+        <div>{currentTimerTime.toLocaleTimeString()}</div>
       </div>
 
       <Modal

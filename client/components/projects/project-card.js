@@ -6,6 +6,7 @@ class ProjectCard extends HTMLElement {
         wrapper.setAttribute('class', 'project-card');
         this.user = null;
         this.project = null;
+        this.time = null;
 
         this.setupStyle();
         shadow.appendChild(wrapper);
@@ -17,6 +18,10 @@ class ProjectCard extends HTMLElement {
         const style = document.createElement('style');
         this.shadowRoot.appendChild(style);
         const existingStyles = `
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
       .project-card {
         min-width: 300px;
         padding: 1.25rem; 
@@ -55,6 +60,10 @@ class ProjectCard extends HTMLElement {
           align-items: center;
       }
 
+      .current-date {
+        background-color: hsl(var(--nextui-primary-100));
+      }
+
       .gantt-cell {
           flex-shrink: 0;
           border-right: 1px solid hsl(var(--nextui-default-400));
@@ -62,8 +71,8 @@ class ProjectCard extends HTMLElement {
           padding: 0.5rem; 
           font-size: 0.75rem;
           color: hsl(var(--nextui-text-color));
-          min-width: 30px; 
-            max-width: 30px;
+          min-width: 35px; 
+          max-width: 35px;
           height: 20px; 
           transition: background-color 0.3s ease; 
       }
@@ -100,11 +109,17 @@ class ProjectCard extends HTMLElement {
           max-width: 150px;
           padding-right: 0.625rem;
           flex-shrink: 0;
+            justify-content: start;
+        align-items: center;
           display: flex;
-          align-items: center; /* Center content vertically */
           overflow-y: hidden;
             overflow-x: hidden;
       }
+    .task-info span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
       .task-info:hover, .task-info:active {
           cursor: pointer; 
@@ -272,18 +287,21 @@ class ProjectCard extends HTMLElement {
 
     // Observe these attributes for changes
     static get observedAttributes() {
-        return ['project', 'user'];
+        return ['project', 'user', 'time'];
     }
 
     // Handle attribute changes
     attributeChangedCallback(name, oldValue, newValue) {
-        if ((name === 'project' || name === 'user') && oldValue !== newValue) {
+        if ((name === 'project' || name === 'user' || name === 'time') && oldValue !== newValue) {
             // Reset the stored data to force re-parsing
             if (name === 'project') {
                 this.project = undefined;
             }
             if (name === 'user') {
                 this.user = undefined;
+            }
+            if (name === 'time') {
+                this.time = undefined;
             }
             this.render();
         }
@@ -294,6 +312,7 @@ class ProjectCard extends HTMLElement {
             // Always parse fresh from attributes
             this.project = JSON.parse(this.getAttribute('project') || '{}');
             this.user = JSON.parse(this.getAttribute('user') || '{}');
+            this.time = this.getAttribute('time') ? new Date(this.getAttribute('time')) : new Date();
         } catch (error) {
             console.error("Error parsing 'project' or 'user' attributes:", error);
             return false;
@@ -333,6 +352,10 @@ class ProjectCard extends HTMLElement {
           <button class="delete" id="delete-proj">delete</button>
         </div>
         <h3>${this.project.description}</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>Members: ${this.project.members.join(', ')}</h4>
+            <h5>Creator: ${this.project.creator}</h5>
+        </div>
         <button class="add-activity-btn">Add Activity</button>
         <div class="gantt-chart">
           ${this.renderGanttChart(this.project.activities, days, startDate)}
@@ -340,8 +363,18 @@ class ProjectCard extends HTMLElement {
         <modal-component id="activityModal">
           <form id="activityForm">
             <input type="text" id="activityTitle" placeholder="Activity Title" required>
-            <input type="date" id="activityStartDate" placeholder="Start Date" required>
-            <input type="date" id="activityDueDate" placeholder="Due Date" required>
+            <label for="activityStartDate">From - To Date</label>
+            <div class="header-inline">
+                <input 
+                    type="date" 
+                    min="${startDate.toISOString().split('T')[0]}"
+                    max="${endDate.toISOString().split('T')[0]}"
+                    id="activityStartDate" placeholder="Start Date" required>
+                <input type="date" 
+                    min="${startDate.toISOString().split('T')[0]}"
+                    max="${endDate.toISOString().split('T')[0]}"
+                    id="activityDueDate" placeholder="Due Date" required>
+            </div>
             <label for="activityAssignees">Assignees</label>
             <select id="activityAssignees" multiple>
             </select>
@@ -366,8 +399,22 @@ class ProjectCard extends HTMLElement {
 
         this._modal = this.shadowRoot.querySelector('modal-component');
 
-        // Event listeners per apertura modale
-        this.addEventListeners(this.project);
+        const overlayGanttRows = this.shadowRoot.querySelector('.overlay-gantt');
+
+        // Restore the last scroll position from localStorage
+        const lastScrollLeft = localStorage.getItem('overlayGanttScrollTop');
+        if (lastScrollLeft) {
+            overlayGanttRows.scrollLeft = parseInt(lastScrollLeft, 10);
+        }
+
+        // Add an event listener to save the scroll position on scroll
+        overlayGanttRows.addEventListener('scroll', () => {
+            localStorage.setItem('overlayGanttScrollTop', overlayGanttRows.scrollLeft);
+        });
+
+        // Event listeners per apertura modale 
+        // deep clone project to avoid modifying the original
+        this.addEventListeners(JSON.parse(JSON.stringify(this.project)));
     }
 
     toggleActivityCompletion(activityId, project) {
@@ -417,7 +464,7 @@ class ProjectCard extends HTMLElement {
             button.addEventListener('click', (e) => {
                 e.stopPropagation(); // Previene il bubbling dell'evento
                 const activityId = button.parentElement.parentElement.dataset.activityId;
-                this.openModal(activityId, project, false);
+                this.openModal(activityId, this.project, false);
             });
         });
 
@@ -433,6 +480,12 @@ class ProjectCard extends HTMLElement {
         addActivityBtn.addEventListener('click', () => {
             this.openModal(null, project, true);
         });
+
+        // check if the user is the creator of the project
+        if (this.user && this.user.username !== project.creator) {
+            deleteProjectBtn.setAttribute('disabled', true);
+            addActivityBtn.setAttribute('disabled', true);
+        }
 
         deleteProjectBtn.addEventListener('click', () => {
             if (confirm(`Are you sure you want to delete the project "${project.title}"?`)) {
@@ -477,6 +530,17 @@ class ProjectCard extends HTMLElement {
             }
         });
 
+        let sidebar = document.querySelector(".sidebar");
+
+        let top = localStorage.getItem("sidebar-scroll");
+        if (top !== null) {
+            sidebar.scrollTop = parseInt(top, 10);
+        }
+
+        // add event listener to save current scroll position of lateral bar
+        window.addEventListener("beforeunload", () => {
+            localStorage.setItem("sidebar-scroll", sidebar.scrollTop);
+        });
         this.setupTooltips();
     }
 
@@ -570,9 +634,7 @@ class ProjectCard extends HTMLElement {
         this.fetchProject(project).then((updatedProject) => {
             this.modifyProject(updatedProject);
         }).catch((error) => {
-            this.addError(`Failed to delete activity: ${error.message}`);
             // Revert the deletion
-            this.addActivityToProject(project, removedActivity, null);
         });
     }
 
@@ -813,8 +875,14 @@ class ProjectCard extends HTMLElement {
         <div class="gantt-cell start-date-column">Start Date</div>
         <div class="gantt-cell end-date-column">End Date</div>
         <div class="gantt-cell participants-column">Assignees</div>
-      ${days.map(day => `<div class="gantt-cell" style="letter-spacing:1px;">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
+      ${days.map(day => `<div class="gantt-cell${this.areSameDate(day, this.time) ? ' current-date' : ''}">${day.getDate()}/${day.getMonth() + 1}</div>`).join('')}
     `;
+    }
+
+    areSameDate(date1, date2) {
+        return date1.getDate() === date2.getDate() &&
+            date1.getMonth() === date2.getMonth() &&
+            date1.getFullYear() === date2.getFullYear();
     }
 
 
@@ -829,19 +897,6 @@ class ProjectCard extends HTMLElement {
         );
 
         return isCompleted && allSubActivitiesComplete;
-    }
-
-    // Add this helper method to your class
-    isActivityFullyComplete(activity) {
-        if (!activity.subActivities || activity.subActivities.length === 0) {
-            return activity.completed;
-        }
-
-        const allSubActivitiesComplete = activity.subActivities.every(subActivity =>
-            this.isActivityFullyComplete(subActivity)
-        );
-
-        return activity.completed && allSubActivitiesComplete;
     }
 
     getActivityCompletionStatus(activity, parentActivity = null) {
@@ -883,11 +938,13 @@ class ProjectCard extends HTMLElement {
       <div class="gantt-row" data-activity-id="${activity._id}">
         <div class="gantt-cell task-info task-name">
           <button class="edit-button" title="Edit activity">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
             </svg>
           </button>
-          ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.title}
+          <span>
+            ${level === 1 ? '<span class="subactivity"></span>' : ''} ${activity.title}
+          </span>
         </div>
       </div>
               `,
@@ -906,7 +963,7 @@ class ProjectCard extends HTMLElement {
                 const activityEndTimestamp = activityEnd.getTime();
 
                 if (dayTimestamp >= activityStartTimestamp && dayTimestamp <= activityEndTimestamp) {
-                    return `<div class="gantt-task-cell gantt-cell ${activity.status}" 
+                    return `<div class="gantt-task-cell gantt-cell ${completionStatus}" 
                  data-activity-name="${activity.title}"
                  data-status="${activity.status}"></div>`;
                 }

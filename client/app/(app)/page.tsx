@@ -1,48 +1,37 @@
-// page.tsx (Server-Side Component)
+"use server";
 
 import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
 import { getUser } from "@/actions/user";
 
-import {
-  ChatModel,
-  NoteModel,
-  Person,
-  PomodoroStats,
-  ProjectModel,
-  SelfieEvent,
-} from "@/helpers/types";
+import { ChatModel, NoteModel, Person } from "@/helpers/types";
 import { getNotes } from "@/actions/notes";
-import { getStats } from "@/actions/pomodoro";
-import getProjects from "@/actions/projects";
-import { getEvents } from "@/actions/events";
-
 
 export default async function Home() {
   try {
-    const [chats,  user]: [
-      ChatModel[],
-      Person
-    ] = await Promise.all([
-      getChats(),
-      getUser(),
-    ]);
+    const [chats, user, notes]: [ChatModel[], Person | Error, NoteModel[]] =
+      await Promise.all([getChats(), getUser(), getNotes()]);
+
+    console.log(notes);
+    if (user instanceof Error) {
+      throw user.message;
+    }
 
     // Pass the fetched data to the client-side component
     return (
       <>
         <Content
           chats={chats}
-          notes={user.notes}
+          notes={notes}
           projects={user.projects}
           pomodoro={user.pomodoro}
           events={user.events}
-          user = {user}
+          user={user}
         />
       </>
     );
   } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return <div>Unexpected error occurred. Please try again later.</div>;
+    console.log(error);
+    return <div className="text-danger">{error}</div>;
   }
 }

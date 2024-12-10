@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MessageModel, StatusEnum, Person } from "@/helpers/types";
 import {
@@ -17,153 +17,134 @@ import { io } from "socket.io-client";
 
 interface ChatModalProps {
   receiverUsername: string;
+  chat: MessageModel[];
+  user: Person;
+  receiver: Person;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername }) => {
+const ChatModal: React.FC<ChatModalProps> = (props) => {
+  const { receiverUsername } = props;
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<MessageModel[]>([]);
-  const [currentUser, setCurrentUser] = useState<Person | null>(null);
-  const [receiver, setReceiver] = useState<Person | null>(null);
+  const [messages, setMessages] = useState<MessageModel[]>(props.chat);
+  const currentUser = props.user;
+  const receiver = props.receiver;
   const [message, setMessage] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
   const socketRef = useRef<any>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
 
-  const getChatByUsername = async (
-    username: string
-  ): Promise<MessageModel[]> => {
-    const res = await fetch(`/api/chats/messages/${username}`);
-    if (!res.ok) throw new Error("Failed to fetch chat");
-    return res.json();
-  };
-
-  const getUser = async (): Promise<Person> => {
-    const res = await fetch("/api/users/id");
-    if (!res.ok) throw new Error("Failed to fetch user");
-    return res.json();
-  };
-
-  const getUserByUsername = async (username: string): Promise<Person> => {
-    const res = await fetch(`/api/users/usernames/${username}`);
-    if (!res.ok) throw new Error("Failed to fetch receiver");
-    return res.json();
-  };
-
-  // fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [user, receiverData, chatMessages] = await Promise.all([
-          getUser(),
-          getUserByUsername(receiverUsername),
-          getChatByUsername(receiverUsername),
-        ]);
-
-        setCurrentUser(user);
-        setReceiver(receiverData);
-        setMessages(chatMessages);
-        setLoading(false);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [receiverUsername]);
+  // Function to add message to the chat
+  function addMessage(newMessage: MessageModel) {
+    setMessages((prev) =>
+      [...prev, newMessage].sort((a, b) => {
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      }),
+    );
+  }
+  // Function to update user status in the UI
+  function updateUserStatus(username: string, isOnline: boolean) {
+    if (username === receiverUsername) {
+      setIsOnline(isOnline);
+    }
+  }
 
   // start socket connection
   useEffect(() => {
-    if (!currentUser) return;
     // Initialize socket connection
-    socketRef.current = io("https://site232454.tw.cs.unibo.it");
-
-    // Join the chat
-    socketRef.current.emit("join", {
-      userId: currentUser._id,
-      username: currentUser.username,
-      receiverUsername,
-    });
-
-    // Listen for incoming messages
-    socketRef.current.on("receive_message", (newMessage: MessageModel) => {
-      setMessages((prev) => [...prev, newMessage]);
-      scrollToBottom();
-      // Send read receipt
-      if (newMessage._id) {
-        socketRef.current.emit("message_read", { messageId: newMessage._id });
-      }
-    });
-
-    // Handle typing indicators
-    socketRef.current.on("user_typing", (data: { username: string }) => {
-      if (data.username === receiverUsername) {
-        setIsTyping(true);
-      }
-    });
-
-    socketRef.current.on(
-      "user_stopped_typing",
-      (data: { username: string }) => {
-        console.log("user_stopped_typing", data);
-        if (data.username === receiverUsername) {
-          setIsTyping(false);
-        }
-      }
-    );
-
-    socketRef.current.on(
-      "message_status",
-      (data: { messageId: string; status: string }) => {
-        setMessages((prev) =>
-          prev.map((msg) => {
-            if (msg._id === data.messageId) {
-              return { ...msg, status: data.status as StatusEnum };
-            }
-            return msg;
-          })
-        );
-      }
-    );
-
-    // Listen for online/offline events
-    socketRef.current.on("user_online", (data: any) => {
-      const { username } = data;
-      updateUserStatus(username, true);
-    });
-
-    socketRef.current.on("user_offline", (data: any) => {
-      const { username } = data;
-      updateUserStatus(username, false);
-    });
-
-    // Function to update user status in the UI
-    function updateUserStatus(username: string, isOnline: boolean) {
-      if (username === receiverUsername) {
-        setIsOnline(isOnline);
-      }
+    if (!process.env.NEXT_PUBLIC_SOCKET_URL) {
+      throw new Error("Socket URL not found");
     }
+    setLoading(true);
+    try {
+      socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL as string);
 
-    socketRef.current.on("message_sent", (data: MessageModel) => {
-      setMessages((prev) => [...prev, data]);
-    });
+      // Join the chat
+      socketRef.current.emit("join", {
+        userId: currentUser._id,
+        username: currentUser.username,
+        receiverUsername,
+      });
 
-    // Cleanup on unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
+      // Listen for incoming messages
+      socketRef.current.on("receive_message", (newMessage: MessageModel) => {
+        addMessage(newMessage);
+        scrollToBottom();
+        // Send read receipt
+        if (newMessage._id) {
+          socketRef.current.emit("message_read", { messageId: newMessage._id });
+        }
+      });
+
+      // Handle typing indicators
+      socketRef.current.on("user_typing", (data: { username: string }) => {
+        if (data.username === receiverUsername) {
+          setIsTyping(true);
+        }
+      });
+
+      socketRef.current.on(
+        "user_stopped_typing",
+        (data: { username: string }) => {
+          console.log("user_stopped_typing", data);
+          if (data.username === receiverUsername) {
+            setIsTyping(false);
+          }
+        },
+      );
+
+      socketRef.current.on(
+        "message_status",
+        (data: { messageId: string; status: string }) => {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg._id === data.messageId) {
+                return { ...msg, status: data.status as StatusEnum };
+              }
+              return msg;
+            }),
+          );
+        },
+      );
+
+      // Listen for online/offline events
+      socketRef.current.on("user_online", (data: any) => {
+        const { username } = data;
+        updateUserStatus(username, true);
+      });
+
+      socketRef.current.on("user_offline", (data: any) => {
+        const { username } = data;
+        updateUserStatus(username, false);
+      });
+
+      socketRef.current.on("message_sent", (data: MessageModel) => {
+        addMessage(data);
+      });
+
+      // Cleanup on unmount
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      };
+    } catch (error) {
+      console.error("Failed to connect to socket:", error);
+      setError("Failed to connect to socket");
+    } finally {
+      setLoading(false);
+    }
   }, [currentUser, receiverUsername]);
 
   useEffect(() => {
@@ -292,45 +273,59 @@ const ChatModal: React.FC<ChatModalProps> = ({ receiverUsername }) => {
         <ModalBody>
           <div className="flex flex-col gap-4">
             {messages.map((msg, idx) => (
-              <div
-                key={msg._id || idx}
-                className={`flex gap-5 ${
-                  msg.sender === currentUser.username
-                    ? "flex-row-reverse"
-                    : "flex-row"
-                }`}
-              >
-                <Avatar
-                  isBordered
-                  radius="full"
-                  size="sm"
-                  src={
-                    msg.sender === currentUser.username
-                      ? currentUser.avatar
-                      : receiver?.avatar
-                  }
-                />
+              <React.Fragment key={msg._id || idx}>
+                {/* show hr when date changes */}
+                {idx > 0 &&
+                  new Date(messages[idx - 1].createdAt).getDate() !==
+                    new Date(msg.createdAt).getDate() && (
+                    <>
+                      <hr className="my-2" />
+                      <p className="text-center text-sm text-gray-500">
+                        {new Date(msg.createdAt).toDateString()}
+                      </p>
+                    </>
+                  )}
+
                 <div
-                  className={`flex flex-col gap-1 max-w-[70%] ${
+                  key={msg._id || idx}
+                  className={`flex gap-5 ${
                     msg.sender === currentUser.username
-                      ? "items-end"
-                      : "items-start"
+                      ? "flex-row-reverse"
+                      : "flex-row"
                   }`}
                 >
-                  <p
-                    className={`px-4 py-2 rounded-lg ${
+                  <Avatar
+                    isBordered
+                    radius="full"
+                    size="sm"
+                    src={
                       msg.sender === currentUser.username
-                        ? "bg-primary text-white"
-                        : "bg-gray-100 dark:bg-gray-800"
+                        ? currentUser.avatar
+                        : receiver?.avatar
+                    }
+                  />
+                  <div
+                    className={`flex flex-col gap-1 max-w-[70%] ${
+                      msg.sender === currentUser.username
+                        ? "items-end"
+                        : "items-start"
                     }`}
                   >
-                    {msg.message}
-                  </p>
-                  <span className="text-xs text-gray-500">
-                    {formatDate(msg.createdAt)}
-                  </span>
+                    <p
+                      className={`px-4 py-2 rounded-lg overflow-x-auto w-full ${
+                        msg.sender === currentUser.username
+                          ? "bg-primary text-white"
+                          : "bg-gray-100 dark:bg-gray-800"
+                      }`}
+                    >
+                      {msg.message}
+                    </p>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(msg.createdAt)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             ))}
             <div ref={messagesEndRef} />
           </div>

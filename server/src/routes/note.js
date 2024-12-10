@@ -10,8 +10,6 @@ function createNoteRouter(db) {
     const uid = req.user._id;
     const note = req.body;
 
-    console.log(note);
-
     try {
       const result = await db.postNote(uid, note);
       res.status(201).json({ message: "Nota aggiunta correttamente", result });
@@ -42,9 +40,8 @@ function createNoteRouter(db) {
   // Es: /note/list?fields=title,date
   router.get("/list", cookieJwtAuth, async function (req, res) {
     const uid = req.user._id;
-    const fields = req.query.fields ? req.query.fields.split(",") : null;
     try {
-      const result = await db.getNotes(uid, fields);
+      const result = await db.getNotes(uid);
       if (!result)
         return res.status(404).json({ message: "Nessuna nota trovata" });
       return res.status(200).json(result);

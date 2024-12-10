@@ -13,8 +13,8 @@ module.exports = {
   theme: {
     extend: {
       boxShadow: {
-        'light': '0 4px 6px rgba(255, 255, 255, 0.1)', // Ombra chiara per dark mode
-      }
+        light: "0 4px 6px rgba(255, 255, 255, 0.1)", // Ombra chiara per dark mode
+      },
     },
   },
   darkMode: "class",

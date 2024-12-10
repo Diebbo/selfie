@@ -9,22 +9,23 @@ import { activitySchema } from "./models/event-model.js";
 import { projectSchema } from "./models/project-model.js";
 import { songSchema } from "./models/song-model.js";
 import { messageSchema } from "./models/chat-model.js";
-
+import { noteSchema } from "./models/note-model.js";
+import { resourceSchema } from "./models/event-model.js";
 
 // services import
 import createProjectService from "./services/projects.mjs";
 
 export async function createDataBase(uri) {
-  
-  
   // creating a model
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
+  const resourceModel = mongoose.model("Resource", resourceSchema);
   const songModel = mongoose.model("Song", songSchema);
   const projectModel = mongoose.model("Project", projectSchema);
   const activityModel = mongoose.model("Activity", activitySchema);
   const chatModel = mongoose.model("Chat", messageSchema);
+  const noteModel = mongoose.model("Note", noteSchema);
 
   const models = {
     timeModel,
@@ -34,6 +35,7 @@ export async function createDataBase(uri) {
     projectModel,
     activityModel,
     chatModel,
+    resourceModel,
   };
 
   await mongoose.connect(uri, { dbName: "test" });
@@ -56,7 +58,10 @@ export async function createDataBase(uri) {
     const usernameUser = await userModel.findOne({ username: user.username });
     if (usernameUser) throw new Error("Username already used");
 
-    let res = await userModel.create({ ...user });
+    let res = await userModel.create({
+      ...user,
+      avatar: `https://api.dicebear.com/9.x/open-peeps/svg?seed=${user.username}`,
+    });
 
     // OLD send verification email
     /*addNotification(res, {
@@ -69,10 +74,10 @@ export async function createDataBase(uri) {
     const payload = {
       title: "Verify your email",
       body: `Click here to verify your email:`,
-      link: `https://site232454.tw.cs.unibo.it/verification?emailToken=${user.emailtoken}`,
+      link: `verification?emailToken=${user.emailtoken}`,
     };
 
-    return { dbuser:res, payload };
+    return { dbuser: res, payload };
   };
 
   const updateUsername = async (uid, username) => {
@@ -96,6 +101,23 @@ export async function createDataBase(uri) {
     user.isVerified = true;
     user.emailtoken = "";
     await user.save();
+
+    return user;
+  };
+
+  const lostPassword = async (email, resetToken) => {
+    const user = await userModel.findOne({ email: email });
+    if (!user) throw new Error("User not found");
+
+    user.resetToken = resetToken;
+    await user.save();
+    return user;
+  };
+
+  const verifyResetToken = async (resetToken) => {
+    console.log(resetToken);
+    const user = await userModel.findOne({ resetToken: resetToken });
+    if (!user) throw new Error("Invalid token");
 
     return user;
   };
@@ -134,6 +156,8 @@ export async function createDataBase(uri) {
     if (!user) throw new Error("User not found");
 
     user.password = hashedPassword;
+    user.isVerified = true;
+    if (user.resetToken) user.resetToken = "";
     await user.save();
     return user;
   };
@@ -326,21 +350,44 @@ export async function createDataBase(uri) {
 
       if (id) {
         // Modify existing note
-        const noteId = new mongoose.Types.ObjectId(id); // convert _id field from a string to ObjectID to compare with ids in the db
-        const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
-        if (noteIndex !== -1) {
-          // Update existing note
-          user.notes[noteIndex] = {
-            ...user.notes[noteIndex].toObject(),
-            ...note,
-            _id: noteId, // Ensure we keep the original ObjectId
-          };
+        const noteId = new mongoose.Types.ObjectId(id);
+        if (note.isPublic) {
+          // Modifica nota pubblica
+          const publicNote = await noteModel.findById(noteId);
+          if (publicNote) {
+            await noteModel.findByIdAndUpdate(noteId, {
+              ...note,
+              userId: uid,
+              _id: noteId,
+            });
+          } else {
+            throw new Error("Public note with provided ID not found");
+          }
         } else {
-          throw new Error("Note with provided ID not found");
+          // Modifica nota privata
+          const noteIndex = user.notes.findIndex((n) => n._id.equals(noteId));
+          if (noteIndex !== -1) {
+            user.notes[noteIndex] = {
+              ...user.notes[noteIndex].toObject(),
+              ...note,
+              _id: noteId,
+            };
+          } else {
+            throw new Error("Note with provided ID not found");
+          }
         }
       } else {
         // New note
-        user.notes.push(note);
+        if (note.isPublic) {
+          // Crea nota pubblica
+          await noteModel.create({
+            ...note,
+            userId: uid,
+          });
+        } else {
+          // Crea nota privata
+          user.notes.push(note);
+        }
       }
 
       await user.save();
@@ -351,33 +398,15 @@ export async function createDataBase(uri) {
     }
   };
 
-  const getNotes = async (uid, fields = null) => {
-    let projection = { "notes._id": 1 }; // Sempre includi l'ID della nota
-
-    if (Array.isArray(fields) && fields.length > 0) {
-      fields.forEach((field) => {
-        projection[`notes.${field}`] = 1;
-      });
-    } else {
-      projection = { notes: 1 }; // Se fields non è specificato o è vuoto, prendi tutte le note
-    }
-
-    const user = await userModel.findById(uid, projection);
+  const getNotes = async (uid) => {
+    const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
-
-    return user.notes.map((note) => {
-      if (Array.isArray(fields) && fields.length > 0) {
-        const filteredNote = { _id: note._id };
-        fields.forEach((field) => {
-          if (note[field] !== undefined) {
-            filteredNote[field] = note[field];
-          }
-        });
-        return filteredNote;
-      } else {
-        return note.toObject(); // Ritorna tutti i campi della nota
-      }
-    });
+    const publicNotes = await noteModel.find({});
+    const privateNote = user.notes;
+    return {
+      private: privateNote,
+      public: publicNotes,
+    };
   };
 
   const getNoteById = async (uid, noteId) => {
@@ -400,14 +429,15 @@ export async function createDataBase(uri) {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
-      const noteIndex = user.notes.findIndex(
+      let noteIndex = user.notes.findIndex(
         (note) => note._id.toString() === noteId,
       );
-      if (noteIndex === -1) throw new Error("Note not found");
-
-      user.notes.splice(noteIndex, 1);
-      await user.save();
-
+      if (noteIndex === -1) {
+        noteIndex = await noteModel.findByIdAndDelete(noteId);
+      } else {
+        user.notes.splice(noteIndex, 1);
+        await user.save();
+      }
       return { message: "Note removed successfully" };
     } catch (error) {
       console.error("Error removing note:", error);
@@ -416,8 +446,8 @@ export async function createDataBase(uri) {
   };
 
   const addNotification = async (user, notification) => {
-    if (!user.inobxNotifications) user.inboxNotifications = [];
-    user.inboxNotifications.push(notification);
+    if (!user.inbox) user.inbox = [];
+    user.inbox.push(notification);
     await user.save();
   };
   /* Explanation of the generateNotifications function:
@@ -544,6 +574,115 @@ export async function createDataBase(uri) {
     );
   }
 
+  const getResource = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    try {
+      const risorse = await resourceModel.find();
+      return risorse;
+    } catch (error) {
+      throw new Error(error);
+    }
+  };
+
+  const addResource = async (resource, uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+    if (user.role === 'user') throw new Error("Not Authorized");
+
+    try {
+      const addedResource = resourceModel.create({ ...resource, creator: uid });
+      return addedResource;
+    } catch (e) {
+      throw new Error(e);
+    }
+  };
+
+  const unBookResource = async (uid, bookId) => {
+    if (!uid || !bookId) {
+      throw new Error("Missing required parameters");
+    }
+
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    const result = await resourceModel.findOneAndUpdate(
+      { "used._id": new mongoose.Types.ObjectId(bookId) },
+      { $pull: { used: { _id: new mongoose.Types.ObjectId(bookId) } } },
+      { new: true }
+    );
+    await result.save();
+
+    if (!result) {
+      throw new Error("Booking not found in any resource");
+    }
+
+    return {
+      success: true,
+      message: "Resource unbooked successfully",
+      resourceId: result._id
+    };
+  };
+
+  const bookResource = async (uid, id, startDate, endDate) => {
+    try {
+      const user = await userModel.findById(uid);
+      if (!user) throw new Error("User not found");
+
+      const resource = await resourceModel.findById(id);
+      if (!resource) throw new Error("Resource not found");
+
+      const isOverlapping = resource.used.some((period) => {
+        return (
+          (startDate >= period.startTime && startDate < period.endTime) ||
+          (endDate > period.startTime && endDate <= period.endTime) ||
+          (startDate <= period.startTime && endDate >= period.endTime)
+        );
+      });
+
+      if (isOverlapping) {
+        return false;
+      }
+
+      resource.used.push({
+        startTime: startDate,
+        endTime: endDate,
+      });
+
+      await resource.save();
+      return true;
+    } catch (error) {
+      throw new Error(error);
+    }
+  };
+
+  const deleteResource = async (uid, resourceName) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    // Verifica che l'utente sia admin
+    if (!isAdmin(uid)) throw new Error("User is not authorized to delete resources");
+
+    // Trova la risorsa tramite il nome
+    const resource = await resourceModel.findOne({ name: resourceName });
+    if (!resource) throw new Error("Resource not found");
+
+    // Trova e aggiorna tutti gli eventi che utilizzano questa risorsa
+    await eventModel.updateMany(
+      { resource: resourceName },
+      { $unset: { resource: "" } }
+    );
+
+    // Elimina la risorsa dal modello delle risorse
+    await resourceModel.deleteOne({ _id: resource._id });
+
+    return {
+      success: true,
+      message: `Resource ${resourceName} successfully deleted and removed from all events`,
+      deletedResource: resource
+    };
+  };
+
   const getEvents = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -556,6 +695,14 @@ export async function createDataBase(uri) {
     // Recupera tutti gli eventi in una sola query
     const events = await eventModel.find({ _id: { $in: allEventIds } });
 
+    if (!events) return [];
+    for (const event of events) {
+      await event.populate({
+        path: "participants",
+        select: "username _id",
+      });
+    }
+
     return events;
   };
 
@@ -566,11 +713,16 @@ export async function createDataBase(uri) {
     const event = await eventModel.findById(eventid);
     if (!event) throw new Error("Event not found");
 
-    return event;
+    const owner = await userModel.findById(event.uid, "username _id");
+    event.owner = owner;
+
+    return event.populate({
+      path: "participants",
+      select: "username _id",
+    });
   };
 
   const createEvent = async (uid, event) => {
-    // Validazione iniziale dell'utente
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -580,25 +732,21 @@ export async function createDataBase(uri) {
       throw new Error("Event must have a date");
 
     try {
-      // Creazione evento
       const addedEvent = await eventModel.create({ ...event, uid: uid });
       if (!addedEvent) throw new Error("Failed to create event");
 
-      // Aggiungi l'evento all'utente creatore
       await userModel.findByIdAndUpdate(
         uid,
         { $push: { events: addedEvent._id } },
         { new: true },
       );
 
-      // Gestione partecipanti
       if (addedEvent.participants && addedEvent.participants.length > 0) {
         var notifications = [];
         for (const participant of addedEvent.participants) {
           try {
-            // Usa findOneAndUpdate invece di find + save
             const updated = await userModel.findByIdAndUpdate(
-              participant,
+              participant._id,
               { $push: { invitedEvents: addedEvent._id } },
               { new: true },
             );
@@ -669,9 +817,11 @@ export async function createDataBase(uri) {
 
   const modifyEvent = async (uid, event, eventId) => {
     const user = await userModel.findById(uid);
+
     if (!user) throw new Error("User not found");
 
-    const oldEvent = await eventModel.findById(eventId);
+    const oldEvent = await eventModel.findById(eventId).populate('participants');
+
     if (!oldEvent) throw new Error("Event not found");
 
     if (oldEvent.uid.toString() !== uid.toString())
@@ -679,15 +829,83 @@ export async function createDataBase(uri) {
 
     try {
       // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
-      const replacedEvent = await eventModel.replaceOne(
+      const updatedEvent = await eventModel.replaceOne(
         { _id: eventId },
-        { ...event, uid: uid },
+        { ...event, uid: uid }
       );
-      if (replacedEvent.modifiedCount === 0) {
+
+      if (updatedEvent.modifiedCount === 0) {
         throw new Error("Event replace failed");
       }
 
-      return { replacedEvent };
+      // Trova i nuovi partecipanti confrontando gli ID
+      const oldParticipantIds = oldEvent.participants.map(p => p._id);
+      const newParticipantIds = event.participants.map(p => p._id);
+
+      // Trova i partecipanti rimossi
+      const removedParticipantIds = oldParticipantIds.filter(
+        id => !newParticipantIds.includes(id)
+      );
+
+      // Trova i nuovi partecipanti
+      const newParticipants = newParticipantIds.filter(
+        id => !oldParticipantIds.includes(id)
+      );
+
+      var notifications = [];
+
+      // Rimuove l'evento dagli utenti che non sono più partecipanti
+      for (const removedParticipantId of removedParticipantIds) {
+        try {
+          await userModel.findByIdAndUpdate(
+            removedParticipantId,
+            {
+              $pull: {
+                invitedEvents: eventId,
+                participatingEvents: eventId
+              }
+            }
+          );
+          console.log(`Event removed from user: ${removedParticipantId}`);
+        } catch (err) {
+          console.error(`Error removing event from participant ${removedParticipantId}:`, err);
+        }
+      }
+
+      // Invia notifiche solo ai nuovi partecipanti
+      for (const participantId of newParticipantIds) {
+        console.log(participantId);
+        try {
+          const updated = await userModel.findByIdAndUpdate(
+            participantId,
+            { $push: { invitedEvents: eventId } },
+            { new: true }
+          );
+
+          var payload = {
+            title: "📆 Sei stato invitato a un evento di gruppo",
+            body:
+              "L'utente " +
+              user.username +
+              " ti ha invitato all'evento " +
+              event.title +
+              "\nClicca qui per accettare l'invito.",
+            link: `/calendar/${eventId}/${participantId}`,
+          };
+
+          notifications.push({ user: updated, payload });
+
+          if (!updated) {
+            console.log(`User not found: ${participantId}`);
+          } else {
+            console.log(`Event added to user: ${participantId}`);
+          }
+        } catch (err) {
+          console.error(`Error updating participant ${participantId}:`, err);
+        }
+      }
+
+      return { updatedEvent, notifications };
     } catch (e) {
       throw new Error("Event did not get changed: " + e.message);
     }
@@ -695,24 +913,26 @@ export async function createDataBase(uri) {
 
   // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
   const dodgeEvent = async (uid, eventId) => {
-    console.log("guma is gliding");
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
     const event = await eventModel.findById(eventId);
     if (!event) throw new Error("Event not found");
 
-    // togliere l'evento dalla lista degli eventi dello user
-    const res = await userModel.findByIdAndUpdate(uid, {
+    const userRes = await userModel.findByIdAndUpdate(uid, {
       $pull: { participatingEvents: eventId },
     });
 
-    return res;
+    const eventRes = await eventModel.findByIdAndUpdate(eventId, {
+      $pull: { participants: uid },
+    });
+    console.log("evento senza:", eventRes);
+
+    return { userRes, eventRes };
   };
 
-  // accetto la proposta dell'evento [componente participateevent]
+  // accetto la proposta dell'evento [componente participateEvent]
   const participateEvent = async (uid, eventId) => {
-    console.log("prova");
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -720,23 +940,20 @@ export async function createDataBase(uri) {
     if (!event) throw new Error("Event not found");
 
     // Check if user is already participating
-    if (user.participatingEvents.includes(eventId))
+    if (user.participatingEvents?.includes(eventId))
       throw new Error("User is already participating in this event");
-    else if (!user.invitedUser.includes(eventId))
-      throw new Error("User is not invited to the event");
+
+    if (!user.participatingEvents) user.participatingEvents = [];
     user.participatingEvents.push(eventId);
     user.invitedEvents = user.invitedEvents.filter(
       (e) => e.toString() !== eventId.toString(),
     );
     await user.save();
 
-    //devo fare altro per mandare le notifiche dell'evento?
-    //non credo tanto l'evento c'è già nello user
-
     return user.invitedEvents;
   };
 
-  // rifiuto la proposta dell'evento [componente participateevent]
+  // rifiuto la proposta dell'evento [componente participateEvent]
   const rejectEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -753,9 +970,12 @@ export async function createDataBase(uri) {
     );
     await user.save();
 
+    await eventModel.findByIdAndUpdate(eventId, {
+      $pull: { participants: uid },
+    });
+
     return user.invitedEvents;
   };
-
 
   const getParticipantsUsernames = async (eventId) => {
     try {
@@ -763,12 +983,15 @@ export async function createDataBase(uri) {
       if (!event) throw new Error("Event not found");
 
       // Trova tutti gli utenti che hanno questo eventId nel loro array events
-      const users = await userModel.find({
-        invitedEvents: eventId  // Cerca l'eventId nell'array events
-      }, 'username'); // Proietta solo il campo username
+      const users = await userModel.find(
+        {
+          invitedEvents: eventId, // Cerca l'eventId nell'array events
+        },
+        "username",
+      ); // Proietta solo il campo username
 
       // Estrai gli username dal risultato
-      const usernames = users.map(user => user.username);
+      const usernames = users.map((user) => user.username);
 
       return usernames;
     } catch (error) {
@@ -776,41 +999,164 @@ export async function createDataBase(uri) {
     }
   };
 
-  // TYPO
-  const getUsrernameForActivity = async (activity) => {
-    if (!activity.participants || activity.participants.length === 0) {
-      return activity;
+  const importEvents = async (events, userId) => {
+    const importedEvents = [];
+
+    // Validazione iniziale dell'utente
+    const user = await userModel.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    for (const event of Object.values(events)) {
+      if (event.type !== "VEVENT") continue;
+
+      try {
+        // Converti l'evento iCal nel formato del tuo schema
+        const eventData = {
+          title: event.summary || "",
+          summary: event.summary || "",
+          uid: userId,
+          sequence: event.sequence || 0,
+          status: mapStatus(event.status),
+          transp: event.transparency || "OPAQUE",
+          dtstart: event.start,
+          dtend: event.end,
+          dtstamp: event.dtstamp?.toISOString() || new Date().toISOString(),
+          allDay: event.allDay || false,
+          categories: event.categories || [],
+          location: event.location || "",
+          description: event.description || "",
+          URL: event.url || "",
+          participants: [],
+        };
+
+        // Aggiungi le coordinate geografiche se presenti
+        if (event.geo) {
+          eventData.geo = {
+            lat: event.geo.lat,
+            lon: event.geo.lon,
+          };
+        }
+
+        // Gestisci le regole di ricorrenza se presenti
+        if (event.rrule) {
+          eventData.rrule = parseRRule(event.rrule);
+        }
+
+        // Salva l'evento nel database
+        const newEvent = new eventModel(eventData);
+        // Con .save() aggiungo _id nell'oggetto
+        const savedEvent = await newEvent.save();
+        if (!savedEvent) throw new Error("Failed to save event");
+
+        // Aggiungi l'evento all'array importedEvents
+        importedEvents.push(savedEvent);
+      } catch (error) {
+        console.error("Error importing event:", error);
+        // Continua con il prossimo evento anche se questo fallisce
+        continue;
+      }
     }
 
-    // Fetch the user details for all participants based on their IDs
-    console.log(activity.participants);
-    let participants = await userModel.find({
-      _id: { $in: activity.participants.map((id) => id.toString()) },
-    });
+    try {
+      // Aggiorna l'array events dell'utente con tutti gli eventi importati
+      if (importedEvents.length > 0) {
+        await userModel.findByIdAndUpdate(
+          userId,
+          {
+            $push: {
+              events: {
+                $each: importedEvents.map((event) => event._id),
+              },
+            },
+          },
+          { new: true },
+        );
+      }
 
-    // Replace the participant IDs with their usernames
-    activity.participants = participants.map((user) => user.username);
-    console.log(activity.participants);
-    console.log("-----");
-    return activity;
+      const importedTitles = importedEvents
+        .map((event) => event.title)
+        .filter((title) => title !== undefined && title !== null);
+
+      return importedTitles;
+    } catch (error) {
+      console.error("Error updating user events:", error);
+      throw new Error("Failed to update user events");
+    }
+  };
+
+  // Helper function per mappare lo status dell'evento
+  const mapStatus = (status) => {
+    switch (status?.toUpperCase()) {
+      case "CONFIRMED":
+        return "confirmed";
+      case "TENTATIVE":
+        return "tentative";
+      case "CANCELLED":
+        return "cancelled";
+      default:
+        return "confirmed";
+    }
+  };
+
+  // Helper function per parsare le regole di ricorrenza
+  const parseRRule = (rrule) => {
+    const ruleObj = {};
+
+    if (rrule.freq) {
+      ruleObj.freq = rrule.freq.toLowerCase();
+    }
+
+    if (rrule.interval) {
+      ruleObj.interval = rrule.interval;
+    }
+
+    if (rrule.until) {
+      ruleObj.until = new Date(rrule.until);
+    }
+
+    if (rrule.count) {
+      ruleObj.count = rrule.count;
+    }
+
+    if (rrule.bymonth) {
+      ruleObj.bymonth = rrule.bymonth;
+    }
+
+    if (rrule.bymonthday) {
+      ruleObj.bymonthday = rrule.bymonthday;
+    }
+
+    if (rrule.byday) {
+      ruleObj.byday = rrule.byday.map((day) => {
+        if (typeof day === "string") {
+          return { day: day };
+        }
+        return {
+          day: day.day,
+          position: day.pos || 1,
+        };
+      });
+    }
+
+    if (rrule.bysetpos) {
+      ruleObj.bysetpos = Array.isArray(rrule.bysetpos)
+        ? rrule.bysetpos
+        : [rrule.bysetpos];
+    }
+
+    if (rrule.wkst) {
+      ruleObj.wkst = rrule.wkst;
+    }
+
+    return ruleObj;
   };
 
   const getUsernameForActivities = async (activities) => {
     if (!activities || activities.length === 0) return activities;
 
     for (let i = 0; i < activities.length; i++) {
-      // Check if the activity has subActivities and recursively process them
-      if (
-        activities[i].subActivities &&
-        activities[i].subActivities.length > 0
-      ) {
-        activities[i].subActivities = await getUsernameForActivities(
-          activities[i].subActivities,
-        );
-      }
-
       // Process the participants for the current (father) activity
-      activities[i] = await getUsrernameForActivity(activities[i]);
+      activities[i] = await getUsernameForActivity(activities[i]);
     }
 
     return activities;
@@ -865,36 +1211,33 @@ export async function createDataBase(uri) {
 
     if (!activity.title || !activity.startDate || !activity.dueDate) {
       throw new Error(
-        `Activity must have a title, start date, and due date: ${JSON.stringify(activity)}`
+        `Activity must have a title, start date, and due date: ${JSON.stringify(activity)}`,
       );
     }
 
     // Check if the activity's due date is after the project's start date and before or on the project's deadline
-    if (
-      startDate &&
-      new Date(activity.dueDate) < new Date(startDate)
-    ) {
+    if (startDate && new Date(activity.dueDate) < new Date(startDate)) {
       throw new Error(
-        `Activity due date must be after the project start date: ${startDate}`
+        `Activity due date must be after the project start date: ${startDate}`,
       );
     }
 
     if (new Date(activity.dueDate) > new Date(deadline)) {
       throw new Error(
-        `Activity due date must be on or before the project deadline: ${deadline}`
+        `Activity due date must be on or before the project deadline: ${deadline}`,
       );
     }
 
     if (new Date(activity.startDate) < new Date(startDate)) {
       throw new Error(
-        `Activity start date must be after the project start date: ${startDate}`
+        `Activity start date must be after the project start date: ${startDate}`,
       );
     }
 
     // Ensure activity's start date is before its due date
     if (new Date(activity.startDate) > new Date(activity.dueDate)) {
       throw new Error(
-        `Activity start date must be before its due date: ${activity.dueDate}`
+        `Activity start date must be before its due date: ${activity.dueDate}`,
       );
     }
 
@@ -904,7 +1247,10 @@ export async function createDataBase(uri) {
     }
 
     activity.subActivities?.forEach((subActivity) => {
-      checkActivityFit({ startDate:activity.startDate, deadline:activity.dueDate }, subActivity);
+      checkActivityFit(
+        { startDate: activity.startDate, deadline: activity.dueDate },
+        subActivity,
+      );
     });
   };
 
@@ -1283,36 +1629,7 @@ export async function createDataBase(uri) {
     }
   };
 
-  // NOW PLACED IN pushNotificationWorker
-  /*const checkAndSendNotification = async () => {
-    console.log(`Checking notifications at ${new Date().toISOString()}`);
-    const users = await getAllUserEvents();
-    const now = getDateTime();
- 
-    try {
-      for (const user of users) {
-        if (!user.subscription) continue;
- 
-        for (const event of user.events) {
-          if (shouldSendNotification(event, now)) {
-            const payload = createNotificationPayload(event);
-            if (event.notification.type == "push") {
-              await sendPushNotification(user.subscription, payload);
-            } else if (event.notification.type == "email") {
-              payload.email = user.email;
-              console.log(payload);
-              await sendNotification(payload);
-            }
-            console.log(`Sent notification to ${user.username}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error checking and sending notifications:", error);
-    }
-  };*/
-
-  const createActivity = async (uid, projectId, activity) => {
+  const createActivity = async (uid, activity, parentId = null) => {
     let user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
@@ -1324,275 +1641,121 @@ export async function createDataBase(uri) {
       throw new Error("Activity must have a dueDate");
     }
 
-    var addedActivity = await activityModel.create({
-      ...activity,
-      uid: uid,
-      parentId: "root",
+    /* activity.participants = [user.username];
+
+    const users = await userModel.find({
+      username: { $in: activity.participants },
     });
 
-    if (!projectId) {
-      user.activities.push(addedActivity._id);
-      await user.save();
-      await generateNotificationsForActivity(addedActivity, [user]);
-    } else {
-      const project = await projectModel.findByIdAndUpdate(
-        projectId,
-        { $addToSet: { activities: addedActivity._id.toString() } },
-        { new: true },
-      );
-      if (!project) throw new Error("Project not found");
+    if (users.length !== activity.participants.length) {
+      throw new Error("Some participants not found");
+    }
 
-      let participants = await userModel.find({
-        _id: { $in: addedActivity.participants },
+    activity.participants = activity.participants.map((part) =>
+      users.find((user) => user.username === part)._id.toString(),
+    );
+    */
+
+    if (!parentId) {
+      console.log("Creating new activity", activity);
+      const addedActivity = await activityModel.create({
+        ...activity,
+        uid: uid,
       });
-      const allParticipants = participants ? [...participants, user] : [user];
-      await generateNotificationsForActivity(addedActivity, allParticipants);
+      return addedActivity;
     }
 
-    return addedActivity;
-  };
+    const parentActivity = await activityModel.findById(parentId);
 
-  const createSubActivity = async (uid, projectId, parentId, subactivity) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    const parent = await activityModel.findById(parentId);
-    if (!parent) throw new Error("Parent not found");
-
-    if (!subactivity.name) {
-      throw new Error("Activity must have a name");
+    if (!parentActivity) {
+      throw new Error("Parent activity not found");
     }
 
-    if (!subactivity.dueDate) {
-      throw new Error("Activity must have a dueDate");
+    if (parentActivity.uid.toString() !== uid.toString()) {
+      throw new Error("Parent activity does not belong to user");
     }
 
-    const addedSubActivity = await activityModel.create({
-      ...subactivity,
+    if (!parentActivity.subActivities) parentActivity.subActivities = [];
+
+    parentActivity.subActivities.push({
+      ...activity,
       uid: uid,
       parentId: parentId,
     });
-    parent.subActivity.push(addedSubActivity._id);
-    await parent.save();
 
-    if (!projectId) {
-      await generateNotificationsForActivity(addedSubActivity, [user]);
-    } else {
-      var participants = await userModel.find({
-        _id: { $in: addedSubActivity.participants },
-      });
-      await generateNotificationsForActivity(addedSubActivity, [participants]);
-    }
+    await parentActivity.save();
 
-    return addedSubActivity;
+    return parentActivity;
+    //return await getUsernameForActivity(parentActivity);
   };
 
-  const getActivities = async (uid, projectId) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-    let activity;
-
-    if (!projectId) {
-      activity = await activityModel.find({ _id: { $in: user.activities } });
-    } else {
-      var project = await projectModel.findById(projectId);
-      if (!project) throw new Error("Project not found");
-
-      activity = await activityModel.find({ _id: { $in: project.activities } });
-      // for each activity, get the participants and subactivities
-      for (let i = 0; i < activity.length; i++) {
-        let participants = await userModel.find({
-          _id: { $in: activity[i].participants },
-        });
-        activity[i].participants = participants.map(
-          (participant) => participant.username,
-        );
-
-        const subActivitiesIds = activity[i].subActivity.map((sub) =>
-          sub.toString(),
-        );
-        const subActivities = await activityModel.find({
-          _id: { $in: subActivitiesIds },
-        });
-        activity[i].subActivity = subActivities;
-      }
+  const getUsernameForActivity = async (activity) => {
+    if (!activity.participants || activity.participants.length === 0) {
+      return activity;
     }
 
-    return { activity: activity };
+    await activity.populate("participants", "username");
+    await activity.populate("subActivities.participants", "username");
+
+    activity = activity.toObject();
+
+    activity.participants = activity.participants.map(
+      (participant) => participant.username,
+    );
+
+    for (let i = 0; i < activity.subActivities?.length; i++) {
+      activity.subActivities[i].participants = activity.subActivities[
+        i
+      ].participants.map((participant) => participant.username);
+    }
+
+    return activity;
+  };
+
+  const getActivities = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    let activities = await activityModel.find({ uid: uid });
+    // for each activiteis, get the participants and subactivities
+    // activities = await getUsernameForActivities(activities);
+
+    return activities;
   };
 
   // delete activity from user or project
-  const deleteActivity = async (uid, activityId, projectId) => {
+  const deleteActivity = async (uid, activityId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
     const activity = await activityModel.findById(activityId);
     if (!activity) throw new Error("Activity not found");
 
-    if (activity.parentId !== "root") {
-      return deleteSubActivity(uid, activityId, projectId);
-    }
-
-    if (!projectId) {
-      await userModel.findByIdAndUpdate(uid, {
-        $pull: { activities: { _id: activityId } },
-      });
-    } else {
-      await projectModel.findByIdAndUpdate(projectId, {
-        $pull: { activities: { _id: activityId } },
-      });
-      const project = await projectModel.findById(projectId);
-      if (!project) throw new Error("Project not found");
-      await project.save();
-    }
+    await userModel.findByIdAndUpdate(uid, {
+      $pull: { activities: { _id: activityId } },
+    });
 
     // Delete the activity related to this Id
-    await activityModel.findByIdAndDelete(activityId);
+    const deletedActivity = await activityModel.findByIdAndDelete(activityId);
 
-    // Remove any notifications related to this activity
-    await userModel.updateMany(
-      { "inboxNotifications.fromTask": activityId },
-      { $pull: { inboxNotifications: { fromTask: activityId } } },
-    );
-    // Delete all subactivities of the parent
-    await activityModel.deleteMany({ _id: { $in: activity.subActivities } });
+    return deletedActivity.lean();
   };
 
-  const deleteSubActivity = async (uid, activityId, projectId) => {
+  const modifyActivity = async (uid, activity, activityId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    const activity = await activityModel.findById(activityId);
-    if (!activity) throw new Error("Activity not found");
+    const oldActivity = await activityModel.find({ _id: activityId, uid: uid });
+    if (!oldActivity) throw new Error("Old Activity not found");
 
-    const parent = await activityModel.findById(activity.parentId);
-    if (!parent) throw new Error("Father Activity not found");
+    activity.participants = undefined;
 
-    // cancello la sotto attività
-    await activityModel.findByIdAndDelete(activityId);
-
-    // cancello la sotto attività dal parent
-    parent.subActivity = parent.subActivity.filter(
-      (sub) => sub._id.toString() !== activityId.toString(),
+    await activityModel.updateOne(
+      { _id: activityId, uid: uid },
+      { ...activity, uid: uid },
     );
 
-    // manca la cancellazione delle notifiche
-
-    return await parent.save();
-  };
-
-  const modifyActivity = async (uid, activity, activityId, projectId) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    const oldActivity = await activityModel.findById(activityId);
-    if (!oldActivity) throw new Error("User not found");
-
-    if (oldActivity.parentId !== "root") {
-      console.log("modifySubActivity");
-      return modifySubActivity(uid, activity, activityId, projectId);
-    }
-
-    //check se la subactivity è mia
-    if (oldActivity.uid.toString() != uid)
-      throw new Error("Activity does not belong to user");
-
-    try {
-      const replacedActivity = await activityModel.replaceOne(
-        { _id: activityId },
-        { ...activity, uid: uid, parentId: "root" },
-      );
-      if (replacedActivity.modifiedCount === 0) {
-        throw new Error("Activity replace failed");
-      }
-
-      const updatedUsers = null;
-      if (!projectId) {
-        // Aggiorno le notifiche di ogni partecipante all'attività
-        /*
-        updatedUsers = console.log(await userModel.updateMany(
-          { activities: activity._id },
-          { $set: { inboxNotifications: { fromTask: activity._id } } }
-        ));
-        */
-      } else {
-        const project = await projectModel.findById(projectId);
-        if (!project) throw new Error("Project not found");
-
-        updatedUsers = await userModel.updateMany(
-          { "project.activities": activityId },
-          { $set: { inboxNotifications: { fromTask: activityId } } },
-        );
-      }
-      await user.save();
-
-      return { replacedActivity, updatedUsers };
-    } catch (e) {
-      throw new Error("Activity did not get changed: " + e.message);
-    }
-  };
-
-  const modifySubActivity = async (
-    uid,
-    subActivity,
-    subActivityId,
-    projectId,
-  ) => {
-    const user = await userModel.findById(uid);
-    if (!user) throw new Error("User not found");
-
-    const oldActivity = await activityModel.findById(subActivityId);
-
-    if (oldActivity.uid.toString() !== uid.toString())
-      throw new Error("Subactivity does not belong to user");
-
-    const replacedSubActivity = await activityModel.replaceOne(
-      { _id: subActivityId },
-      { ...subActivity, uid: uid, parentId: oldActivity.parentId },
-    );
-    if (replacedSubActivity.modifiedCount === 0) {
-      throw new Error("Activity replace failed");
-    }
-
-    const parent = await activityModel.findById(oldActivity.parentId);
-    if (!parent) throw new Error("Parent not found");
-
-    //rimpiazza nel padre la sotto attività
-    parent.subActivity = parent.subActivity
-      .filter((sub) => sub._id !== subActivity._id)
-      .concat(replacedSubActivity);
-
-    //cancello le vecchie notifiche
-    if (!projectId) {
-      // user activity
-      const updatedUsers = await userModel.updateMany(
-        { activities: parent._id },
-        { $pull: { inboxNotifications: { fromTask: subActivity._id } } },
-      );
-    } else {
-      //project activity
-      const project = await projectModel.findById(projectId);
-      if (!project) throw new Error("Project not found");
-
-      const updatedUsers = await userModel.updateMany(
-        { "project.activities": activityId },
-        { $set: { inboxNotifications: { fromTask: activityId } } },
-      );
-    }
-
-    //genero le nuove notifiche
-    /*
-    if(!projectId) {
-      generateNotificationsForActivity(replacedSubActivity, [user]);
-      return { replacedSubActivity, user };
-    } else {
-      var participants = await userModel.find( { _id: { $in: addedSubActivity.participants } });
-      if (!participants) throw new Error("Participants not found");
-      generateNotificationsForActivity(replacedSubActivity, [participants]);
-    }
-      return { replacedSubActivity, participants };
-    */
-    return replacedSubActivity;
+    return await activityModel.findById(activityId)?.lean();
   };
 
   const chatService = {
@@ -1638,16 +1801,6 @@ export async function createDataBase(uri) {
         createdAt: now,
         status: "sent",
       });
-
-      // send notification
-      const newNotification = {
-        title: "New message",
-        description: message,
-        fromMessage: newMessage._id,
-        when: now,
-        method: "email",
-      };
-      await addNotification(receiver, newNotification);
 
       return {
         createdAt: newMessage.createdAt,
@@ -1804,7 +1957,11 @@ export async function createDataBase(uri) {
 
   const userService = {
     async changeAvatar(uid, avatar) {
-      return await userModel.findByIdAndUpdate(uid, { avatar: avatar }, { new: true });
+      return await userModel.findByIdAndUpdate(
+        uid,
+        { avatar: avatar },
+        { new: true },
+      );
     },
     async getAllUsernames() {
       return await userModel.find({}, { username: 1 });
@@ -1833,10 +1990,36 @@ export async function createDataBase(uri) {
     },
     async getById(id) {
       const user = await userModel
-        .findById(id)
-        .populate("participatingEvents")
-        .populate("events") // convert  id to event object
+        .findById(id, "-__v -password -createdAt -updatedAt")
+        .populate({
+          path: "participatingEvents",
+          populate: {
+            path: "participants",
+            select: "username _id",
+          },
+        })
+        .populate({
+          path: "events",
+          populate: {
+            path: "participants",
+            select: "username _id",
+          },
+        })
         .populate("projects")
+        .populate({
+          path: "projects",
+          populate: {
+            path: "members",
+            select: "username _id",
+          },
+        })
+        .populate({
+          path: "projects",
+          populate: {
+            path: "creator",
+            select: "username _id avatar",
+          },
+        })
         .populate({
           path: "friends",
           model: "Users",
@@ -1885,11 +2068,21 @@ export async function createDataBase(uri) {
     getDateTime,
   });
 
+  const isAdmin = async (uid) => {
+    const user = await userModel.findById(uid);
+    if (!user) throw new Error("User not found");
+
+    if (user.role === 'admin') return true;
+    else return false;
+  };
+
   return {
     login,
     register,
     deleteAccount,
     updateUsername,
+    lostPassword,
+    verifyResetToken,
     updateEmail,
     updatePassword,
     changeDateTime,
@@ -1898,6 +2091,11 @@ export async function createDataBase(uri) {
     getNoteById,
     removeNoteById,
     createEvent,
+    getResource,
+    bookResource,
+    unBookResource,
+    addResource,
+    deleteResource,
     getEvent,
     getEvents,
     deleteEvent,
@@ -1906,6 +2104,7 @@ export async function createDataBase(uri) {
     participateEvent,
     rejectEvent,
     getParticipantsUsernames,
+    importEvents,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,
@@ -1923,7 +2122,6 @@ export async function createDataBase(uri) {
     verifyEmail,
     isVerified,
     createActivity,
-    createSubActivity,
     getActivities,
     deleteActivity,
     modifyActivity,
@@ -1940,5 +2138,7 @@ export async function createDataBase(uri) {
     enableNotifications,
     getAllUserEvents,
     projectService,
+    getUsernameForActivities,
+    isAdmin,
   };
 }
