@@ -292,7 +292,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     return (
       <div
         aria-label="weekView"
-        className={`h-full w-full rounded-[20px] ${isToday ? "bg-blue-50 dark:bg-slate-900" : ""}`}
+        className={`h-full w-full rounded-[20px] ${isToday ? "bg-blue-100" : ""}`}
       >
         {!isMobile ? (
           <Button

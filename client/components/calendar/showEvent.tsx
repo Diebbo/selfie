@@ -91,9 +91,9 @@ function eventReducer(state: State, action: Action): State {
         ...state,
         editedEvent: state.editedEvent
           ? {
-              ...state.editedEvent,
-              [action.payload.field]: action.payload.value,
-            }
+            ...state.editedEvent,
+            [action.payload.field]: action.payload.value,
+          }
           : null,
       };
 
@@ -103,10 +103,10 @@ function eventReducer(state: State, action: Action): State {
         dateRange: action.payload,
         editedEvent: state.editedEvent
           ? {
-              ...state.editedEvent,
-              dtstart: action.payload.start,
-              dtend: action.payload.end,
-            }
+            ...state.editedEvent,
+            dtstart: action.payload.start,
+            dtend: action.payload.end,
+          }
           : null,
       };
 
@@ -115,12 +115,12 @@ function eventReducer(state: State, action: Action): State {
         ...state,
         editedEvent: state.editedEvent
           ? {
-              ...state.editedEvent,
-              notification: {
-                ...state.editedEvent.notification,
-                [action.payload.field]: action.payload.value,
-              },
-            }
+            ...state.editedEvent,
+            notification: {
+              ...state.editedEvent.notification,
+              [action.payload.field]: action.payload.value,
+            },
+          }
           : null,
       };
 
@@ -130,12 +130,12 @@ function eventReducer(state: State, action: Action): State {
         ...state,
         editedEvent: state.editedEvent
           ? {
-              ...state.editedEvent,
-              geo: {
-                lat: action.payload.lat,
-                lon: action.payload.lon,
-              },
-            }
+            ...state.editedEvent,
+            geo: {
+              lat: action.payload.lat,
+              lon: action.payload.lon,
+            },
+          }
           : null,
       };
 
@@ -499,7 +499,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
     if (!state.editedEvent) return;
 
     const updatedParticipants =
-      state.editedEvent.participants?.filter((p:Partial<Person>) => p?._id !== friend._id) || [];
+      state.editedEvent.participants?.filter((p: Partial<Person>) => p?._id !== friend._id) || [];
     handleInputChange("participants", updatedParticipants);
     setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
   };
@@ -794,15 +794,15 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                 value={
                   state.dateRange
                     ? {
-                        start: getDateParsed(
-                          state.dateRange.start,
-                          displayEvent.allDay,
-                        ),
-                        end: getDateParsed(
-                          state.dateRange.end,
-                          displayEvent.allDay,
-                        ),
-                      }
+                      start: getDateParsed(
+                        state.dateRange.start,
+                        displayEvent.allDay,
+                      ),
+                      end: getDateParsed(
+                        state.dateRange.end,
+                        displayEvent.allDay,
+                      ),
+                    }
                     : undefined
                 }
                 onChange={handleDateRangeChange as any}
@@ -942,7 +942,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                         displayEvent.participants
                           .map((p) => {
                             const people = friends.concat(user);
-
                             const participant = people.find(
                               (per) => per._id === p._id,
                             );
@@ -1107,8 +1106,8 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                       selectedKeys={
                         displayEvent?.notification.repetition?.freq?.toString()
                           ? [
-                              displayEvent?.notification.repetition.freq.toString(),
-                            ]
+                            displayEvent?.notification.repetition.freq.toString(),
+                          ]
                           : []
                       }
                       onSelectionChange={(keys) =>
