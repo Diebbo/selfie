@@ -3,7 +3,31 @@
 import { cookies } from 'next/headers';
 import getBaseUrl from '@/config/proxy';
 import { AuthenticationError, ServerError } from '@/helpers/errors';
-import { SelfieEvent, ResourceModel } from '@/helpers/types';
+import { Person, SelfieEvent, ResourceModel } from '@/helpers/types';
+
+export async function getEventWithOwner(eventid: string): Promise<SelfieEvent & { owner: Partial<Person> } | Error> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const res = await fetch(`${getBaseUrl()}/api/events/${eventid}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': `token=${token.toString()}`,
+    },
+    cache: 'no-store' // This ensures fresh data on every request
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    return new Error(data.message);
+  }
+
+  return data;
+}
 
 export async function getEvents(): Promise<SelfieEvent[]> {
   const cookieStore = await cookies();
@@ -28,6 +52,30 @@ export async function getEvents(): Promise<SelfieEvent[]> {
     throw new ServerError(`Server error: ${res.statusText}`);
   } else if (!res.ok) {
     throw new Error('Failed to fetch events');
+  }
+
+  return data;
+}
+
+export async function getEventv2(id: string): Promise<SelfieEvent | Error> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+
+  const res = await fetch(`${getBaseUrl()}/api/events/${id}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': `token=${token.toString()}`,
+    },
+    cache: 'no-store' // This ensures fresh data on every request
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    return new Error(data.message);
   }
 
   return data;

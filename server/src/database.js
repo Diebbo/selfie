@@ -695,6 +695,14 @@ export async function createDataBase(uri) {
     // Recupera tutti gli eventi in una sola query
     const events = await eventModel.find({ _id: { $in: allEventIds } });
 
+    if (!events) return [];
+    for (const event of events) {
+      await event.populate({
+        path: "participants",
+        select: "username _id",
+      });
+    }
+
     return events;
   };
 
@@ -705,7 +713,13 @@ export async function createDataBase(uri) {
     const event = await eventModel.findById(eventid);
     if (!event) throw new Error("Event not found");
 
-    return event;
+    const owner = await userModel.findById(event.uid, "username _id");
+    event.owner = owner;
+
+    return event.populate({
+      path: "participants",
+      select: "username _id",
+    });
   };
 
   const createEvent = async (uid, event) => {
@@ -732,7 +746,7 @@ export async function createDataBase(uri) {
         for (const participant of addedEvent.participants) {
           try {
             const updated = await userModel.findByIdAndUpdate(
-              participant,
+              participant._id,
               { $push: { invitedEvents: addedEvent._id } },
               { new: true },
             );
@@ -1906,8 +1920,20 @@ export async function createDataBase(uri) {
     async getById(id) {
       const user = await userModel
         .findById(id, "-__v -password -createdAt -updatedAt")
-        .populate("participatingEvents")
-        .populate("events") // convert  id to event object
+        .populate({
+          path: "participatingEvents",
+          populate: {
+            path: "participants",
+            select: "username _id",
+          },
+        })
+        .populate({
+          path: "events",
+          populate: {
+            path: "participants",
+            select: "username _id",
+          },
+        })
         .populate("projects")
         .populate({
           path: "projects",

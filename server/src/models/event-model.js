@@ -122,7 +122,12 @@ const eventSchema = new mongoose.Schema({
     lon: Number,
   },
   description: String,
-  participants: [String],
+  participants: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+    },
+  ],
   URL: String,
   notification: notificationSchema,
   resource: String,
@@ -143,7 +148,7 @@ const resourceSchema = new mongoose.Schema({
       },
       claimant: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Users",
       },
     },
   ],

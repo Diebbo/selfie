@@ -242,10 +242,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({
 
   const getAvailableFriends = (
     friends: People,
-    participants: string[] | undefined,
+    participants: Partial<Person>[] | undefined,
   ) => {
     if (!participants) return friends;
-    return friends.filter((friend) => !participants.includes(friend._id));
+    return friends.filter(
+      (friend) => !participants.map((p) => p?._id).includes(friend._id),
+    );
   };
 
   const handleRemoveResource = () => {
@@ -317,7 +319,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
   const [errorTitle, setErrorTitle] = useState(false);
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<People | null>(null);
+  const [participants, setParticipants] = useState<Partial<Person>[] | null>(null);
   const [availableFriends, setAvailableFriends] = useState<People>(
     getAvailableFriends(friends, event.participants),
   );
@@ -487,7 +489,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
 
     const updatedParticipants = [
       ...(state.editedEvent.participants || []),
-      friend._id,
+      { _id: friend._id, username: friend.username },
     ];
     handleInputChange("participants", updatedParticipants);
     setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
@@ -497,7 +499,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
     if (!state.editedEvent) return;
 
     const updatedParticipants =
-      state.editedEvent.participants?.filter((id) => id !== friend._id) || [];
+      state.editedEvent.participants?.filter((p:Partial<Person>) => p?._id !== friend._id) || [];
     handleInputChange("participants", updatedParticipants);
     setAvailableFriends(getAvailableFriends(friends, updatedParticipants));
   };
@@ -772,9 +774,15 @@ const ShowEvent: React.FC<ShowEventProps> = ({
               </div>
             </ModalHeader>
             <ModalBody>
+              <Input
+                isDisabled={true}
+                label="Owner"
+                value={owner}
+                className="max-w-xs"
+              />
               <DateRangePicker
                 label="Event duration"
-                className="max-w-[430px] mb-4"
+                className="mb-4 max-w-[430px]"
                 hideTimeZone
                 defaultValue={{
                   start: getDateParsed(
@@ -866,7 +874,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                   </Button>
                 </div>
                 {state.isEditing && state.availableResources.length === 0 && (
-                  <p className="text-warning text-sm">
+                  <p className="text-sm text-warning">
                     There are not resources available for choosen period
                   </p>
                 )}
@@ -881,7 +889,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                 className="mb-4"
               />
 
-              <div aria-label="Participants" className="flex w-full gap-4 mb-4">
+              <div aria-label="Participants" className="flex gap-4 mb-4 w-full">
                 <Autocomplete
                   variant="bordered"
                   label="Friends"
@@ -928,19 +936,21 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                     </DropdownTrigger>
                     <DropdownMenu
                       aria-label="Invited participants"
-                      className="max-h-[300px] overflow-y-auto"
+                      className="overflow-y-auto max-h-[300px]"
                     >
                       {displayEvent?.participants?.length ? (
                         displayEvent.participants
-                          .map((participantId) => {
-                            const participant = friends.find(
-                              (friend) => friend._id === participantId,
+                          .map((p) => {
+                            const people = friends.concat(user);
+
+                            const participant = people.find(
+                              (per) => per._id === p._id,
                             );
                             if (!participant) return null;
 
                             return (
                               <DropdownItem
-                                key={participantId}
+                                key={participant._id}
                                 className="py-2"
                                 endContent={
                                   state.isEditing ? (
@@ -1016,7 +1026,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
               />
 
               <Switch
-                className="w-fit min-w-[120px] mb-2"
+                className="mb-2 w-fit min-w-[120px]"
                 isSelected={notifications}
                 isDisabled={!state.isEditing}
                 onValueChange={setNotifications}
@@ -1154,7 +1164,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                   <Button
                     color="danger"
                     variant="light"
-                    className="border-1 border-danger mx-2"
+                    className="mx-2 border-1 border-danger"
                     onPress={deleteEvent}
                   >
                     Delete Event
