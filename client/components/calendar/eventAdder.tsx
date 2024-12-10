@@ -46,7 +46,6 @@ async function createEvent(
   resourceId: string | undefined,
 ): Promise<boolean> {
   try {
-    console.log("evento aggiunto", event);
     var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
@@ -64,7 +63,6 @@ async function createEvent(
       throw new Error("Failed to create events");
     }
 
-    console.log("aggiungo la risorsa con Id: ", resourceId);
     if (resourceId !== undefined) {
       res = await fetch(`${EVENTS_API_URL}/resource/${resourceId}`, {
         method: "PATCH",
@@ -137,7 +135,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
   isMobile,
   resource,
 }) => {
-  console.log("eventAdder risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
   const [availableResources, setAvailableResources] = useState<ResourceModel[]>(
     [],
@@ -192,7 +189,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
         eventData.dtend as Date,
       ),
     );
-    console.log("available: ", available);
     setAvailableResources(available);
   }, [eventData.dtstart, eventData.dtend, resource]);
 
@@ -273,7 +269,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
               return false;
             });
 
-          console.log("suggestions: ", suggestions);
           setLocationSuggestions(suggestions);
         } catch (error) {
           console.error("Error fetching location suggestions:", error);
@@ -410,7 +405,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       ...prev,
       rrule: newRrule,
     }));
-    console.log("newRrule", newRrule);
   };
 
   const handleParticipantSelect = (friend: Person) => {
@@ -418,7 +412,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       ...prev,
       participants: [...(prev.participants || []), { _id: friend._id } as Partial<Person>],
     }));
-    console.log(eventData.participants);
   };
 
   const handleRemoveParticipant = (friendToRemove: Person) => {
@@ -486,7 +479,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       return;
     }
 
-    console.log("isError", isError, "dateError", dateError);
     if (!isError && !notificationError && !dateError) {
       const newEvent: SelfieEvent = {
         ...eventData,

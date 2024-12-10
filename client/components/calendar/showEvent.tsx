@@ -523,16 +523,13 @@ const ShowEvent: React.FC<ShowEventProps> = ({
     }
 
     const oldR = resource.find((r) => r.name === selectedEvent?.resource);
-    console.log("oldR", oldR);
     const newR = resource.find((r) => r.name === updatedEvent?.resource);
-    console.log("newR", newR);
 
     const oldBookId = oldR?.used.find(
       (r) =>
         r.startTime === selectedEvent?.dtstart &&
         r.endTime === selectedEvent.dtend,
     )?._id;
-    console.log("oldBookId:", oldBookId, oldR?._id);
 
     // caso 1: unbook risorsa (x -> 0)
     var res;
@@ -555,7 +552,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
       const q =
         `${EVENTS_API_URL}/resource/${newR?._id}` +
         (oldBookId !== undefined ? `?oldBookId=${oldBookId}` : "");
-      console.log("query", q);
       res = await fetch(q, {
         method: "PATCH",
         headers: {

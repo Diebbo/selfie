@@ -33,7 +33,6 @@ export const NotificationsDropdown = () => {
         method: "GET",
         credentials: "include",
       });
-      console.log("END FETCHING NOTIFICATIONS");
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
@@ -86,7 +85,6 @@ export const NotificationsDropdown = () => {
           throw new Error("Socket URL not defined");
         }
         socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL as string);
-        console.log("Connected to socket notification server");
 
         socketRef.current.on("connect", () => {
           console.log("Connected to notification server");
@@ -99,7 +97,6 @@ export const NotificationsDropdown = () => {
         socketRef.current.on(
           "new_notification",
           (notification: Notification) => {
-            console.log("Received new notification", notification);
             setNotifications((prev) => [notification, ...prev]);
 
             toast(
