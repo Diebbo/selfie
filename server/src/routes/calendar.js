@@ -127,6 +127,12 @@ function createCalendarRouter(db, sendNotification) {
         ? db.dodgeEvent(uid, eventId)
         : db.modifyEvent(uid, event, eventId));
       console.log(result);
+      const notifications = result.notifications;
+      if (notifications) {
+        for (let i = 0; i < notifications.length; i++) {
+          sendNotification(notifications[i].user, notifications[i].payload);
+        }
+      }
 
       if (!result || Object.keys(result).length === 0) {
         return res.status(404).json({ message: "evento vuoto" });

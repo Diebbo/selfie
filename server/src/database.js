@@ -817,9 +817,11 @@ export async function createDataBase(uri) {
 
   const modifyEvent = async (uid, event, eventId) => {
     const user = await userModel.findById(uid);
+
     if (!user) throw new Error("User not found");
 
-    const oldEvent = await eventModel.findById(eventId);
+    const oldEvent = await eventModel.findById(eventId).populate('participants');
+
     if (!oldEvent) throw new Error("Event not found");
 
     if (oldEvent.uid.toString() !== uid.toString())
@@ -827,16 +829,83 @@ export async function createDataBase(uri) {
 
     try {
       // Sovrascrivo l'intero evento dello user con il nuovo evento modificato
-      const replacedEvent = await eventModel.replaceOne(
+      const updatedEvent = await eventModel.replaceOne(
         { _id: eventId },
-        { ...event, uid: uid },
+        { ...event, uid: uid }
       );
-      if (replacedEvent.modifiedCount === 0) {
+
+      if (updatedEvent.modifiedCount === 0) {
         throw new Error("Event replace failed");
       }
 
-      console.log(replacedEvent);
-      return { replacedEvent };
+      // Trova i nuovi partecipanti confrontando gli ID
+      const oldParticipantIds = oldEvent.participants.map(p => p._id);
+      const newParticipantIds = event.participants.map(p => p._id);
+
+      // Trova i partecipanti rimossi
+      const removedParticipantIds = oldParticipantIds.filter(
+        id => !newParticipantIds.includes(id)
+      );
+
+      // Trova i nuovi partecipanti
+      const newParticipants = newParticipantIds.filter(
+        id => !oldParticipantIds.includes(id)
+      );
+
+      var notifications = [];
+
+      // Rimuove l'evento dagli utenti che non sono più partecipanti
+      for (const removedParticipantId of removedParticipantIds) {
+        try {
+          await userModel.findByIdAndUpdate(
+            removedParticipantId,
+            {
+              $pull: {
+                invitedEvents: eventId,
+                participatingEvents: eventId
+              }
+            }
+          );
+          console.log(`Event removed from user: ${removedParticipantId}`);
+        } catch (err) {
+          console.error(`Error removing event from participant ${removedParticipantId}:`, err);
+        }
+      }
+
+      // Invia notifiche solo ai nuovi partecipanti
+      for (const participantId of newParticipantIds) {
+        console.log(participantId);
+        try {
+          const updated = await userModel.findByIdAndUpdate(
+            participantId,
+            { $push: { invitedEvents: eventId } },
+            { new: true }
+          );
+
+          var payload = {
+            title: "📆 Sei stato invitato a un evento di gruppo",
+            body:
+              "L'utente " +
+              user.username +
+              " ti ha invitato all'evento " +
+              event.title +
+              "\nClicca qui per accettare l'invito.",
+            link: `/calendar/${eventId}/${participantId}`,
+          };
+
+          notifications.push({ user: updated, payload });
+
+          if (!updated) {
+            console.log(`User not found: ${participantId}`);
+          } else {
+            console.log(`Event added to user: ${participantId}`);
+          }
+        } catch (err) {
+          console.error(`Error updating participant ${participantId}:`, err);
+        }
+      }
+
+      return { updatedEvent, notifications };
     } catch (e) {
       throw new Error("Event did not get changed: " + e.message);
     }
@@ -855,8 +924,9 @@ export async function createDataBase(uri) {
     });
 
     const eventRes = await eventModel.findByIdAndUpdate(eventId, {
-      $pull: { participants: uid.toString() },
+      $pull: { participants: uid },
     });
+    console.log("evento senza:", eventRes);
 
     return { userRes, eventRes };
   };
@@ -872,9 +942,6 @@ export async function createDataBase(uri) {
     // Check if user is already participating
     if (user.participatingEvents?.includes(eventId))
       throw new Error("User is already participating in this event");
-    else if (!user.invitedEvents?.includes(eventId))
-      throw new Error("User is not invited to the event");
-
 
     if (!user.participatingEvents) user.participatingEvents = [];
     user.participatingEvents.push(eventId);
@@ -902,6 +969,10 @@ export async function createDataBase(uri) {
       (e) => e.toString() !== eventId.toString(),
     );
     await user.save();
+
+    await eventModel.findByIdAndUpdate(eventId, {
+      $pull: { participants: uid },
+    });
 
     return user.invitedEvents;
   };
