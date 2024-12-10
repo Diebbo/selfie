@@ -152,7 +152,6 @@ export function createWebSocket(io, database, sendNotification) {
     let typingTimeout = null;
 
     socket.on("typing_start", ({ senderUsername, receiverUsername }) => {
-      console.log("typing_start");
       if (typingTimeout) clearTimeout(typingTimeout);
       typingTimeout = setTimeout(async () => {
         const receiverId =
@@ -167,7 +166,6 @@ export function createWebSocket(io, database, sendNotification) {
     });
 
     socket.on("typing_end", async ({ senderUsername, receiverUsername }) => {
-      console.log("typing_end");
       try {
         const receiverId =
           await database.userService.fromUsernameToId(receiverUsername);
