@@ -42,7 +42,7 @@ export const EventCard = (props: { data: SelfieEvent; theme: number }) => {
           <div className="flex flex-col">
             <span className="text-white">Participants</span>
             <span className="text-white text-xs">
-              {data.participants}
+              {data.participants.map(u => u.username).join(", ")}
             </span>
           </div>
         </div>

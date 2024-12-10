@@ -1,7 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
 import { Link, Button } from "@nextui-org/react";
@@ -276,30 +274,6 @@ export const Content = (props: ContentProps): ReactElement => {
           </div>
         </div>
       </div>
-
-      {/* position && (
-         <div className="mt-4 p-4 bg-default-100 rounded-lg">
-           <h3 className="text-xl font-semibold mb-2">Current Location</h3>
-           <p>Latitude: {position.latitude}</p>
-           <p>Longitude: {position.longitude}</p>
-         </div>
-       ) */}
-
-      {/*
-      <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
-        <div className="flex  flex-wrap justify-between">
-          <h3 className="text-center text-xl font-semibold">Latest Users</h3>
-          <Link
-            href="/accounts"
-            as={NextLink}
-            color="primary"
-            className="cursor-pointer"
-          >
-            View All
-          </Link>
-        </div>
-        <TableWrapper />
-        </div>Table Latest Users */}
     </div>
   );
 };

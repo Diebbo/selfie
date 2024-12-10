@@ -4,22 +4,15 @@ import { getChats } from "@/actions/chats";
 import { Content } from "@/components/home/content";
 import { getUser } from "@/actions/user";
 
-import {
-  ChatModel,
-  Person,
-} from "@/helpers/types";
+import { ChatModel, NoteModel, Person } from "@/helpers/types";
+import { getNotes } from "@/actions/notes";
 
 export default async function Home() {
   try {
-    const [chats, user]: [
-      ChatModel[],
-      Person | Error
-    ] = await Promise.all([
-      getChats(),
-      getUser(),
-    ]);
+    const [chats, user, notes]: [ChatModel[], Person | Error, NoteModel[]] =
+      await Promise.all([getChats(), getUser(), getNotes()]);
 
-
+    console.log(notes);
     if (user instanceof Error) {
       throw user.message;
     }
@@ -29,7 +22,7 @@ export default async function Home() {
       <>
         <Content
           chats={chats}
-          notes={user.notes}
+          notes={notes}
           projects={user.projects}
           pomodoro={user.pomodoro}
           events={user.events}
