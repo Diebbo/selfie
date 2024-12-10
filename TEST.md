@@ -1,6 +1,6 @@
 # Test Done
 
-| Testing | Satus | Fixed |
+| Testing | Status | Fixed |
 |---------|-------|-------|
 | login  | pass  |     |
 | register | fail: dateBirth |  yes   |
@@ -10,11 +10,12 @@
 | add friend | pass  |     |
 | remove friend | pass  |     |
 | accept event invite | fail: startEventDate.getTime is not a function | yes |
-| dodge event invite | fail  |     |
+| dodge event invite | fail  | yes |
 | todo list | pass  |     |
 | pomodoro | pass  |     |
-| delete event | fail |   |
-| accept event invite | fail: if event already doged |  |
+| delete event | fail |  |
+| accept event invite | fail: if event already dodged | yes |
 | home board events | fail: id not names | | 
-| event doged | fail: still showing invited | |
-| enter for updating avatar | fail: not showing | |
+| event dodged | fail: still showing invited | yes |
+| enter for updating avatar | fail: not showing | yes |
+| modify event | fail: if remove/add user, user still sees/not see the event | yes  |
