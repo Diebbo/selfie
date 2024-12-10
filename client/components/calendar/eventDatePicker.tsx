@@ -1,60 +1,88 @@
 "use client";
 
 import React, { useContext } from "react";
+import { DateRangePicker, RangeValue, DateValue } from "@nextui-org/react";
+import { mobileContext } from "./contextStore";
 import {
-  DateRangePicker,
-  RangeValue,
-  DateValue,
-} from "@nextui-org/react";
-import { mobileContext } from "./contextStore"
-import { parseDateTime } from "@internationalized/date";
+  getLocalTimeZone,
+  parseAbsoluteToLocal,
+  parseDateTime,
+  TimeFields,
+} from "@internationalized/date";
+
+export const getDefaultDateRange = (isAllDay: boolean) => {
+  const today = new Date();
+
+  if (isAllDay) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return {
+      start: parseAbsoluteToLocal(today.toISOString()),
+      end: parseAbsoluteToLocal(tomorrow.toISOString()),
+    };
+  } else {
+    const currentHour = new Date(today);
+    const nextHour = new Date(today);
+    nextHour.setHours(today.getHours());
+    console.log(parseAbsoluteToLocal(currentHour.toISOString()));
+    return {
+      start: parseAbsoluteToLocal(currentHour.toISOString()),
+      end: parseAbsoluteToLocal(nextHour.toISOString()),
+    };
+  }
+};
 
 interface EventDatePickerProps {
   isAllDay: boolean;
-  startDate: Date | undefined;
-  endDate: Date | undefined;
   onChange: (start: Date | string, end: Date | string) => void;
+  setDateError: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const EventDatePicker: React.FC<EventDatePickerProps> = ({
   isAllDay,
   onChange,
+  setDateError,
 }) => {
-  const { isMobile, setIsMobile } = useContext(mobileContext) as any;
+  const { isMobile } = useContext(mobileContext) as any;
 
-  const handleDateRangeChange = (value: RangeValue<DateValue>) => {
+  const handleDateRangeChange = (value: RangeValue<DateValue> | null) => {
     if (value?.start && value?.end) {
-      onChange(value.start.toString(), value.end.toString());
-    }
-  };
+      const start: TimeFields = { hour: 0, minute: 0 };
+      const end: TimeFields = { hour: 23, minute: 59 };
+      console.log("inizio e fine", start, end);
+      const zone = getLocalTimeZone();
 
-  const getDefaultDateRange = (isAllDay: boolean) => {
-    const today = new Date();
+      var startDate = value.start.toDate(zone);
+      var endDate = value.end.toDate(zone);
+      if (isAllDay) {
+        startDate.setHours(0);
+        startDate.setMinutes(0);
+        startDate.setSeconds(0);
+        endDate.setHours(23);
+        endDate.setMinutes(59);
+        endDate.setSeconds(59);
+      }
+      console.log("ma questo sono sapotite", startDate, endDate);
 
-    if (isAllDay) {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return {
-        start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(tomorrow.toISOString().split('T')[0])
-      };
-    } else {
-      const nextHour = new Date(today);
-      nextHour.setHours(today.getHours() + 1);
-      return {
-        start: parseDateTime(today.toISOString().split('T')[0]),
-        end: parseDateTime(nextHour.toISOString().split('T')[0])
-      };
+      if (startDate.getTime() > endDate.getTime()) {
+        setDateError(true);
+        return;
+      } else {
+        setDateError(false);
+        onChange(startDate, endDate);
+        return;
+      }
     }
   };
 
   return (
     <DateRangePicker
       label="Event duration"
-      className={`${isMobile
-        ? "w-full max-w-[95vw] mx-auto flex flex-col space-y-2 overflow-hidden"
-        : "max-w-[430px] flex flex-row space-x-2"
-        }`}
+      className={`${
+        isMobile
+          ? "w-full max-w-[95vw] mx-auto flex flex-col space-y-2 overflow-hidden"
+          : "max-w-[430px] flex flex-row space-x-2"
+      }`}
       isRequired
       hideTimeZone
       visibleMonths={isMobile ? 1 : 2}
@@ -62,8 +90,6 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
       granularity={isAllDay ? "day" : "minute"}
       defaultValue={getDefaultDateRange(isAllDay)}
     />
-
-
   );
 };
 

@@ -13,7 +13,6 @@ const notificationSchema = new mongoose.Schema({
 
 const subActivitySchema = new mongoose.Schema({
   name: String,
-  startDate: Date,
   dueDate: Date,
   description: String,
   completed: {
@@ -33,31 +32,42 @@ const subActivitySchema = new mongoose.Schema({
 });
 
 const activitySchema = new mongoose.Schema({
-  name: String,
-  startDate: {
-    type: Date,
-    required: false,
+  name: {
+    type: String,
+    required: true,
   },
-  dueDate: Date,
+  dueDate: {
+    type: Date,
+    required: true,
+  },
   completed: {
     type: Boolean,
     default: false,
   },
   //notifiche per attività
   notification: notificationSchema,
-  participants: [
-    // usernames
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Users",
-    },
-  ],
-  subActivities: [subActivitySchema],
+  participants: {
+    type: [
+      // usernames
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+    ],
+    default: [],
+  },
+  subActivities: {
+    type: [subActivitySchema],
+    default: [],
+  },
   uid: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users",
   },
-  description: String,
+  description: {
+    type: String,
+    default: "",
+  },
 });
 
 const eventSchema = new mongoose.Schema({
@@ -79,11 +89,30 @@ const eventSchema = new mongoose.Schema({
       enum: ["daily", "weekly", "monthly", "yearly"],
     },
     interval: Number,
+    until: Date,
+    count: Number,
     bymonth: Number,
     bymonthday: Number,
+    byday: [{
+      day: {
+        type: String,
+        enum: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
+      },
+      position: { // Posizione nel mese (-1 per ultimo, 1-5 per primo-quinto)
+        type: Number,
+        min: -1,
+        max: 5
+      }
+    }],
+    bysetpos: [Number], // bysetpos[15] = il 15 del mese
+    wkst: {
+      type: String,
+      enum: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"],
+      default: "MO"
+    }
   },
-  dtstart: Date,
-  dtend: Date,
+  dtstart: String,
+  dtend: String,
   dtstamp: String,
   allDay: Boolean,
   categories: [String],
@@ -93,9 +122,36 @@ const eventSchema = new mongoose.Schema({
     lon: Number,
   },
   description: String,
-  participants: [String],
+  participants: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+    },
+  ],
   URL: String,
   notification: notificationSchema,
+  resource: String,
 });
 
-export { eventSchema, activitySchema, notificationSchema };
+const resourceSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  used: [
+    {
+      startTime: {
+        type: Date,
+      },
+      endTime: {
+        type: Date,
+      },
+      claimant: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Users",
+      },
+    },
+  ],
+});
+
+export { eventSchema, activitySchema, notificationSchema, resourceSchema };

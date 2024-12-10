@@ -1,11 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { TableWrapper } from "../table/table";
 import { EventCard } from "./event-card";
 import { CardFriends } from "./card-friends";
-import { Link, Button, Spinner, Modal, ModalBody, ModalHeader } from "@nextui-org/react";
+import { Link, Button } from "@nextui-org/react";
 import NextLink from "next/link";
+import { useTime } from "../contexts/TimeContext";
 
 import {
   PomodoroStats,
@@ -16,14 +15,12 @@ import {
 } from "@/helpers/types";
 import { CardChats } from "./card-chats";
 import { People } from "@/helpers/types";
-// import { useGeolocation } from "@/helpers/useGeolocation";
 import { PomodoroStatistics } from "./pomodoro-stats";
 import { ProjectTable } from "./project-table";
 import NoteCard from "../notes/NoteCard";
 import WeatherCard from "./WeatherCard";
-import { ReactJSXElement } from "@emotion/react/types/jsx-namespace";
+import { ReactElement } from "react";
 import { useRouter } from "next/navigation";
-import { TurtleIcon } from "lucide-react";
 
 interface UserEvents {
   created: SelfieEvent[];
@@ -39,79 +36,17 @@ interface ContentProps {
   user: Person;
 }
 
-export const Content = (props: ContentProps): ReactJSXElement => {
+export const Content = (props: ContentProps): ReactElement => {
   const [eventType, setEventType] = useState<"your" | "group">("your");
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">("today");
-  //const { position, error } = useGeolocation();
-  const [user, setUser] = useState<Person | null>(props.user);
-  const [isLoaded, setIsLoaded] = useState(true);
-  const [events, setEvents] = useState<UserEvents | null>(props.user.events);
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "all">(
+    "today",
+  );
+  const [user] = useState<Person>(props.user);
+  const [notes] = useState<NoteModel[]>(props.notes);
   const [friends, setFriends] = useState<People | null>(props.user.friends);
-  const [error, setError] = useState<Error | null>(null);
- 
-
-  // useEffect(() => {
-  //   // !error because if user denied GPS we set default position to Bologna, but we also report error
-  //   if (position && !error) {
-  //     sendPositionToServer(position);
-  //   }
-  // }, [position]);
-
-  /*useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/users/id");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user data");
-        }
-
-        const user = await response.json();
-        setUser(user);
-        const allEvents:UserEvents = {
-          created: user.events,
-          participating: user.eventsParticipating,
-        };
-        setEvents(allEvents);
-        setFriends(user.friends);
-        setIsLoaded(true);
-      } catch (error: any) {
-        setError(error.message);
-        setIsLoaded(true);
-      }
-    };
-
-    fetchUser();
-  }, []);
-  */
-
-
-  const sendPositionToServer = async (position: {
-    latitude: number;
-    longitude: number;
-  }) => {
-    try {
-      console.log("Sending position to server:", position);
-      const response = await fetch("/api/users/gps", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(position),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update position");
-      }
-
-      console.log("Position updated successfully");
-    } catch (error) {
-      console.error("Error updating position:", error);
-    }
-  };
-
-  if (error) {
-    console.error("Geolocation error:", error);
-  }
+  const [showPublicNotes, setShowPublicNotes] = useState(false);
+  const { currentTime } = useTime();
+  const router = useRouter();
 
   const filterEvents = (
     events: SelfieEvent[],
@@ -119,7 +54,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
   ) => {
     if (!Array.isArray(events)) return [];
 
-    const today = new Date();
+    const today = new Date(currentTime);
     today.setHours(0, 0, 0, 0); // Imposta l'ora a mezzanotte
 
     const weekEnd = new Date(today);
@@ -156,26 +91,9 @@ export const Content = (props: ContentProps): ReactJSXElement => {
     });
   };
 
-  const renderSpinner = () => {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Spinner />
-      </div>
-    );
-  }
-
-  if (!isLoaded) return renderSpinner();
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-full">
-          <p className="text-danger">Failed to fetch user data</p>
-      </div>
-    );
-  }
-
-  if (!events || !friends || !user) return renderSpinner();
-  
+  const filteredNotes = notes?.filter((note) =>
+    showPublicNotes ? note.isPublic === true : !note.isPublic,
+  );
 
   return (
     <div className="h-full lg:px-6">
@@ -185,9 +103,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
             <div className="flex flex-col border rounded-lg p-4 h-[500px]">
               <div className="flex justify-between items-center mb-4">
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={eventType === "your" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setEventType("your")}
@@ -196,6 +115,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={eventType === "group" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setEventType("group")}
@@ -203,9 +123,10 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                     Group Events
                   </Button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     size="sm"
+                    className="px-3 min-w-10"
                     variant={timeFilter === "today" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setTimeFilter("today")}
@@ -214,6 +135,7 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   </Button>
                   <Button
                     size="sm"
+                    className="px-2 min-w-10"
                     variant={timeFilter === "week" ? "solid" : "flat"}
                     color="primary"
                     onClick={() => setTimeFilter("week")}
@@ -229,12 +151,12 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                       ? user.events.created
                       : user.events.participating,
                   ) &&
-                    filterEvents(
-                      eventType === "your"
-                        ? user.events.created
-                        : user.events.participating,
-                      timeFilter,
-                    ).length > 0 ? (
+                  filterEvents(
+                    eventType === "your"
+                      ? user.events.created
+                      : user.events.participating,
+                    timeFilter,
+                  ).length > 0 ? (
                     filterEvents(
                       eventType === "your"
                         ? user.events.created
@@ -258,6 +180,16 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                   <h3 className="text-xl font-semibold text-foreground-900">
                     Notes Preview
                   </h3>
+                  <Button
+                    size="sm"
+                    variant="shadow"
+                    onClick={() => setShowPublicNotes(!showPublicNotes)}
+                    className={` transition-colors ${
+                      showPublicNotes ? "bg-emerald-600" : "bg-blue-500"
+                    } text-white`}
+                  >
+                    {showPublicNotes ? "Pubbliche" : "Private"}
+                  </Button>
                   <Link
                     href="/notes"
                     as={NextLink}
@@ -269,16 +201,37 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <div className="h-full overflow-y-hidden hover:overflow-y-auto scrollbar-hide">
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {user.notes?.sort((a: NoteModel, b: NoteModel) => new Date(b.date!).getTime() - new Date(a.date!).getTime()).map((note) => (
-                        <NoteCard
-                          key={note._id}
-                          note={note}
-                          onClick={() => { }}
-                          onDelete={() => { }}
-                        />
-                      ))}
-                    </div>
+                    {filteredNotes && filteredNotes.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredNotes
+                          ?.sort(
+                            (a: NoteModel, b: NoteModel) =>
+                              new Date(b.date!).getTime() -
+                              new Date(a.date!).getTime(),
+                          )
+                          .map((note) => (
+                            <NoteCard
+                              key={note._id}
+                              note={note}
+                              onClick={(note) => {
+                                router.push(`/notes?id=${note._id}`);
+                              }}
+                              onDelete={() => {}}
+                              showDelete={false}
+                            />
+                          ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                        <p className="text-xl text-center font-medium mb-2">
+                          Nessuna nota{" "}
+                          {showPublicNotes ? "pubblica" : "privata"} disponibile
+                        </p>
+                        <p className="text-sm">
+                          Crea una nuova nota per iniziare
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -298,30 +251,22 @@ export const Content = (props: ContentProps): ReactJSXElement => {
                 View All
               </Link>
             </div>
-            <ProjectTable projects={user.projects} creator={user} />
+            <ProjectTable projects={user.projects} />
           </div>
-
-          {/* <div className="h-full flex flex-col gap-2">
-            <h3 className="text-xl font-semibold">Calendar</h3>
-            <div className="w-full bg-default-50 shadow-lg rounded-2xl p-6 ">
-
-              TODO
-            </div>
-          </div> */}
         </div>
 
         {/* Left Section */}
-        <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
-          { //<WeatherCard position={position} />
-          }
-          <div className="grid grid-cols-1 mt-1 max-w-[500px]">
+        <div className="mt-6 gap-2 flex flex-col xl:max-w-md w-full">
+          <WeatherCard position={user.position} />
+
+          <div className="mt-4 gap-2 flex flex-col xl:max-w-md w-full">
             <PomodoroStatistics stats={user.pomodoro} />
           </div>
 
-          <h3 className="text-xl font-semibold">Friends</h3>
+          <h3 className="text-xl font-semibold mb-3">Friends</h3>
           <div className="flex flex-col justify-center gap-4 flex-wrap md:flex-nowrap md:flex-col">
             <CardFriends
-              friends={friends}
+              friends={friends as People}
               setFriends={setFriends}
               currentUserId={user._id}
             />
@@ -329,30 +274,6 @@ export const Content = (props: ContentProps): ReactJSXElement => {
           </div>
         </div>
       </div>
-
-      { /* position && (
-         <div className="mt-4 p-4 bg-default-100 rounded-lg">
-           <h3 className="text-xl font-semibold mb-2">Current Location</h3>
-           <p>Latitude: {position.latitude}</p>
-           <p>Longitude: {position.longitude}</p>
-         </div>
-       ) */}
-
-      {/*
-      <div className="flex flex-col justify-center w-full py-5 px-4 lg:px-0  max-w-[90rem] mx-auto gap-3">
-        <div className="flex  flex-wrap justify-between">
-          <h3 className="text-center text-xl font-semibold">Latest Users</h3>
-          <Link
-            href="/accounts"
-            as={NextLink}
-            color="primary"
-            className="cursor-pointer"
-          >
-            View All
-          </Link>
-        </div>
-        <TableWrapper />
-        </div>Table Latest Users */}
     </div>
   );
 };

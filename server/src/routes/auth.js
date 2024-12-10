@@ -225,6 +225,57 @@ export function createAuthRouter(db, sendNotification) {
     }
   });
 
+  router.post("/lostpass", async (req, res) => {
+    const email = req.body.email;
+    const emailToken = crypto.randomBytes(64).toString("hex");
+    try {
+      const dbuser = await db.lostPassword(email, emailToken);
+      const payload = {
+        title: "Reset Password",
+        body: `Click the link to reset your password:`,
+        link: `resetpassword?resetToken=${emailToken}`,
+      };
+      sendNotification(dbuser, payload);
+      return res.status(200).json({ message: "Email sent" });
+    } catch (e) {
+      return res.status(400).json({ error: e.message });
+    }
+  });
+
+  router.post("/verify-reset-token", async (req, res) => {
+    const resetToken = req.body.resetToken;
+    console.log("resetToken", resetToken);
+    if (!resetToken) {
+      return res.status(400).json({ message: "No Token provided" });
+    }
+    try {
+      await db.verifyResetToken(resetToken);
+      return res.status(200).json({ message: "Token verified" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
+  router.post("/reset-password", async (req, res) => {
+    const resetToken = req.body.resetToken;
+    const newPassword = req.body.newPassword;
+    if (!resetToken) {
+      return res.status(400).json({ message: "No Token provided" });
+    }
+    try {
+      const dbuser = await db.verifyResetToken(resetToken);
+
+      const salt = bcrypt.genSaltSync(10);
+      const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+      // Aggiorna la password
+      await db.updatePassword(dbuser._id, hashedNewPassword);
+      return res.status(200).json({ message: "Password reset" });
+    } catch (e) {
+      return res.status(400).json({ message: e.message });
+    }
+  });
+
   router.patch("/verifyemail", async (req, res) => {
     const emailToken = req.query.emailToken;
     if (!emailToken) {

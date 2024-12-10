@@ -6,6 +6,7 @@ import { RegisterFormType, RegisterType } from "@/helpers/types";
 import { Button, Input } from "@nextui-org/react";
 import { Formik } from "formik";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import Stepper from "@/components/stepper/stepper";
 
@@ -17,29 +18,42 @@ export const Register = () => {
   const steps = ["Account", "Personal Info", "Address"];
 
   const initialValues: RegisterFormType = {
-    name: "user",
-    surname: "user",
-    email: "test@gmail.com",
-    password: "usersss",
-    confirmPassword: "usersss",
-    country: "India",
-    zip: "123456",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    address: "123, 4th street, Chennai",
-    phoneNumber: "1234567890",
-    username: "admin",
+    name: "",
+    surname: "",
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+    country: "Italia",
+    zip: "",
+    city: "Bologna",
+    state: "Emilia Romagna",
+    address: "",
+    phoneNumber: "",
     birthDate: new Date(),
   };
 
   const handleRegister = useCallback(
     async (values: RegisterFormType) => {
       try {
-        const response = await register(values as RegisterType);
-        await createAuthCookie(response.token);
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Registration failed");
+        }
+        const data = await response.json();
+        await createAuthCookie(data.token);
         router.replace("/");
-      } catch (err: Error | any) {
-        setError(err?.response?.data?.message || err.message);
+      } catch (err: any) {
+        setError(
+          err.message ? err.message.toString() : "An unknown error occurred",
+        );
       }
     },
     [router],
@@ -59,7 +73,7 @@ export const Register = () => {
 
   return (
     <>
-      <div className="text-center text-[25px] font-bold mb-6">Register</div>
+      <div className="mb-6 font-bold text-center text-[25px]">Register</div>
 
       <Stepper currentStep={currentStep} steps={steps} goToStep={goToStep} />
 
@@ -71,7 +85,7 @@ export const Register = () => {
         {({ values, errors, touched, handleChange, handleSubmit }) => (
           <>
             {currentStep === 0 && (
-              <div className="flex flex-col w-1/2 gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 w-1/2">
                 <div className="flex flex-row gap-4">
                   <Input
                     variant="bordered"
@@ -80,6 +94,7 @@ export const Register = () => {
                     isInvalid={!!errors.name && !!touched.name}
                     errorMessage={errors.name}
                     onChange={handleChange("name")}
+                    required
                   />
                   <Input
                     variant="bordered"
@@ -88,6 +103,7 @@ export const Register = () => {
                     isInvalid={!!errors.surname && !!touched.surname}
                     errorMessage={errors.surname}
                     onChange={handleChange("surname")}
+                    required
                   />
                 </div>
                 <Input
@@ -97,6 +113,7 @@ export const Register = () => {
                   isInvalid={!!errors.username && !!touched.username}
                   errorMessage={errors.username}
                   onChange={handleChange("username")}
+                  required
                 />
                 <Input
                   variant="bordered"
@@ -106,11 +123,12 @@ export const Register = () => {
                   isInvalid={!!errors.email && !!touched.email}
                   errorMessage={errors.email}
                   onChange={handleChange("email")}
+                  required
                 />
               </div>
             )}
             {currentStep === 1 && (
-              <div className="flex flex-col w-1/2 gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 w-1/2">
                 <Input
                   variant="bordered"
                   label="Password"
@@ -134,8 +152,12 @@ export const Register = () => {
                 <Input
                   variant="bordered"
                   label="Birth Date"
-                  type="date"
-                  value={values.birthDate.toString()}
+                  type="Date"
+                  value={
+                    values.birthDate instanceof Date
+                      ? values.birthDate.toISOString().split("T")[0]
+                      : values.birthDate
+                  }
                   isInvalid={!!errors.birthDate && !!touched.birthDate}
                   onChange={handleChange("birthDate")}
                 />
@@ -150,7 +172,7 @@ export const Register = () => {
               </div>
             )}
             {currentStep === 2 && (
-              <div className="flex flex-col w-1/2 gap-4 mb-4">
+              <div className="flex flex-col gap-4 mb-4 w-1/2">
                 <Input
                   variant="bordered"
                   label="Address"
@@ -197,9 +219,7 @@ export const Register = () => {
             )}
 
             {error && (
-              <div className="font-bold text-slate-400 mt-4 text-sm text-red-500">
-                {error}
-              </div>
+              <div className="mt-4 text-sm font-bold text-red-500">{error}</div>
             )}
             <div className="flex flex-row gap-4">
               <Button
@@ -228,12 +248,8 @@ export const Register = () => {
         )}
       </Formik>
 
-      <div className="font-light text-slate-400 mt-4 text-sm">
-        <Button
-          variant="flat"
-          color="secondary"
-          onPress={() => router.push("/login")}
-        >
+      <div className="mt-4 text-sm font-light text-slate-400">
+        <Button variant="flat" color="secondary" as={Link} href="/login">
           Already have an account? <b>Login</b>
         </Button>
       </div>

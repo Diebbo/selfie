@@ -13,6 +13,7 @@ import { MapEvent, MapFriend } from "@/actions/maps";
 import EventIcon from "../icons/EventIcon";
 import CalendarIcon from "../icons/CalendarIcon";
 import FriendsIcon from "../icons/FriendsIcon";
+import { updateGPS } from "@/actions/user";
 
 const MapComponent = dynamic(() => import("./MapComponent"), {
   ssr: false,
@@ -31,61 +32,46 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
     { lat: number; lng: number } | undefined
   >(undefined);
 
-  // Get user position from db when loading the page to center the map
   useEffect(() => {
-    const fetchUserPosition = async () => {
-      try {
-        const response = await fetch("/api/users/gps", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch user position");
-        }
-
-        const data = await response.json();
-        setCenterOn({ lat: data.latitude, lng: data.longitude });
-      } catch (error) {
-        console.error("Error fetching user position:", error);
-      }
-    };
-
-    fetchUserPosition();
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          console.log("updating gps");
+          const { latitude, longitude } = coords;
+          setCenterOn({ lat: latitude, lng: longitude });
+          updateGPS({ latitude, longitude });
+        },
+        (error) => {
+          fetchUserPosition();
+        },
+      );
+    } else {
+      fetchUserPosition();
+    }
   }, []);
 
-  // Send user position to server
-  const sendPositionToServer = useCallback(
-    async (position: { latitude: number; longitude: number }) => {
-      try {
-        const response = await fetch("/api/users/gps", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(position),
-        });
+  // Get user position from db when loading the page to center the map
 
-        if (!response.ok) {
-          throw new Error("Failed to update position");
-        }
+  const fetchUserPosition = async () => {
+    try {
+      console.log("fetching user position");
+      const response = await fetch("/api/users/gps", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-        console.log("Position updated successfully");
-      } catch (error) {
-        console.error("Error updating position:", error);
+      if (!response.ok) {
+        throw new Error("Failed to fetch user position");
       }
-    },
-    [],
-  );
 
-  const handlePositionUpdate = useCallback(
-    (position: { latitude: number; longitude: number }) => {
-      sendPositionToServer(position);
-    },
-    [sendPositionToServer],
-  );
+      const data = await response.json();
+      setCenterOn({ lat: data.latitude, lng: data.longitude });
+    } catch (error) {
+      console.error("Error fetching user position:", error);
+    }
+  };
 
   // Center map on event position when clicked on the event in the list
   const handleItemClick = (item: MapEvent | MapFriend) => {
@@ -93,7 +79,7 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen p-3 bg-gray-100 dark:bg-sky-950 gap-4">
+    <div className="flex flex-col lg:flex-row p-1 lg:p-3 bg-gray-100 dark:bg-sky-950 gap-1 lg:gap-3 h-full">
       {" "}
       <Card className="h-[30vh] lg:h-auto lg:w-1/3 border-2 border-blue-900">
         <CardHeader className="flex justify-between items-center">
@@ -181,7 +167,6 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
             events={events}
             friends={friends}
             centerOn={centerOn || { lat: 44.498955, lng: 11.327591 }}
-            onPositionUpdate={handlePositionUpdate}
           />
         </CardBody>
       </Card>

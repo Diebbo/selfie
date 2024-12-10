@@ -7,6 +7,7 @@ class ProjectComponent extends HTMLElement {
     this.currentIndex = 0;
     this._modal = null;
     this._friends = [];
+    this._time = null;
     this.addEventListener('delete-project', this.handleDeleteProject);
     this.addEventListener('update-project', this.handleSaveProject);
   }
@@ -115,7 +116,7 @@ class ProjectComponent extends HTMLElement {
       }
       this.render();
     }).catch((error) => {
-      console.error('Error deleting project:', error.message);
+        alert(error.message || 'Failed to delete project');
     });
   }
 
@@ -126,12 +127,14 @@ class ProjectComponent extends HTMLElement {
     const res = await fetch(`/api/projects/${projectId}`, {
       method: 'DELETE'
     });
+    
+    const data = await res.json();
 
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+      throw new Error(data.message || 'Failed to delete project');
     }
-
-    return res.json();
+    
+    return data;
   }
 
   connectedCallback() {
@@ -152,6 +155,13 @@ class ProjectComponent extends HTMLElement {
     }
   }
 
+  set time(value) {
+    if (value instanceof Date) {
+      this._time = value;
+      this.render();
+    }
+  }
+
   populateSelectMembers(select) {
     this._friends.forEach(friend => {
       const option = document.createElement('option');
@@ -159,12 +169,6 @@ class ProjectComponent extends HTMLElement {
       option.textContent = friend;
       select.appendChild(option);
     });
-
-    const userOption = document.createElement('option');
-    userOption.value = this._user._id;
-    userOption.textContent = this._user.name;
-    userOption.selected = true;
-    select.appendChild(userOption);
   }
 
 
@@ -220,16 +224,21 @@ class ProjectComponent extends HTMLElement {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ project: newProject })
-      }).then((res) => {
-        if (res.ok) {
-          return res.json();
-        }
-        throw new Error('Error creating project');
-      }).then((data) => {
-        addProject(data.project);
-      }).catch((error) => {
-        this._modal.setError('Error creating project:', error.message);
-      });
+      })
+        .then((res) => {
+          return res.json().then(data => {
+            if (!res.ok) {
+              throw data; // Throw the parsed error response
+            }
+            return data;
+          });
+        })
+        .then((data) => {
+          addProject(data.project);
+        })
+        .catch((error) => {
+          this._modal.setError(error.message || 'Error creating project');
+        });
     }
   };
 
@@ -243,6 +252,7 @@ class ProjectComponent extends HTMLElement {
       const projectCard = document.createElement('project-card');
       projectCard.setAttribute('project', JSON.stringify(this._projects[this.currentIndex]));
       projectCard.setAttribute('user', JSON.stringify(this._user));
+      projectCard.setAttribute('time', this._time?.toISOString());
       this.shadowRoot.appendChild(projectCard);
     } else {
       const noProjdiv = document.createElement('div');

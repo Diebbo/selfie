@@ -3,7 +3,7 @@ export interface ChatModel {
   uid: string;
   username: string;
   lastMessage: MessageModel;
-  avatar: string
+  avatar: string;
 }
 
 export interface MessageModel {
@@ -23,6 +23,7 @@ export enum StatusEnum {
 
 export interface NoteModel {
   _id?: string;
+  isPublic?: boolean;
   title: string;
   content: string;
   date?: Date;
@@ -69,26 +70,43 @@ export interface Person extends RegisterType {
   pomodoro: {
     totalStudyTime: number;
     totalBreakTime: number;
-  }
+  };
+  position: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export type People = Person[];
 
 export type FrequencyType = "daily" | "weekly" | "monthly" | "yearly";
 
+export type DayType = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
+
+export type PositionType = -1 | 1 | 2 | 3 | 4 | 5;
+
+export interface RRule {
+  freq: FrequencyType;
+  interval: number;
+  until?: Date;
+  count?: number;
+  bymonth?: number;
+  bymonthday?: number;
+  byday?: Array<{
+    day: DayType;
+    position?: PositionType;
+  }>;
+}
+
 export interface SelfieEvent {
   title: String;
   summary: String;
-  uid: String;
+  uid: String | Number;
   sequence: Number;
   status: String;
   transp: String;
-  rrule: {
-    freq: FrequencyType;
-    interval: Number;
-    bymonth: Number;
-    bymonthday: Number;
-  };
+  isRrule: boolean;
+  rrule: RRule;
   dtstart: Date;
   dtend: Date;
   dtstamp: String;
@@ -101,9 +119,10 @@ export interface SelfieEvent {
   };
   description: String;
   URL: String;
-  participants: string[];
+  participants: Partial<Person>[];
   notification: SelfieNotification;
   _id: string;
+  resource: string;
 }
 
 export interface SelfieNotification {
@@ -131,10 +150,9 @@ export interface PomodoroStats {
 export interface Song {
   title: string;
   album: string;
-  duration: string;
-  progress: string;
+  duration: number;
   cover: string;
-  id?: string;
+  id: string;
   liked: boolean;
 }
 /*
@@ -146,23 +164,65 @@ export interface Song {
       setBreakTime(data.shortBreakDuration);
 */
 
+interface Task {
+  _id: string;
+  title: string;
+  dueDate: Date;
+}
+
 export interface TaskModel {
+  _id: string;
   name: string;
   dueDate: Date;
   completed: boolean;
-  participants: any[]; // id array of users
-  subActivity: any; // Assuming subActivities are references to other Activities
+  participants: string[]; // Usernames
+  subActivities: TaskModel[];
   uid: string; // User ID
   parentId?: any; // You might want to define this more specifically based on your needs
+}
+
+export enum TaskStatus {
+  PENDING = "pending",
+  IN_PROGRESS = "in-progress",
+  COMPLETED = "completed",
+}
+
+export interface ProjectTaskModel extends Task {
+  description: string;
+  status: TaskStatus;
+  participants: string[]; // Usernames
+  subTasks: ProjectTaskModel[];
+  startDate: Date;
 }
 
 export interface ProjectModel {
   _id: string;
   title: string;
   description: string;
-  activities: TaskModel[];
-  creator: string; // creator id
-  members: string[]; // particapants usernames
+  activities: ProjectTaskModel[];
+  creator: Person; // creator id
+  members: Person[]; // particapants usernames
   creationDate: Date;
   deadline: Date;
+  startDate: Date;
+}
+
+export interface ResourceModel {
+  _id: string;
+  name: string;
+  used: [{
+    _id: string,
+    startTime: Date,
+    endTime: Date,
+    claimant: string,
+  }];
+}
+
+export interface CombinedAppointment {
+  type: 'event' | 'project' | 'task' | 'project-task';
+  event?: SelfieEvent;
+  project?: ProjectModel;
+  task?: TaskModel;
+  projectTask?: ProjectTaskModel;
+  projectId?: string;
 }

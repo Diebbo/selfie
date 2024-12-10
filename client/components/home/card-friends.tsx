@@ -118,8 +118,13 @@ export const CardFriends = ({
 
   const handleDeleteFriend = (id: string) => {
     try {
-      const response = fetchDeleteFriend(id);
+      fetchDeleteFriend(id);
       setFriends(friends.filter((friend) => friend._id !== id));
+      // update friends list
+      setUsersCasted([
+        ...usersCasted,
+        friends.find((friend) => friend._id === id) as peopleProp,
+      ]);
       setUserErrorMessage(null);
       // close popover
     } catch (error) {

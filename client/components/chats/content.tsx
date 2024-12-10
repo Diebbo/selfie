@@ -84,7 +84,7 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
                     </div>
                 ) : chats.length > 0 ? (
                     chats.map((chat, index) => (
-                        <Card key={index} className="min-w-[300px]">
+                        <Card key={index} className="sm:widhth-full width-1/2">
                             <CardHeader className="justify-between">
                                 <div className="flex gap-5">
                                     <Avatar isBordered radius="full" size="md" src={chat.avatar} />
@@ -97,6 +97,7 @@ export const Content: React.FC<PropContent> = ({ friends }) => {
                                     radius="full"
                                     size="sm"
                                     variant="solid"
+                                    className="mx-3"
                                     onPress={() => handleClick(chat)}
                                 >
                                     Chat with

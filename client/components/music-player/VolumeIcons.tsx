@@ -6,9 +6,9 @@ interface IconProps {
   className?: string;
 }
 
-export const VolumeOffIcon: React.FC<IconProps> = ({
-  width = 24,
-  height = 24,
+export const VolumeDownIcon: React.FC<IconProps> = ({
+  width = 22,
+  height = 22,
   className,
 }) => (
   <svg
@@ -30,8 +30,8 @@ export const VolumeOffIcon: React.FC<IconProps> = ({
 );
 
 export const VolumeUpIcon: React.FC<IconProps> = ({
-  width = 24,
-  height = 24,
+  width = 22,
+  height = 22,
   className,
 }) => (
   <svg

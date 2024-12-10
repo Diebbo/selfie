@@ -35,6 +35,8 @@
     "**/*.ts",
     "**/*.tsx",
     "helpers/**/*.ts",
+    "@/helpers/*.ts",
+    "@/helpers/*.d.ts",
     ".next/types/**/*.ts",
     "nextbuild/types/**/*.ts"
   ],

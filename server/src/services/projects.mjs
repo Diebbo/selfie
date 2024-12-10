@@ -100,7 +100,7 @@ export default function createProjectService(models, lib) {
   return {
     async updateProject(uid, projectId, project) {
       const dbProj = await projectModel.findOne({ _id: projectId, creator: uid });
-      if (!dbProj) throw new Error("Progetto non trovato");
+      if (!dbProj) throw new Error("Porject not found or you don't have the permission to update it");
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
 
@@ -128,7 +128,7 @@ export default function createProjectService(models, lib) {
     },
     async delete(uid, projectId) {
       const result = await projectModel.deleteOne({ _id: projectId, creator: uid });
-      if (result.deletedCount === 0) throw new Error("Errore nell'eliminazione del progetto");
+      if (result.deletedCount === 0) throw new Error("Errore nell'eliminazione del progetto! Potresti non avere i permessi per farlo!");
       return { success: true };
     },
 
@@ -216,7 +216,15 @@ export default function createProjectService(models, lib) {
         { $addToSet: { projects: newProject._id } }
       );
 
-      return await populateMembers(newProject);
+      const populatedProject = await populateMembers(newProject);
+
+      const notificationPayload = {
+        title: "New project created by " + user.username,
+        body: `Click here to view the new project: ${newProject.title}`,
+        link: `https://site232454.tw.cs.unibo.it/projects/${newProject._id}`
+      };
+
+      return { project: populatedProject, notificationPayload, users: members };
     },
     /**
      * Toggles an activity's status within a project, searching both top-level activities

@@ -43,7 +43,7 @@ export function createApp({ dirpath, database, sendNotification }) {
   app.use("/api/config", createTimeRouter(database));
   app.use("/api/events", createCalendarRouter(database, sendNotification));
   app.use("/api/notes", createNoteRouter(database));
-  app.use("/api/projects", createProjectRouter(database));
+  app.use("/api/projects", createProjectRouter(database, sendNotification));
   app.use("/api/pomodoro", createPomodoroRouter(database));
   app.use("/api/musicplayer", createMusicRouter(database));
   app.use("/api/activities", createActivityRouter(database));

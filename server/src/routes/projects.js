@@ -1,7 +1,7 @@
 import express from 'express';
 import cookieJwtAuth from './middleware/cookieJwtAuth.js';
 
-export function createProjectRouter(db) {
+export function createProjectRouter(db, sendNotification) {
   const router = express.Router();
 
   router.put('/', cookieJwtAuth, async function(req, res) {
@@ -16,7 +16,12 @@ export function createProjectRouter(db) {
       return res.status(400).json({ message: e.message });
     }
 
-    return res.status(200).json({ message: "progetto aggiunto correttamente", project: result });
+    // send Notification
+    for (const user of result.users) {
+      sendNotification(user, result.notificationPayload);
+    }
+
+    return res.status(200).json({ message: "progetto aggiunto correttamente", project: result.project });
   });
 
   router.get('/', cookieJwtAuth, async function(req, res) {

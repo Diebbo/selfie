@@ -21,14 +21,14 @@ import { useRouter } from "next/navigation";
 import CalendarIcon from "../icons/CalendarIcon";
 import EventIcon from "../icons/EventIcon";
 import { Avatar } from "@nextui-org/react";
+import { updateGPS } from "@/actions/user";
+import toast from "react-hot-toast";
 
 interface MapComponentProps {
   filter: "all" | "events" | "friends";
   events: MapEvent[];
   friends: MapFriend[];
   centerOn: { lat: number; lng: number };
-  // props to update user GPS to db
-  onPositionUpdate: (position: { latitude: number; longitude: number }) => void;
 }
 
 // Button to center the map on the user's location
@@ -41,6 +41,20 @@ const LocateControl = ({
     locationfound(e) {
       onLocationFound(e.latlng); // update the user's location in the db
     },
+    locationerror() {
+      toast(
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white">{"📍 No permission"}</h4>
+            <p className="text-sm text-red-400 dark:text-red-600">{"You have to allow GPS permission in your browser"}</p>
+          </div>
+        </div>,
+        {
+          duration: 5000  ,
+          position: 'top-right',
+        }
+      );
+    }
   });
   return (
     <div className="leaflet-top leaflet-right">
@@ -50,6 +64,7 @@ const LocateControl = ({
           title="Centra sulla mia posizione"
           onClick={(e) => {
             e.preventDefault();
+            
             map.locate();
           }}
           className="inline-flex items-center justify-center w-10 h-10 bg-white text-black"
@@ -78,7 +93,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   events,
   friends,
   centerOn,
-  onPositionUpdate,
 }) => {
   const router = useRouter();
   const [userLocation, setUserLocation] = useState<[number, number]>([
@@ -92,13 +106,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   useEffect(() => {
     setMapCenter([centerOn.lat, centerOn.lng]);
+    setUserLocation([centerOn.lat, centerOn.lng]);
   }, [centerOn]);
 
   const handleLocationFound = (latlng: L.LatLng) => {
     console.log("handleLocationFound");
     setUserLocation([latlng.lat, latlng.lng]);
     setMapCenter([latlng.lat, latlng.lng]);
-    onPositionUpdate({ latitude: latlng.lat, longitude: latlng.lng });
+    updateGPS({ latitude: latlng.lat, longitude: latlng.lng });
   };
 
   return (

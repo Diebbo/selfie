@@ -25,11 +25,10 @@ export const UserDropdown = () => {
 
   const fetchUser = useCallback(async () => {
     try {
-      /*const res = await fetch("/api/users/id");
-      if (!res.ok) {
-        throw new Error("Failed to fetch user");
-      }*/
       const dbUser = await getUser();
+      if (dbUser instanceof Error) {
+        throw dbUser.message;
+      }
       setUser(dbUser);
     } catch (error) {
       console.error("Failed to fetch user:", error);
@@ -104,11 +103,6 @@ export const UserDropdown = () => {
           <p>{user?.email || "Loading..."}</p>
         </DropdownItem>
         <DropdownItem key="settings">My Settings</DropdownItem>
-        <DropdownItem key="team_settings">Team Settings</DropdownItem>
-        <DropdownItem key="analytics">Analytics</DropdownItem>
-        <DropdownItem key="system">System</DropdownItem>
-        <DropdownItem key="configurations">Configurations</DropdownItem>
-        <DropdownItem key="help_and_feedback">Help & Feedback</DropdownItem>
         <DropdownItem
           key="logout"
           color="danger"

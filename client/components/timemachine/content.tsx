@@ -7,40 +7,40 @@ import {
   parseDateTime,
   parseDate,
   CalendarDateTime,
+  parseAbsoluteToLocal,
+  ZonedDateTime,
 } from "@internationalized/date";
-import { DatePicker } from "@nextui-org/react";
-import { Card, CardBody, Button, Input } from "@nextui-org/react";
+import { DatePicker, DateValue } from "@nextui-org/react";
+import { Button } from "@nextui-org/react";
 
 interface TimeModifierClientProps {
   onSubmit: (
-    formData: FormData,
+    formData: FormData
   ) => Promise<{ success: boolean; error?: string }>;
   onReset: () => Promise<{ success: boolean; error?: string }>;
-
-  onClose?: () => void; // Aggiungiamo questa prop per gestire la chiusura del modal
+  onClose?: () => void;
   initialTime: Date;
 }
 
 const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
   onSubmit,
   onReset,
-
   onClose,
   initialTime,
 }) => {
-  const [time, setTime] = React.useState(initialTime.toISOString());
+  const [time, setTime] = React.useState(
+    parseAbsoluteToLocal(initialTime.toISOString())
+  );
   const [state, setState] = React.useState({ success: false, error: null });
-  const [currentTime, setCurrentTime] = React.useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Prevent the default form submission behavior
 
-    const formData = new FormData(event.currentTarget); // Create FormData from form
+    const formData = new FormData(event.currentTarget);
+    formData.set("time", time.toDate().toISOString());
 
-    // Invoke onSubmit with the form data
     const response = await onSubmit(formData);
 
-    // Update the state based on the response
     setState(response as any);
   };
 
@@ -49,23 +49,10 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
     setState(response as any);
 
     if (response.success) {
-      // Chiudi il modal dopo un breve delay per mostrare il messaggio di successo
       setTimeout(() => {
         onClose?.();
       }, 1000);
     }
-  };
-
-  // Convert Date to type DateValue for
-  const convertToCalendarDateTime = (date: Date) => {
-    return new CalendarDateTime(
-      date.getFullYear(),
-      date.getMonth() + 1,
-      date.getDate(),
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-    );
   };
 
   return (
@@ -76,14 +63,14 @@ const TimeModifierClient: React.FC<TimeModifierClientProps> = ({
           variant="bordered"
           hideTimeZone
           showMonthAndYearPickers
-          // Usa initialTime come valore di default
-          defaultValue={convertToCalendarDateTime(initialTime)}
-          onChange={(date) =>
-            setTime(date.toDate(getLocalTimeZone()).toISOString())
-          }
+          value={time}
+          onChange={(date: ZonedDateTime | null) : void => {
+            if (date) {
+              setTime(date);
+            }
+          }}
           className="max-w-60"
         />
-        <input type="hidden" name="time" value={time} />
 
         <div className="flex gap-2 justify-center">
           <Button color="primary" variant="shadow" type="submit">
