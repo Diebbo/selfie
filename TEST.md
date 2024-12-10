@@ -14,7 +14,8 @@
 | todo list | pass  |     |
 | pomodoro | pass  |     |
 | delete event | fail |   |
-| accept event invite | fail: if event already doged |  |
+| accept event invite | fail: if event already dodged |  |
 | home board events | fail: id not names | | 
-| event doged | fail: still showing invited | |
+| event dodged | fail: still showing invited | |
 | enter for updating avatar | fail: not showing | |
+| modify event | fail: if remove/add user, user still sees/not see the event |  |
