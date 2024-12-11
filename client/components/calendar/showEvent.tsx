@@ -1074,17 +1074,11 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                     <Select
                       label="Frequency repetition"
                       isDisabled={!state.isEditing}
+                      placeholder={displayEvent.notification.repetition.freq.toString()}
                       variant="bordered"
                       classNames={{
                         base: "data-[hover=true]:bg-yellow-300",
                       }}
-                      selectedKeys={
-                        displayEvent?.notification.repetition?.freq?.toString()
-                          ? [
-                            displayEvent?.notification.repetition.freq.toString(),
-                          ]
-                          : []
-                      }
                       onSelectionChange={(keys) =>
                         handleNotificationChange(
                           "repetition.freq",
@@ -1116,17 +1110,18 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                       label="Interval repetition"
                       isDisabled={!state.isEditing}
                       type="number"
-                      value={
-                        displayEvent.notification.repetition?.interval?.toString() ||
-                        ""
-                      }
-                      onChange={(e) =>
+                      min={1}
+                      max={99}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      placeholder={displayEvent.notification.repetition.interval.toString()}
+                      onChange={(e) => {
+                        const value = Math.min(Math.max(1, parseInt(e.target.value, 10) || 1), 99);
                         handleNotificationChange(
                           "repetition.interval",
-                          e.target.value,
+                          value,
                         )
-                      }
-                      placeholder="Set the frequency repetition"
+                      }}
                     />
                   </div>
                 </>
