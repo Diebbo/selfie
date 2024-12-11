@@ -47,30 +47,30 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
   //da rivedere e mettere serverside, dopo il merge con develop
   useEffect(() => {
     async function fetchParticipantsUsername() {
-        const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          cache: "no-store",
-        });
+      const res = await fetch(`${EVENTS_API_URL}/${eventid}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      });
 
-        if (!res.ok) {
-          return new Error("Failed to fetch participants' usernames");
-        }
+      if (!res.ok) {
+        return new Error("Failed to fetch participants' usernames");
+      }
 
-        const event = await res.json();
+      const event = await res.json();
 
-        const participants = event.participants;
+      const participants = event.participants;
 
-        // if you are not a participant you are redirected to calendar page
-        if (!participants.map((p:any) => p?._id).includes(participant)) {
-          router.refresh();
-          router.push("/calendar");
-        }
+      // if you are not a participant you are redirected to calendar page
+      if (!participants.map((p: any) => p?._id).includes(participant)) {
+        router.refresh();
+        router.push("/calendar");
+      }
 
-        setTrueParticipant(true);
-        setParticipants(participants.map((p:any) => p.username));
+      setTrueParticipant(true);
+      setParticipants(participants.map((p: any) => p.username));
     }
 
     const ret = fetchParticipantsUsername();
@@ -80,10 +80,8 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
 
   }, [event.participants]);
 
-  // TODO: controllare che esista ancora l'evento e lo user
   const handleResponse = async (response: "accept" | "decline") => {
     try {
-      // Implementa la logica per inviare la risposta al server
       const res = await fetch(`/api/events/participate/${eventid}`, {
         method: "POST",
         headers: {
@@ -106,8 +104,6 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
           link: link,
         }),
       });
-
-      console.log(await res.json());
 
       handleReturnToCalendar();
     } catch (error) {
@@ -147,7 +143,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
           </ModalBody>
           <ModalFooter className="gap-10 justify-center">
             <Button onPress={handleReturnToCalendar}>
-              Torna al calendario
+              Go back to calendar
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -235,7 +231,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
       <ModalContent>
         <ModalHeader>
           <h2 className="text-xl font-semibold">
-            Sei stato invitato da {owner}
+            You have been invated from {owner}
           </h2>
         </ModalHeader>
         <ModalBody>
@@ -243,7 +239,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
             <CardBody>
               <Input
                 className="mb-4 text-gray-600"
-                label="Titolo evento"
+                label="Event title"
                 isReadOnly={true}
                 value={event?.title as string}
               />
@@ -251,7 +247,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
               <DateRangePicker
                 isReadOnly={true}
                 className="mb-4"
-                label="Data dell'evento"
+                label="Event date"
                 visibleMonths={1}
                 granularity={event?.allDay ? "day" : "minute"}
                 hideTimeZone
@@ -272,7 +268,7 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
 
               {event?.description && event?.description.length > 0 && (
                 <Input
-                  label="Descrizione"
+                  label="Description"
                   className="mb-4 text-gray-600"
                   isReadOnly={true}
                   value={event?.description as string}
@@ -281,12 +277,12 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
 
               {event?.participants && event?.participants.length > 0 && (
                 <Input
-                  label="Partecipanti"
+                  label="Participants"
                   className="mb-4 text-gray-600"
                   isReadOnly={true}
                   value={
                     owner +
-                    ", ".concat(participants.map((p:any) => p?.username).join(", "))
+                    ", ".concat(participants.map((p: any) => p?.username).join(", "))
                   }
                 />
               )}
@@ -310,14 +306,14 @@ const ParticipantContent: React.FC<ParticipantContentProps> = ({
             className="border-red-700 border-1"
             onPress={() => handleResponse("decline")}
           >
-            Rifiuta
+            Reject
           </Button>
           <Button
             color="success"
             className="hover:bg-green-600"
             onPress={() => handleResponse("accept")}
           >
-            Accetta
+            Accept
           </Button>
         </ModalFooter>
       </ModalContent>

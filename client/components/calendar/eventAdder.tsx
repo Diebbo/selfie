@@ -313,7 +313,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       const [_, notificationField, repetitionField] = name.split(".");
 
       setEventData((prev: any) => {
-        // Se stiamo gestendo un campo di repetition
         if (notificationField === "repetition") {
           return {
             ...prev,
@@ -327,7 +326,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
           };
         }
 
-        // Se stiamo gestendo fromDate
         if (notificationField === "fromDate") {
           return {
             ...prev,
@@ -338,7 +336,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
           };
         }
 
-        // Per tutti gli altri campi della notification
+        // Per tutti gli altri campi della campo notification
         return {
           ...prev,
           notification: {
@@ -358,14 +356,14 @@ const EventAdder: React.FC<EventAdderProps> = ({
     const endDate = new Date(end);
 
     setEventData((prev) => {
-      //keep resource if possible
+      //keep resource if possible after date change
       if (prev.resource) {
         const selectedResource = resource.find((r) => r.name === prev.resource);
         if (
           selectedResource &&
           !checkResourceAvailability(selectedResource, startDate, endDate)
         ) {
-          //remove old resource
+          //remove old resource because not available
           return {
             ...prev,
             dtstart: startDate,
@@ -491,10 +489,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
       } as SelfieEvent;
 
       try {
-        console.log("aggiungo la risorsa _id", selectedResource?._id);
         const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
-          console.log("Event created successfully");
           handleExit();
         } else {
           console.error("Failed to create event");
