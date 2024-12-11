@@ -12,17 +12,9 @@ export default function NotificationSettings() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator && "PushManager" in window) {
-      navigator.serviceWorker
-        .register("/service-worker.js")
-        .then((registration) => {
-          console.log(
-            "Service Worker registered with scope:",
-            registration.scope,
-          );
-        })
-        .catch((error) => {
-          console.error("Service Worker registration failed:", error);
-        });
+      navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+        console.error("Service Worker registration failed:", error);
+      });
     }
   }, []);
 
@@ -125,7 +117,7 @@ export default function NotificationSettings() {
         setSubscriptionStatus("Unsubscribed successfully!");
         setSelectedDevice(null);
         const updatedDevices = allDevices.filter(
-          (device) => device !== selectedDevice,
+          (device) => device !== selectedDevice
         );
         setAllDevices(updatedDevices);
       } else {
@@ -151,29 +143,6 @@ export default function NotificationSettings() {
     } catch (error) {
       console.error("Error sending test notification:", error);
       setSubscriptionStatus("Error sending test notification.");
-    }
-  };
-
-  const sendClientSideNotification = () => {
-    if (!("Notification" in window)) {
-      alert("This browser does not support desktop notification");
-      return;
-    }
-
-    if (Notification.permission === "granted") {
-      new Notification("Test Notification", {
-        body: "This is a test notification from the client side!",
-        icon: "/path/to/icon.png", // Sostituisci con il percorso della tua icona
-      });
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then((permission) => {
-        if (permission === "granted") {
-          new Notification("Test Notification", {
-            body: "This is a test notification from the client side!",
-            icon: "/path/to/icon.png", // Sostituisci con il percorso della tua icona
-          });
-        }
-      });
     }
   };
 
@@ -238,7 +207,12 @@ export default function NotificationSettings() {
       </div>
 
       <p
-        className={`mt-3 ${subscriptionStatus.includes("successfully") || subscriptionStatus.includes("Updated") ? "text-success" : "text-danger"}`}
+        className={`mt-3 ${
+          subscriptionStatus.includes("successfully") ||
+          subscriptionStatus.includes("Updated")
+            ? "text-success"
+            : "text-danger"
+        }`}
       >
         {subscriptionStatus}
       </p>
