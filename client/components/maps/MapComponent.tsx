@@ -7,10 +7,9 @@ import {
   Popup,
   useMap,
   useMapEvents,
-  CircleMarker,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css"; // Re-uses images from ~leaflet package
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.webpack.css";
 import * as L from "leaflet";
 import "leaflet-defaulticon-compatibility";
 
@@ -45,16 +44,20 @@ const LocateControl = ({
       toast(
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <div className="p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">{"📍 No permission"}</h4>
-            <p className="text-sm text-red-400 dark:text-red-600">{"You have to allow GPS permission in your browser"}</p>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              {"📍 No permission"}
+            </h4>
+            <p className="text-sm text-red-400 dark:text-red-600">
+              {"You have to allow GPS permission in your browser"}
+            </p>
           </div>
         </div>,
         {
-          duration: 5000  ,
-          position: 'top-right',
+          duration: 5000,
+          position: "top-right",
         }
       );
-    }
+    },
   });
   return (
     <div className="leaflet-top leaflet-right">
@@ -64,7 +67,7 @@ const LocateControl = ({
           title="Centra sulla mia posizione"
           onClick={(e) => {
             e.preventDefault();
-            
+
             map.locate();
           }}
           className="inline-flex items-center justify-center w-10 h-10 bg-white text-black"
@@ -153,7 +156,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
                          active:scale-95"
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(6)}`,
+                    `${userLocation[0].toFixed(6)}, ${userLocation[1].toFixed(
+                      6
+                    )}`
                   );
                 }}
               >
@@ -243,9 +248,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 <h3 className="font-bold text-lg text-blue-900 dark:text-blue-100">
                   {friend.name}
                 </h3>
-                <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  Ultimo aggiornamento: {/* ADD last GPS update in db */}
-                </div>
                 <button
                   className="mt-3 px-4 py-1.5 bg-blue-600 hover:bg-blue-800
                            text-white rounded-full text-sm font-medium

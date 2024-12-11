@@ -52,13 +52,6 @@ export function createWebSocket(io, database, sendNotification) {
         // Salva il socket ID dell'utente
         notificationSockets.set(userId, socket.id);
 
-        // Invia una notifica di benvenuto
-        /*socket.emit("new_notification", {
-          title: "🔔 Notifiche attive",
-          body: "Riceverai qui le tue notifiche",
-          timestamp: new Date(),
-        });*/
-
         console.log(`User ${userId} joined notification system< successfully`);
       } catch (error) {
         console.error("Error in notification join handler:", error);
@@ -256,8 +249,7 @@ export async function emitNotification(userId, notification) {
   }
 
   try {
-    //console.log("Trying to emit notification to user", userId, notification);
-    // Invia la notifica alla room personale dell'utente
+    // Invia la notifica all'utente
     ioInstance.to(userId).emit("new_notification", notification);
     console.log(`Notification emitted to user ${userId}`);
     return true;
