@@ -360,39 +360,20 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
             {day}
           </Button>
           {todayAppointments && todayAppointments.length > 0 && (
-            <div
-              className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
-              ${todayAppointments.map((a) =>
-                a.type == "event" ? "bg-primary" : "",
-              )}`}
-            />
-          )}
-
-          {todayAppointments && todayAppointments.length > 0 && (
-            <div
-              className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
-              ${todayAppointments.map((a) =>
-                a.type == "project" ? "bg-warning" : "",
-              )}`}
-            />
-          )}
-
-          {todayAppointments && todayAppointments.length > 0 && (
-            <div
-              className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
-              ${todayAppointments.map((a) =>
-                a.type == "task" ? "bg-green-400" : "",
-              )}`}
-            />
-          )}
-
-          {todayAppointments && todayAppointments.length > 0 && (
-            <div
-              className={`mt-[0.5rem] w-3 h-3 rounded-full mt-1
-              ${todayAppointments.map((a) =>
-                a.type == "project-task" ? "bg-danger" : "",
-              )}`}
-            />
+            <>
+              {todayAppointments.some((a) => a.type === "event") && (
+                <div className="mt-[0.5rem] w-3 h-3 rounded-full mt-1 bg-primary" />
+              )}
+              {todayAppointments.some((a) => a.type === "project") && (
+                <div className="mt-[0.5rem] w-3 h-3 rounded-full mt-1 bg-warning" />
+              )}
+              {todayAppointments.some((a) => a.type === "task") && (
+                <div className="mt-[0.5rem] w-3 h-3 rounded-full mt-1 bg-green-400" />
+              )}
+              {todayAppointments.some((a) => a.type === "project-task") && (
+                <div className="mt-[0.5rem] w-3 h-3 rounded-full mt-1 bg-danger" />
+              )}
+            </>
           )}
         </div>
       )}
