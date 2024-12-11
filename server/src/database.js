@@ -16,7 +16,6 @@ import { resourceSchema } from "./models/event-model.js";
 import createProjectService from "./services/projects.mjs";
 
 export async function createDataBase(uri) {
-  // creating a model
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
@@ -62,14 +61,6 @@ export async function createDataBase(uri) {
       ...user,
       avatar: `https://api.dicebear.com/9.x/open-peeps/svg?seed=${user.username}`,
     });
-
-    // OLD send verification email
-    /*addNotification(res, {
-      title: "Verify your email",
-      description: "verificati",
-      method: "email",
-      when: new Date(),
-    });*/
 
     const payload = {
       title: "Verify your email",
@@ -726,7 +717,6 @@ export async function createDataBase(uri) {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    // Validazione evento
     if (!event.title) throw new Error("Event must have a title");
     if (!event.dtstart || !event.dtend)
       throw new Error("Event must have a date");
@@ -847,11 +837,6 @@ export async function createDataBase(uri) {
         id => !newParticipantIds.includes(id)
       );
 
-      // Trova i nuovi partecipanti
-      const newParticipants = newParticipantIds.filter(
-        id => !oldParticipantIds.includes(id)
-      );
-
       var notifications = [];
 
       // Rimuove l'evento dagli utenti che non sono più partecipanti
@@ -873,11 +858,10 @@ export async function createDataBase(uri) {
       }
 
       // Invia notifiche solo ai nuovi partecipanti
-      for (const participantId of newParticipantIds) {
-        console.log(participantId);
+      for (const newParticipantId of newParticipantIds) {
         try {
           const updated = await userModel.findByIdAndUpdate(
-            participantId,
+            newParticipantId,
             { $push: { invitedEvents: eventId } },
             { new: true }
           );
@@ -890,18 +874,18 @@ export async function createDataBase(uri) {
               " ti ha invitato all'evento " +
               event.title +
               "\nClicca qui per accettare l'invito.",
-            link: `/calendar/${eventId}/${participantId}`,
+            link: `/calendar/${eventId}/${newParticipantId}`,
           };
 
           notifications.push({ user: updated, payload });
 
           if (!updated) {
-            console.log(`User not found: ${participantId}`);
+            console.log(`User not found: ${newParticipantId}`);
           } else {
-            console.log(`Event added to user: ${participantId}`);
+            console.log(`Event added to user: ${newParticipantId}`);
           }
         } catch (err) {
-          console.error(`Error updating participant ${participantId}:`, err);
+          console.error(`Error updating participant ${newParticipantId}:`, err);
         }
       }
 
@@ -911,7 +895,7 @@ export async function createDataBase(uri) {
     }
   };
 
-  // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
+  // tolgo l'evento dopo averlo accettato [delete evento per componente ShowEvent]
   const dodgeEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -926,7 +910,6 @@ export async function createDataBase(uri) {
     const eventRes = await eventModel.findByIdAndUpdate(eventId, {
       $pull: { participants: uid },
     });
-    console.log("evento senza:", eventRes);
 
     return { userRes, eventRes };
   };
@@ -982,15 +965,11 @@ export async function createDataBase(uri) {
       const event = await eventModel.findById(eventId);
       if (!event) throw new Error("Event not found");
 
-      // Trova tutti gli utenti che hanno questo eventId nel loro array events
-      const users = await userModel.find(
-        {
-          invitedEvents: eventId, // Cerca l'eventId nell'array events
-        },
-        "username",
-      ); // Proietta solo il campo username
+      const users = await userModel.find({
+        invitedEvents: eventId,
+      }, "username",
+      );
 
-      // Estrai gli username dal risultato
       const usernames = users.map((user) => user.username);
 
       return usernames;
@@ -1010,7 +989,7 @@ export async function createDataBase(uri) {
       if (event.type !== "VEVENT") continue;
 
       try {
-        // Converti l'evento iCal nel formato del tuo schema
+        // converto l'evento ical nel formato dello schema
         const eventData = {
           title: event.summary || "",
           summary: event.summary || "",
@@ -1029,7 +1008,7 @@ export async function createDataBase(uri) {
           participants: [],
         };
 
-        // Aggiungi le coordinate geografiche se presenti
+        // aggiungo le coordinate geografiche se presenti
         if (event.geo) {
           eventData.geo = {
             lat: event.geo.lat,
@@ -1037,22 +1016,19 @@ export async function createDataBase(uri) {
           };
         }
 
-        // Gestisci le regole di ricorrenza se presenti
+        // gestisco le regole di ricorrenza se presenti
         if (event.rrule) {
           eventData.rrule = parseRRule(event.rrule);
         }
 
-        // Salva l'evento nel database
+        // salvo l'evento nel database
         const newEvent = new eventModel(eventData);
-        // Con .save() aggiungo _id nell'oggetto
         const savedEvent = await newEvent.save();
         if (!savedEvent) throw new Error("Failed to save event");
 
-        // Aggiungi l'evento all'array importedEvents
         importedEvents.push(savedEvent);
       } catch (error) {
         console.error("Error importing event:", error);
-        // Continua con il prossimo evento anche se questo fallisce
         continue;
       }
     }
@@ -1451,9 +1427,9 @@ export async function createDataBase(uri) {
   };
 
   // For now only for testing (to add song to the DB)
-  const addSong = async (uid, song) => {
+  const addSong = async (song) => {
     try {
-      const result = await songModel.create(song);
+      await songModel.create(song);
     } catch (error) {
       console.error("Error adding song:", error);
       throw error;
@@ -1640,21 +1616,6 @@ export async function createDataBase(uri) {
     if (!activity.dueDate) {
       throw new Error("Activity must have a dueDate");
     }
-
-    /* activity.participants = [user.username];
-
-    const users = await userModel.find({
-      username: { $in: activity.participants },
-    });
-
-    if (users.length !== activity.participants.length) {
-      throw new Error("Some participants not found");
-    }
-
-    activity.participants = activity.participants.map((part) =>
-      users.find((user) => user.username === part)._id.toString(),
-    );
-    */
 
     if (!parentId) {
       console.log("Creating new activity", activity);
@@ -2091,20 +2052,20 @@ export async function createDataBase(uri) {
     getNoteById,
     removeNoteById,
     createEvent,
+    getEvent,
+    getEvents,
+    modifyEvent,
+    dodgeEvent,
+    participateEvent,
+    rejectEvent,
+    importEvents,
+    deleteEvent,
+    getParticipantsUsernames,
     getResource,
     bookResource,
     unBookResource,
     addResource,
     deleteResource,
-    getEvent,
-    getEvents,
-    deleteEvent,
-    modifyEvent,
-    dodgeEvent,
-    participateEvent,
-    rejectEvent,
-    getParticipantsUsernames,
-    importEvents,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,

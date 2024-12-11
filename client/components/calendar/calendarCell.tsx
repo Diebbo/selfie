@@ -184,7 +184,6 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     cellDate,
   );
   const hasMoreAppointments = todayAppointments.length > 2;
-  const hasAppointments = todayAppointments.length > 0;
   const { isMobile } = useContext(mobileContext) as any;
 
   const handleClick = (item: CombinedAppointment) => {

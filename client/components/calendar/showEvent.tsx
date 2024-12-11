@@ -125,7 +125,6 @@ function eventReducer(state: State, action: Action): State {
       };
 
     case "UPDATE_GEO":
-      console.log("update_geo action", action);
       return {
         ...state,
         editedEvent: state.editedEvent
@@ -362,7 +361,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
           setParticipants(result.usernames);
         }
       } catch (e: unknown) {
-        console.log("Error fetching participants", e);
       }
     };
 
@@ -467,7 +465,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
   };
 
   const handleInputChange = (field: keyof SelfieEvent, value: any) => {
-    console.log("check input change", field, value);
     dispatch({ type: "UPDATE_FIELD", payload: { field, value } });
   };
 
@@ -517,7 +514,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
   ) {
     // caso base: no action needed
     if (updatedEvent.resource === "" && "" === selectedEvent?.resource) {
-      console.log("nessuna modifica per le risorse, si esce");
       handleClose();
       return;
     }
@@ -543,12 +539,8 @@ const ShowEvent: React.FC<ShowEventProps> = ({
         cache: "no-store",
       });
     } else {
-      // caso in cui è avvenuta una modifica all'evento che interessa anche la risorsa
+      // caso 2: è avvenuta una modifica all'evento che interessa anche la risorsa
       // (y -> x || 0 -> x)
-      // (updatedEvent.resource !== selectedEvent?.resource
-      // || updatedEvent.dtstart !== selectedEvent!.dtstart
-      // || updatedEvent.dtend !== selectedEvent!.dtend)
-
       const q =
         `${EVENTS_API_URL}/resource/${newR?._id}` +
         (oldBookId !== undefined ? `?oldBookId=${oldBookId}` : "");
@@ -579,7 +571,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
         return;
       }
 
-      // Convert CalendarDate or ZonedDateTime to standard Date objects
       const convertToStandardDate = (date: DateValue | Date | string): Date => {
         if (date instanceof Date) return date;
 
@@ -592,10 +583,10 @@ const ShowEvent: React.FC<ShowEventProps> = ({
           return new Date(date);
         }
 
-        // For ZonedDateTime, convert to local Date
         return new Date(date.toDate(getLocalTimeZone()));
       };
 
+      //modifiche delle date dell'evento sia start/end che notifiche
       const updatedEvent = {
         ...state.editedEvent,
         dtstart: state.editedEvent.allDay
@@ -604,7 +595,6 @@ const ShowEvent: React.FC<ShowEventProps> = ({
         dtend: state.editedEvent.allDay
           ? convertToStandardDate(state.editedEvent.dtend).setHours(23, 59)
           : convertToStandardDate(state.editedEvent.dtend),
-        // If notification has dates, convert them too
         ...(state.editedEvent.notification?.fromDate && {
           notification: {
             ...state.editedEvent.notification,
@@ -704,22 +694,11 @@ const ShowEvent: React.FC<ShowEventProps> = ({
     }
   }
 
+  // event that is currently displayed in the showEvent component its either the original or editedEvent
   const displayEvent = state.isEditing ? state.editedEvent : selectedEvent;
-  console.log(
-    "resource display.resource selectedEvent.resource",
-    resource,
-    displayEvent?.resource,
-    selectedEvent?.resource,
-  );
-  console.log(
-    "forse",
-    resource.find((m) => m.name === displayEvent?.resource)?.name,
-  );
-
   const [resourceValue, setResourceValue] = useState<string>(
     displayEvent?.resource || "No resource booked",
   );
-  console.log("resourceValue", resourceValue);
 
   if (!isOpen) return null;
 
