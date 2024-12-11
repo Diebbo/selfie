@@ -43,7 +43,7 @@ export const NotificationsDropdown = () => {
       setNotifications(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error fetching notifications",
+        err instanceof Error ? err.message : "Error fetching notifications"
       );
     } finally {
       setIsLoading(false);
@@ -52,17 +52,8 @@ export const NotificationsDropdown = () => {
 
   const fetchID = async () => {
     try {
-      /*const response = await fetch("/api/users/id", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user ID");
-      }*/
-
       const user = await getUser();
-      return user; // Ritorna l'utente
+      return user;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error fetching user ID");
       throw err; // Rilancia l'errore per gestirlo in initializeSocket
@@ -113,9 +104,9 @@ export const NotificationsDropdown = () => {
               {
                 duration: 5000,
                 position: "top-right",
-              },
+              }
             );
-          },
+          }
         );
 
         // Gestione errori di connessione
@@ -126,7 +117,7 @@ export const NotificationsDropdown = () => {
       } catch (error) {
         console.error("Error initializing socket:", error);
         setError(
-          error instanceof Error ? error.message : "Error initializing socket",
+          error instanceof Error ? error.message : "Error initializing socket"
         );
       } finally {
         setIsLoading(false);
@@ -134,7 +125,6 @@ export const NotificationsDropdown = () => {
     };
 
     // Fetch le notifiche iniziali
-    // Avvia l'inizializzazione
     initializeSocket();
 
     // Cleanup
@@ -162,7 +152,7 @@ export const NotificationsDropdown = () => {
       setNotifications([]); // Aggiorna lo stato locale dopo la cancellazione
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error clearing notifications",
+        err instanceof Error ? err.message : "Error clearing notifications"
       );
     }
   };
@@ -179,11 +169,11 @@ export const NotificationsDropdown = () => {
       }
 
       setNotifications((prev) =>
-        prev.filter((n) => n._id !== notification._id),
+        prev.filter((n) => n._id !== notification._id)
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error deleting notification",
+        err instanceof Error ? err.message : "Error deleting notification"
       );
     }
   };
@@ -258,6 +248,7 @@ export const NotificationsDropdown = () => {
                 <DropdownItem
                   key={index}
                   className="px-2 py-2"
+                  textValue={notification.title}
                   onClick={(e) => {
                     e.preventDefault();
                     window.location.href = notification.link;

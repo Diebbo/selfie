@@ -5,13 +5,6 @@ function createTimeRouter(db) {
   const router = express.Router();
 
   router.post("/time", cookieJwtAuth, function (req, res, next) {
-    // TODO: Remove this
-    /*if (req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "You are not authorized to change the time" });
-        }*/
-
     if (!req.body.date) {
       return res.status(400).json({ message: "Time required" });
     }
@@ -28,13 +21,6 @@ function createTimeRouter(db) {
   });
 
   router.delete("/time", cookieJwtAuth, function (req, res, next) {
-    // TODO: Remove this
-    /*if (req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "You are not authorized to change the time" });
-        }*/
-
     try {
       db.changeDateTime(null, true);
       console.log("Time has been reset to real time");
