@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { DateValue, Input, Select, SelectItem } from "@nextui-org/react";
 import { DatePicker } from "@nextui-org/react";
 import { SelfieNotification } from "@/helpers/types";
-import { now, getLocalTimeZone } from "@internationalized/date";
+import { getLocalTimeZone } from "@internationalized/date";
 import { getDateParsed } from "./showEvent";
 
 interface NotificationMenuProps {
