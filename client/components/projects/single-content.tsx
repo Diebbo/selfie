@@ -70,7 +70,7 @@ export default function Content({ projects, user, id }: ContentProps) {
 
   return (
     <div className="m-3">
-      <Button variant='flat' color='primary' className='mb-3' onClick={() => goBack()}>Go back</Button>
+      <Button variant='flat' color='primary' className='mb-3' onPress={() => goBack()}>Go back</Button>
       <project-card ref={projectCardRef}></project-card>
     </div>
   );

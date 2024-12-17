@@ -585,16 +585,11 @@ const ShowEvent: React.FC<ShowEventProps> = ({
 
         return new Date(date.toDate(getLocalTimeZone()));
       };
-
-      //modifiche delle date dell'evento sia start/end che notifiche
+      
       const updatedEvent = {
         ...state.editedEvent,
-        dtstart: state.editedEvent.allDay
-          ? convertToStandardDate(state.editedEvent.dtstart).setHours(0, 0)
-          : convertToStandardDate(state.editedEvent.dtstart),
-        dtend: state.editedEvent.allDay
-          ? convertToStandardDate(state.editedEvent.dtend).setHours(23, 59)
-          : convertToStandardDate(state.editedEvent.dtend),
+        dtstart: convertToStandardDate(state.editedEvent.dtstart),
+        dtend: convertToStandardDate(state.editedEvent.dtend),
         ...(state.editedEvent.notification?.fromDate && {
           notification: {
             ...state.editedEvent.notification,
@@ -604,6 +599,12 @@ const ShowEvent: React.FC<ShowEventProps> = ({
           },
         }),
       };
+
+      //modifiche delle date dell'evento sia start/end che notifiche
+      if (state.editedEvent.allDay) {
+        updatedEvent.dtstart.setHours(0, 0);
+        updatedEvent.dtend.setHours(23, 59);
+      }
 
       var res = await fetch(`${EVENTS_API_URL}/${selectedEvent?._id}`, {
         method: "PATCH",
@@ -740,7 +741,7 @@ const ShowEvent: React.FC<ShowEventProps> = ({
                 {user._id === displayEvent.uid && !state.isEditing && (
                   <Button
                     className="mx-2 mr-4"
-                    onClick={handleEdit}
+                    onPress={handleEdit}
                     color="primary"
                   >
                     Modify
