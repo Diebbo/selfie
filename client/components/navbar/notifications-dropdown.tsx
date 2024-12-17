@@ -248,8 +248,7 @@ export const NotificationsDropdown = () => {
                   key={index}
                   className="px-2 py-2"
                   textValue={notification.title}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onPress={() => {
                     window.location.href = notification.link;
                   }}
                   closeOnSelect={false}

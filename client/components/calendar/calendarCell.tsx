@@ -218,7 +218,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
           <div className="space-y-3">
             {todayAppointments.map((item, index) => (
               <Button
-                variant="outlined"
+                variant="bordered"
                 key={index}
                 className="p-3 border rounded-lg border-2 hover:border-secondary cursor-pointer w-full"
                 onPress={() => {
