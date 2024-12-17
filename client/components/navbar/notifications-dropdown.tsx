@@ -196,7 +196,6 @@ export const NotificationsDropdown = () => {
         />
       </div>
       <Dropdown
-        className="overflow-y-auto scrollbar-hide"
         placement="bottom-end"
       >
         <DropdownTrigger>
@@ -214,7 +213,7 @@ export const NotificationsDropdown = () => {
           </NavbarItem>
         </DropdownTrigger>
         <DropdownMenu
-          className="w-80 max-h-[40vh] "
+          className="w-80 max-h-[40vh] overflow-y-auto scrollbar-hide"
           aria-label="Notifications"
           variant="flat"
           color="success"
