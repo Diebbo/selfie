@@ -165,8 +165,8 @@ export const Content = (props: ContentProps): ReactElement => {
                   </DropdownMenu>
                 </Dropdown>
               </div>
-              <div className="overflow-y-hidden pr-2 h-full border-t hover:overflow-y-auto scrollbar-hide">
-                <div className="grid grid-cols-1 gap-4 pt-4 2xl:grid-cols-2">
+              <div className="pr-2 h-full border-t overflow-y-auto scrollbar-hide">
+                <div className="grid grid-cols-1 gap-4 pt-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 overflow-y-auto">
                   {Array.isArray(
                     eventType === "your"
                       ? user.events.created

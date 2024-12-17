@@ -203,7 +203,9 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
     : "bg-slate-800 text-white dark:text-white";
 
   const AppointmentsModal = () => (
+    <>
     <Modal
+     
       isOpen={isAllEventsOpen}
       onClose={() => setIsAllEventsOpen(false)}
       size="md"
@@ -215,10 +217,11 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
         <ModalBody className="p-4 max-h-[80vh] overflow-y-auto">
           <div className="space-y-3">
             {todayAppointments.map((item, index) => (
-              <div
+              <Button
+                variant="outlined"
                 key={index}
-                className="p-3 border rounded-lg border-2 hover:border-secondary cursor-pointer"
-                onClick={() => {
+                className="p-3 border rounded-lg border-2 hover:border-secondary cursor-pointer w-full"
+                onPress={() => {
                   handleClick(item);
                   setIsAllEventsOpen(false);
                 }}
@@ -279,12 +282,13 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
                     </>
                   )}
                 </p>
-              </div>
+              </Button>
             ))}
           </div>
         </ModalBody>
       </ModalContent>
     </Modal>
+  </>
   );
 
   if (!isMonthView) {
@@ -354,7 +358,7 @@ const CalendarCell: React.FC<CalendarCellProps> = ({
         <div className="flex flex-col items-center">
           <Button
             className={`w-10 h-10 min-w-0 rounded-full p-0 ${dayButtonClass}`}
-            onClick={() => setIsAllEventsOpen(true)}
+            onPress={() => setIsAllEventsOpen(true)}
           >
             {day}
           </Button>

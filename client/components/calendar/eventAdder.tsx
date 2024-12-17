@@ -561,7 +561,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   }}
                 >
                   <div className="flex flex-col gap-1">
-                    <p className="text-medium">Tutto il giorno</p>
+                    <p className="text-medium">All day</p>
                   </div>
                 </Switch>
               )}
