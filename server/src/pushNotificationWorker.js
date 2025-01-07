@@ -247,7 +247,7 @@ export default function createNotificationWorker(db) {
         const emailPayload = {
           email: user.email,
           title: payload.title,
-          body: `${payload.body}\n\n<a href="http://site232454.tw.cs.unibo.it/${payload.link}">Click here to view</a>`,
+          body: `${payload.body}\n\n<a href="https://site232454.tw.cs.unibo.it/${payload.link}">Click here to view</a>`,
         };
 
         await sendEmailNotification(emailPayload);
