@@ -31,7 +31,6 @@ function createCalendarRouter(db, sendNotification) {
 
   router.get("/", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
-    console.log(uid);
     try {
       var result = await db.getEvents(uid);
     } catch (e) {
@@ -47,7 +46,6 @@ function createCalendarRouter(db, sendNotification) {
   router.get("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventid = req.params.id;
-    console.log(uid);
     try {
       var result = await db.getEvent(uid, eventid);
     } catch (e) {
@@ -57,7 +55,6 @@ function createCalendarRouter(db, sendNotification) {
     if (!result)
       return res.status(404).json({ message: "Nessun evento trovato" });
 
-    //console.log(result);
     return res.status(200).json(result);
   });
 
@@ -104,29 +101,23 @@ function createCalendarRouter(db, sendNotification) {
     });
   });
 
-  // per togliere il partecipante dall'evento faccio una query parametrica dove
-  // metto l'id del partecipante
   // /api/events/:id/?fields=[true/false]
   router.patch("/:id", cookieJwtAuth, async function(req, res) {
     const uid = req.user._id;
     const eventId = req.params.id;
     //user to remove
     const isDodge = req.query.fields === "true" ? true : false;
-    console.log(isDodge);
 
     if (!isDodge) {
       var event = req.body.event;
-      console.log("event", event);
       if (!event)
         return res.status(400).json({ message: "Id dell'evento non fornito" });
     }
 
     try {
-      // toglimi dall'evento || modifica evento
       const result = await (isDodge
         ? db.dodgeEvent(uid, eventId)
         : db.modifyEvent(uid, event, eventId));
-      console.log(result);
       const notifications = result.notifications;
       if (notifications) {
         for (let i = 0; i < notifications.length; i++) {
@@ -208,7 +199,6 @@ function createCalendarRouter(db, sendNotification) {
 
     try {
       const result = await db.unBookResource(uid, bookId);
-      console.log("risorsa unbookata", result);
       return res.status(200).json(result);
     } catch (e) {
       return res.status(500).json({ message: "Server Error" + e })

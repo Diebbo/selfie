@@ -5,7 +5,6 @@ function createNoteRouter(db) {
   const router = express.Router();
 
   // Crea una nuova nota o modifica una esistente
-  // Rotta per creare una nuova nota
   router.post("/", cookieJwtAuth, async function (req, res) {
     const uid = req.user._id;
     const note = req.body;
@@ -19,7 +18,7 @@ function createNoteRouter(db) {
     }
   });
 
-  // Rotta per aggiornare una nota esistente
+  // Route per aggiornare una nota esistente
   router.put("/:id", cookieJwtAuth, async function (req, res) {
     const uid = req.user._id;
     const note = req.body;

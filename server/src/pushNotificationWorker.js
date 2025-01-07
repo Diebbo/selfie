@@ -25,23 +25,6 @@ export default function createNotificationWorker(db) {
           continue;
         }
 
-        // send notifications for user
-        if (user?.inbox?.length > 0) {
-          while (user.inbox.length > 0) {
-            const notification = user.inbox[0];
-            try {
-              await sendNotification(user, notification);
-              user.inbox.shift();
-            } catch (error) {
-              console.error(
-                `Error sending notification to user ${user.username}:`,
-                error,
-              );
-              // Continue with next notification
-            }
-          }
-        }
-
         for (const event of user.events || []) {
           if (!event?.notification) {
             console.log(
@@ -208,7 +191,7 @@ export default function createNotificationWorker(db) {
       from: "selfie.notification@gmail.com",
       to: payload.email,
       subject: payload.title,
-      text: payload.body,
+      html: payload.body,
     };
 
     if (process.env.NODE_ENV !== "production") {
@@ -238,9 +221,10 @@ export default function createNotificationWorker(db) {
         throw new Error("Invalid user object");
       }
 
+      // WebSocket Notification when user is online
       if (user.isVerified) await emitNotification(user._id.toString(), payload);
 
-      // Add push notifications if enabled
+      // Web Push Notification
       if (
         user.notifications?.pushOn &&
         Array.isArray(user.notifications.subscriptions) &&
@@ -252,19 +236,18 @@ export default function createNotificationWorker(db) {
           data: { url: payload.link },
         };
 
-        // Send to all subscriptions in one batch
         await sendPushNotifications(
           user.notifications.subscriptions,
           pushPayload,
         );
       }
 
-      // Add email notification if enabled
+      // Email Notification
       if (user.notifications?.emailOn && user.email) {
         const emailPayload = {
           email: user.email,
           title: payload.title,
-          body: `${payload.body}\n\n<a href="http://site232454.tw.cs.unibo/${payload.link}>Click here to view</a>`,
+          body: `${payload.body}\n\n<a href="https://site232454.tw.cs.unibo.it/${payload.link}">Click here to view</a>`,
         };
 
         await sendEmailNotification(emailPayload);
@@ -288,7 +271,7 @@ export default function createNotificationWorker(db) {
     // Bind db context to the check function
     const check = checkAndSendNotifications.bind(null);
 
-    // Schedule job with error handling
+    // Schedule job
     try {
       const job = schedule.scheduleJob("* * * * *", check);
 

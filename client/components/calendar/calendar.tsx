@@ -1,4 +1,3 @@
-//client/components/calendar/calendar.tsx
 "use client";
 
 import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
@@ -236,7 +235,7 @@ const CalendarPage = (props: CalendarPageProps) => {
               />
 
               <Button
-                onClick={() => {
+                onPress={() => {
                   isMonthView ? changeMonth(-1) : changeWeek(-7);
                 }}
                 variant="flat"
@@ -282,13 +281,13 @@ const CalendarPage = (props: CalendarPageProps) => {
               </Tooltip>
               <Button
                 variant="solid"
-                onClick={handleToday}
+                onPress={handleToday}
                 className="text-white text-base rounded-xl bg-primary border-transparent border-2 hover:border-white"
               >
                 Today
               </Button>
               <Button
-                onClick={() => {
+                onPress={() => {
                   isMonthView ? changeMonth(1) : changeWeek(7);
                 }}
                 variant="flat"

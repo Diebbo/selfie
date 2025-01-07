@@ -16,7 +16,6 @@ import { resourceSchema } from "./models/event-model.js";
 import createProjectService from "./services/projects.mjs";
 
 export async function createDataBase(uri) {
-  // creating a model
   const timeModel = mongoose.model("Times", timeSchema);
   const userModel = mongoose.model("Users", userSchema);
   const eventModel = mongoose.model("Event", eventSchema);
@@ -63,14 +62,6 @@ export async function createDataBase(uri) {
       avatar: `https://api.dicebear.com/9.x/open-peeps/svg?seed=${user.username}`,
     });
 
-    // OLD send verification email
-    /*addNotification(res, {
-      title: "Verify your email",
-      description: "verificati",
-      method: "email",
-      when: new Date(),
-    });*/
-
     const payload = {
       title: "Verify your email",
       body: `Click here to verify your email:`,
@@ -79,6 +70,8 @@ export async function createDataBase(uri) {
 
     return { dbuser: res, payload };
   };
+
+  // Settings Section
 
   const updateUsername = async (uid, username) => {
     const user = await userModel.findById(uid);
@@ -115,7 +108,6 @@ export async function createDataBase(uri) {
   };
 
   const verifyResetToken = async (resetToken) => {
-    console.log(resetToken);
     const user = await userModel.findOne({ resetToken: resetToken });
     if (!user) throw new Error("Invalid token");
 
@@ -137,7 +129,6 @@ export async function createDataBase(uri) {
     const emailUser = await userModel.findOne({ email: email });
     if (emailUser) throw new Error("Email already used");
 
-    // TODO: Send the verification email with the emailToken
     user.email = email;
     await user.save();
 
@@ -162,44 +153,41 @@ export async function createDataBase(uri) {
     return user;
   };
 
+  // Notification Settings Section
+
   const saveSubscriptions = async (uid, newSubscription) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    // Inizializza il campo notifications se non esiste
     if (!user.notifications) {
       user.notifications = {
-        emailOn: true, // Valore predefinito, puoi modificarlo secondo le tue esigenze
-        pushOn: true, // Valore predefinito, puoi modificarlo secondo le tue esigenze
+        emailOn: true, 
+        pushOn: true, 
         subscriptions: [],
       };
     }
 
-    // Controlla se esiste già una sottoscrizione con lo stesso endpoint
+    // check if a subscription with the same endpoint already exists
     const existingSubIndex = user.notifications.subscriptions.findIndex(
       (sub) => sub.endpoint === newSubscription.endpoint,
     );
 
-    // Controlla se esiste una sottoscrizione con lo stesso deviceName, in caso ritorna un errore
     if (existingSubIndex !== -1) {
-      // Se esiste una sottoscrizione con lo stesso endpoint, aggiorna solo il deviceName
+      // if a subscription with the same endpoint exists, update device name
       user.notifications.subscriptions[existingSubIndex] = newSubscription;
     } else {
-      // Controlla se esiste una sottoscrizione con lo stesso deviceName
+      // if a subscription with the same device name exists, throw an error
       const existingDeviceIndex = user.notifications.subscriptions.findIndex(
         (sub) => sub.device_name === newSubscription.device_name,
       );
-
       if (existingDeviceIndex !== -1) {
-        // Se esiste una sottoscrizione con lo stesso deviceName, lancia un errore
         throw new Error("A subscription with this device name already exists");
       }
 
-      // Aggiungi la nuova sottoscrizione
+      // New device subscription
       user.notifications.subscriptions.push(newSubscription);
     }
-
-    // Assicurati che pushOn sia true quando aggiungi o aggiorni una sottoscrizione
+    // Set push Notification to ON 
     user.notifications.pushOn = true;
 
     await user.save();
@@ -218,19 +206,16 @@ export async function createDataBase(uri) {
       throw new Error("User has no subscriptions");
     }
 
-    // Trova l'indice della sottoscrizione con il nome del dispositivo specificato
+    // find index of subscription with the specified device name
     const subscriptionIndex = user.notifications.subscriptions.findIndex(
       (sub) => sub.device_name === deviceName,
     );
-
     if (subscriptionIndex === -1) {
       throw new Error("Subscription not found for the specified device");
     }
 
-    // Rimuovi la sottoscrizione dall'array
     user.notifications.subscriptions.splice(subscriptionIndex, 1);
 
-    // Se non ci sono più sottoscrizioni, imposta pushOn a false
     if (user.notifications.subscriptions.length === 0) {
       user.notifications.pushOn = false;
     }
@@ -310,6 +295,8 @@ export async function createDataBase(uri) {
     return user;
   };
 
+  // Time Machine Section
+
   const changeDateTime = async (time, isRealTime = false) => {
     let filter = { name: "timemachine" };
     let update = {
@@ -336,6 +323,8 @@ export async function createDataBase(uri) {
     }
   };
 
+  // Note Section
+
   const postNote = async (uid, note, id) => {
     try {
       const user = await userModel.findById(uid);
@@ -346,7 +335,7 @@ export async function createDataBase(uri) {
         throw new Error("Note must have a title and content");
       }
       if (!note.tags) note.tags = [];
-      note.date = new Date(); // update the last modified date with current date
+      note.date = await getDateTime();
 
       if (id) {
         // Modify existing note
@@ -433,8 +422,10 @@ export async function createDataBase(uri) {
         (note) => note._id.toString() === noteId,
       );
       if (noteIndex === -1) {
+        // nota pubblica 
         noteIndex = await noteModel.findByIdAndDelete(noteId);
       } else {
+        // nota privata
         user.notes.splice(noteIndex, 1);
         await user.save();
       }
@@ -445,134 +436,8 @@ export async function createDataBase(uri) {
     }
   };
 
-  const addNotification = async (user, notification) => {
-    if (!user.inbox) user.inbox = [];
-    user.inbox.push(notification);
-    await user.save();
-  };
-  /* Explanation of the generateNotifications function:
-  O(log n) Insertion: We've implemented a binary search function findInsertionIndex that finds the correct insertion point for each new notification in O(log n) time.
-  Minimized Database Writes: Instead of updating each user individually, we now use a batch update approach. The batchUpdateUsers function creates a bulk write operation that updates all users in a single database call.
-  Maintained Sorting: We use MongoDB's $position operator to insert new notifications at the correct index, maintaining the sorted order without having to resort the entire array.
-  Single Database Operation: All updates for all users are now performed in a single bulkWrite operation, significantly reducing the number of database writes.
-  Memory Efficiency: We don't create a full copy of the inboxNotifications array in memory. Instead, we work directly with the database to insert the new notifications at the correct positions.
-  This implementation addresses your concerns by:
-
-  Ensuring O(log n) computational time for inserting new notifications into the sorted array.
-  Fetching all new inbox notifications at once.
-  Minimizing the number of database writes by using a bulk operation.
-  Note that this implementation assumes you're using MongoDB (based on the bulkWrite operation). If you're using a different database, you might need to adjust the batch update function accordingly.
-  */
-  async function generateNotifications(
-    { eventId, activityId, startDate, notification, title },
-    users,
-  ) {
-    const eventStartDate = new Date(startDate);
-    const notificationDate = new Date(notification.fromDate);
-    const notificationTimes = [];
-
-    const { freq, interval } = notification.repetition;
-    const incrementDate = {
-      daily: (date) => date.setDate(date.getDate() + interval),
-      weekly: (date) => date.setDate(date.getDate() + 7 * interval),
-      monthly: (date) => date.setMonth(date.getMonth() + interval),
-      yearly: (date) => date.setFullYear(date.getFullYear() + interval),
-    };
-
-    while (notificationDate < eventStartDate) {
-      notificationTimes.push(new Date(notificationDate));
-      incrementDate[freq](notificationDate);
-    }
-
-    const newNotifications = notificationTimes.map((notificationTime) => ({
-      fromEvent: eventId,
-      fromTask: activityId,
-      when: notificationTime,
-      title: notification.title || title,
-      method: notification.type || "email",
-    }));
-
-    console.log(
-      "New notifications:",
-      newNotifications.map((n) => n.when),
-    );
-
-    // Binary search function for O(log n) insertion
-    function findInsertionIndex(arr, notification) {
-      let low = 0;
-      let high = arr.length;
-      while (low < high) {
-        let mid = Math.floor((low + high) / 2);
-        if (arr[mid].when < notification.when) {
-          low = mid + 1;
-        } else {
-          high = mid;
-        }
-      }
-      return low;
-    }
-
-    // Batch update function
-    async function batchUpdateUsers(users, newNotifications) {
-      const bulkOperations = users.map((user) => {
-        const update = {
-          $push: { inboxNotifications: { $each: [], $sort: { when: 1 } } },
-        };
-
-        newNotifications.forEach((notification) => {
-          if (!user.inboxNotifications) {
-            user.inboxNotifications = [];
-          }
-          const insertIndex = findInsertionIndex(
-            user.inboxNotifications,
-            notification,
-          );
-          update.$push.inboxNotifications.$each.push({
-            $position: insertIndex,
-            ...notification,
-          });
-        });
-
-        return {
-          updateOne: {
-            filter: { _id: user._id },
-            update: update,
-          },
-        };
-      });
-
-      // Assuming you're using MongoDB and have a User model
-      return userModel.bulkWrite(bulkOperations);
-    }
-
-    // Filter out falsy users and perform batch update
-    const validUsers = users.filter(Boolean);
-    return batchUpdateUsers(validUsers, newNotifications);
-  }
-
-  async function generateNotificationsForEvent(event, users) {
-    return await generateNotifications(
-      {
-        eventId: event._id,
-        startDate: event.dtstart,
-        notification: event.notification,
-        title: event.title,
-      },
-      users,
-    );
-  }
-
-  async function generateNotificationsForActivity(activity, users) {
-    return await generateNotifications(
-      {
-        activityId: activity._id,
-        startDate: activity.dueDate,
-        notification: activity.notification,
-        title: activity.name,
-      },
-      users,
-    );
-  }
+  
+  // Resources Section
 
   const getResource = async (uid) => {
     const user = await userModel.findById(uid);
@@ -683,6 +548,8 @@ export async function createDataBase(uri) {
     };
   };
 
+  // Events Section
+
   const getEvents = async (uid) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -726,7 +593,6 @@ export async function createDataBase(uri) {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
 
-    // Validazione evento
     if (!event.title) throw new Error("Event must have a title");
     if (!event.dtstart || !event.dtend)
       throw new Error("Event must have a date");
@@ -847,11 +713,6 @@ export async function createDataBase(uri) {
         id => !newParticipantIds.includes(id)
       );
 
-      // Trova i nuovi partecipanti
-      const newParticipants = newParticipantIds.filter(
-        id => !oldParticipantIds.includes(id)
-      );
-
       var notifications = [];
 
       // Rimuove l'evento dagli utenti che non sono più partecipanti
@@ -873,11 +734,10 @@ export async function createDataBase(uri) {
       }
 
       // Invia notifiche solo ai nuovi partecipanti
-      for (const participantId of newParticipantIds) {
-        console.log(participantId);
+      for (const newParticipantId of newParticipantIds) {
         try {
           const updated = await userModel.findByIdAndUpdate(
-            participantId,
+            newParticipantId,
             { $push: { invitedEvents: eventId } },
             { new: true }
           );
@@ -890,18 +750,18 @@ export async function createDataBase(uri) {
               " ti ha invitato all'evento " +
               event.title +
               "\nClicca qui per accettare l'invito.",
-            link: `/calendar/${eventId}/${participantId}`,
+            link: `/calendar/${eventId}/${newParticipantId}`,
           };
 
           notifications.push({ user: updated, payload });
 
           if (!updated) {
-            console.log(`User not found: ${participantId}`);
+            console.log(`User not found: ${newParticipantId}`);
           } else {
-            console.log(`Event added to user: ${participantId}`);
+            console.log(`Event added to user: ${newParticipantId}`);
           }
         } catch (err) {
-          console.error(`Error updating participant ${participantId}:`, err);
+          console.error(`Error updating participant ${newParticipantId}:`, err);
         }
       }
 
@@ -911,7 +771,7 @@ export async function createDataBase(uri) {
     }
   };
 
-  // mi tolgo l'evento dopo averlo accettato [componente ShowEvent]
+  // tolgo l'evento dopo averlo accettato [delete evento per componente ShowEvent]
   const dodgeEvent = async (uid, eventId) => {
     const user = await userModel.findById(uid);
     if (!user) throw new Error("User not found");
@@ -926,7 +786,6 @@ export async function createDataBase(uri) {
     const eventRes = await eventModel.findByIdAndUpdate(eventId, {
       $pull: { participants: uid },
     });
-    console.log("evento senza:", eventRes);
 
     return { userRes, eventRes };
   };
@@ -982,15 +841,11 @@ export async function createDataBase(uri) {
       const event = await eventModel.findById(eventId);
       if (!event) throw new Error("Event not found");
 
-      // Trova tutti gli utenti che hanno questo eventId nel loro array events
-      const users = await userModel.find(
-        {
-          invitedEvents: eventId, // Cerca l'eventId nell'array events
-        },
-        "username",
-      ); // Proietta solo il campo username
+      const users = await userModel.find({
+        invitedEvents: eventId,
+      }, "username",
+      );
 
-      // Estrai gli username dal risultato
       const usernames = users.map((user) => user.username);
 
       return usernames;
@@ -1010,7 +865,7 @@ export async function createDataBase(uri) {
       if (event.type !== "VEVENT") continue;
 
       try {
-        // Converti l'evento iCal nel formato del tuo schema
+        // converto l'evento ical nel formato dello schema
         const eventData = {
           title: event.summary || "",
           summary: event.summary || "",
@@ -1029,7 +884,7 @@ export async function createDataBase(uri) {
           participants: [],
         };
 
-        // Aggiungi le coordinate geografiche se presenti
+        // aggiungo le coordinate geografiche se presenti
         if (event.geo) {
           eventData.geo = {
             lat: event.geo.lat,
@@ -1037,22 +892,19 @@ export async function createDataBase(uri) {
           };
         }
 
-        // Gestisci le regole di ricorrenza se presenti
+        // gestisco le regole di ricorrenza se presenti
         if (event.rrule) {
           eventData.rrule = parseRRule(event.rrule);
         }
 
-        // Salva l'evento nel database
+        // salvo l'evento nel database
         const newEvent = new eventModel(eventData);
-        // Con .save() aggiungo _id nell'oggetto
         const savedEvent = await newEvent.save();
         if (!savedEvent) throw new Error("Failed to save event");
 
-        // Aggiungi l'evento all'array importedEvents
         importedEvents.push(savedEvent);
       } catch (error) {
         console.error("Error importing event:", error);
-        // Continua con il prossimo evento anche se questo fallisce
         continue;
       }
     }
@@ -1324,12 +1176,14 @@ export async function createDataBase(uri) {
     return user;
   };
 
+  // Music Player Section
+
   const getCurrentSong = async (uid) => {
     try {
       const user = await userModel.findById(uid);
       if (!user) throw new Error("User not found");
       if (!user.musicPlayer.songPlaying) {
-        // se non c'è salvato nessun ID per la current song, allora inserisci l'id del primo elemento del DB song-model
+        // First time user opens the music player
         const songs = await songModel.find({});
         if (songs.length === 0) {
           throw new Error("No songs in the database");
@@ -1364,16 +1218,14 @@ export async function createDataBase(uri) {
       if (currentSongIndex === -1) {
         throw new Error("Error song index");
       }
-      console.log("currentSongIndex", currentSongIndex);
+
       let nextSongIndex = (currentSongIndex + 1) % songs.length;
       const nextSong = songs[nextSongIndex];
 
       user.musicPlayer.songPlaying = nextSong._id;
       await user.save();
 
-      // Ensure likedSongs is an array
       const likedSongs = user.musicPlayer.likedSongs || [];
-
       const isLiked = likedSongs.includes(nextSong._id);
 
       return { ...nextSong.toObject(), isLiked };
@@ -1399,7 +1251,6 @@ export async function createDataBase(uri) {
       if (currentSongIndex === -1) {
         throw new Error("Error song index");
       }
-      console.log("currentSongIndex", currentSongIndex);
       let previousSongIndex = 0;
       if (currentSongIndex === 0) {
         previousSongIndex = songs.length - 1;
@@ -1451,9 +1302,9 @@ export async function createDataBase(uri) {
   };
 
   // For now only for testing (to add song to the DB)
-  const addSong = async (uid, song) => {
+  const addSong = async (song) => {
     try {
-      const result = await songModel.create(song);
+      await songModel.create(song);
     } catch (error) {
       console.error("Error adding song:", error);
       throw error;
@@ -1489,7 +1340,6 @@ export async function createDataBase(uri) {
 
       if (!user.musicPlayer.likedSongs) user.musicPlayer.likedSongs = [];
 
-      // Correctly update the likedSongs array
       user.musicPlayer.likedSongs = user.musicPlayer.likedSongs.filter(
         (id) => id !== songId,
       );
@@ -1566,58 +1416,6 @@ export async function createDataBase(uri) {
     }
   };
 
-  const getNextNotifications = async () => {
-    const users = await userModel.find({});
-    let notifications = { email: [], pushNotification: [] };
-    const currentDateTime = await getDateTime();
-
-    await Promise.all(
-      users.map(async (user) => {
-        if (user.inboxNotifications.length > 0) {
-          const notification = user.inboxNotifications[0];
-
-          if (new Date(notification.when) - currentDateTime <= 30000) {
-            let event, activity, notificationDescription;
-
-            if (notification.fromEvent) {
-              event = await eventModel.findById(notification.fromEvent);
-              notificationDescription =
-                "reminder for event taking place on " + event.dtstart;
-            } else if (notification.fromActivity) {
-              activity = await activityModel.findById(notification.fromTask);
-              notificationDescription =
-                "reminder for activity due on " + activity.dueDate;
-            }
-
-            // Override the default notification description if it's provided
-            notificationDescription =
-              notification.description || notificationDescription;
-
-            let removedNotification = user.inboxNotifications.shift();
-
-            if (removedNotification.method === "email") {
-              notifications.email.push({
-                to: user.email,
-                subject: removedNotification.title,
-                body: notificationDescription,
-              });
-            } else {
-              notifications.pushNotification.push({
-                username: user.username,
-                title: removedNotification.title,
-                body: notificationDescription,
-              });
-            }
-
-            await user.save();
-          }
-        }
-      }),
-    );
-
-    return notifications;
-  };
-
   // To be used by the pushNotificationWorker
   const getAllUserEvents = async () => {
     try {
@@ -1640,21 +1438,6 @@ export async function createDataBase(uri) {
     if (!activity.dueDate) {
       throw new Error("Activity must have a dueDate");
     }
-
-    /* activity.participants = [user.username];
-
-    const users = await userModel.find({
-      username: { $in: activity.participants },
-    });
-
-    if (users.length !== activity.participants.length) {
-      throw new Error("Some participants not found");
-    }
-
-    activity.participants = activity.participants.map((part) =>
-      users.find((user) => user.username === part)._id.toString(),
-    );
-    */
 
     if (!parentId) {
       console.log("Creating new activity", activity);
@@ -2091,20 +1874,20 @@ export async function createDataBase(uri) {
     getNoteById,
     removeNoteById,
     createEvent,
+    getEvent,
+    getEvents,
+    modifyEvent,
+    dodgeEvent,
+    participateEvent,
+    rejectEvent,
+    importEvents,
+    deleteEvent,
+    getParticipantsUsernames,
     getResource,
     bookResource,
     unBookResource,
     addResource,
     deleteResource,
-    getEvent,
-    getEvents,
-    deleteEvent,
-    modifyEvent,
-    dodgeEvent,
-    participateEvent,
-    rejectEvent,
-    getParticipantsUsernames,
-    importEvents,
     getUserById,
     setPomodoroSettings,
     getCurrentSong,
@@ -2117,7 +1900,6 @@ export async function createDataBase(uri) {
     deleteInbox,
     deleteInboxById,
     deleteInboxByLink,
-    getNextNotifications,
     getDateTime,
     verifyEmail,
     isVerified,

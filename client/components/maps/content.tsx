@@ -43,7 +43,7 @@ const MapPage: React.FC<ContentProps> = ({ events, friends }) => {
         },
         (error) => {
           fetchUserPosition();
-        },
+        }
       );
     } else {
       fetchUserPosition();
