@@ -25,23 +25,6 @@ export default function createNotificationWorker(db) {
           continue;
         }
 
-        // send notifications for user
-        if (user?.inbox?.length > 0) {
-          while (user.inbox.length > 0) {
-            const notification = user.inbox[0];
-            try {
-              await sendNotification(user, notification);
-              user.inbox.shift();
-            } catch (error) {
-              console.error(
-                `Error sending notification to user ${user.username}:`,
-                error,
-              );
-              // Continue with next notification
-            }
-          }
-        }
-
         for (const event of user.events || []) {
           if (!event?.notification) {
             console.log(
@@ -208,7 +191,7 @@ export default function createNotificationWorker(db) {
       from: "selfie.notification@gmail.com",
       to: payload.email,
       subject: payload.title,
-      text: payload.body,
+      html: payload.body,
     };
 
     if (process.env.NODE_ENV !== "production") {
@@ -264,7 +247,7 @@ export default function createNotificationWorker(db) {
         const emailPayload = {
           email: user.email,
           title: payload.title,
-          body: `${payload.body}\n\n<a href="http://site232454.tw.cs.unibo/${payload.link}>Click here to view</a>`,
+          body: `${payload.body}\n\n<a href="https://site232454.tw.cs.unibo.it/${payload.link}">Click here to view</a>`,
         };
 
         await sendEmailNotification(emailPayload);

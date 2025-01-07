@@ -1,4 +1,3 @@
-//client/components/calendar/calendar.tsx
 "use client";
 
 import { Chip, Button, Tooltip, Switch } from "@nextui-org/react";
