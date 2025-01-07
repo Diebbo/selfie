@@ -221,9 +221,10 @@ export default function createNotificationWorker(db) {
         throw new Error("Invalid user object");
       }
 
+      // WebSocket Notification when user is online
       if (user.isVerified) await emitNotification(user._id.toString(), payload);
 
-      // Add push notifications if enabled
+      // Web Push Notification
       if (
         user.notifications?.pushOn &&
         Array.isArray(user.notifications.subscriptions) &&
@@ -235,14 +236,13 @@ export default function createNotificationWorker(db) {
           data: { url: payload.link },
         };
 
-        // Send to all subscriptions in one batch
         await sendPushNotifications(
           user.notifications.subscriptions,
           pushPayload,
         );
       }
 
-      // Add email notification if enabled
+      // Email Notification
       if (user.notifications?.emailOn && user.email) {
         const emailPayload = {
           email: user.email,
@@ -271,7 +271,7 @@ export default function createNotificationWorker(db) {
     // Bind db context to the check function
     const check = checkAndSendNotifications.bind(null);
 
-    // Schedule job with error handling
+    // Schedule job
     try {
       const job = schedule.scheduleJob("* * * * *", check);
 

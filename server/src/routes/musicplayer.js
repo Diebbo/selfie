@@ -30,7 +30,6 @@ function createMusicRouter(db){
     router.get("/prevsong", cookieJwtAuth, async (req, res) => {
         const uid = req.user._id;
         try {
-            console.log("uid", uid);
             const song = await db.getPrevSong(uid);
             console.log("song", song);
             res.status(200).json(song);
