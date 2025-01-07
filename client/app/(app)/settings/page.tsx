@@ -1,8 +1,6 @@
 "use server";
 import Content from "@/components/settings/content";
-import {
-  getNotificationStatus,
-} from "@/actions/auth.action";
+import { getNotificationStatus } from "@/actions/auth.action";
 import { getUser, isAdmin } from "@/actions/user";
 import { getEvents, getResource } from "@/actions/events";
 
@@ -19,9 +17,6 @@ const Page = async () => {
     if (user instanceof Error) {
       throw user.message;
     }
-    // console.log("miao", user);
-    // console.log("events page", events);
-    // console.log("risorse", resource);
 
     return (
       <Content

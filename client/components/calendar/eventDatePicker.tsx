@@ -24,7 +24,6 @@ export const getDefaultDateRange = (isAllDay: boolean) => {
     const currentHour = new Date(today);
     const nextHour = new Date(today);
     nextHour.setHours(today.getHours());
-    console.log(parseAbsoluteToLocal(currentHour.toISOString()));
     return {
       start: parseAbsoluteToLocal(currentHour.toISOString()),
       end: parseAbsoluteToLocal(nextHour.toISOString()),
@@ -47,9 +46,6 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
 
   const handleDateRangeChange = (value: RangeValue<DateValue> | null) => {
     if (value?.start && value?.end) {
-      const start: TimeFields = { hour: 0, minute: 0 };
-      const end: TimeFields = { hour: 23, minute: 59 };
-      console.log("inizio e fine", start, end);
       const zone = getLocalTimeZone();
 
       var startDate = value.start.toDate(zone);
@@ -62,7 +58,6 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
         endDate.setMinutes(59);
         endDate.setSeconds(59);
       }
-      console.log("ma questo sono sapotite", startDate, endDate);
 
       if (startDate.getTime() > endDate.getTime()) {
         setDateError(true);
@@ -78,11 +73,10 @@ const EventDatePicker: React.FC<EventDatePickerProps> = ({
   return (
     <DateRangePicker
       label="Event duration"
-      className={`${
-        isMobile
+      className={`${isMobile
           ? "w-full max-w-[95vw] mx-auto flex flex-col space-y-2 overflow-hidden"
           : "max-w-[430px] flex flex-row space-x-2"
-      }`}
+        }`}
       isRequired
       hideTimeZone
       visibleMonths={isMobile ? 1 : 2}

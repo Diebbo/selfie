@@ -1,5 +1,3 @@
-// import { addNotification } from './services/notificationService.js';
-
 let ioInstance = null;
 
 export function createWebSocket(io, database, sendNotification) {
@@ -49,15 +47,9 @@ export function createWebSocket(io, database, sendNotification) {
         // Aggiungi l'utente alla sua room personale per le notifiche
         socket.join(userId);
 
-        // Salva il socket ID dell'utente
+        // Salva il socket ID mappato all'utente
         notificationSockets.set(userId, socket.id);
 
-        // Invia una notifica di benvenuto
-        /*socket.emit("new_notification", {
-          title: "🔔 Notifiche attive",
-          body: "Riceverai qui le tue notifiche",
-          timestamp: new Date(),
-        });*/
 
         console.log(`User ${userId} joined notification system< successfully`);
       } catch (error) {
@@ -67,26 +59,7 @@ export function createWebSocket(io, database, sendNotification) {
         });
       }
     });
-
-    socket.on("leave_notifications", (userId) => {
-      if (notificationSockets.has(userId)) {
-        notificationSockets.delete(userId);
-        socket.leave(userId);
-        console.log(`User ${userId} left notification system`);
-      }
-    });
-
-    socket.on("join_notification_socket", async ({ userId }) => {
-      notificationSockets.set(userId, socket.id);
-      console.log("Notification socket joined");
-      console.log("user id", userId);
-      socket.emit("new_notification", {
-        title: "🔔 Benvenuto su ChatApp!",
-        body: "Le tue notifiche appariranno qui",
-        link: "/notifications",
-      });
-    });
-
+    
     // Handle private messages
     socket.on("private_message", async ({ message, receiverUsername }) => {
       try {
@@ -152,7 +125,6 @@ export function createWebSocket(io, database, sendNotification) {
     let typingTimeout = null;
 
     socket.on("typing_start", ({ senderUsername, receiverUsername }) => {
-      console.log("typing_start");
       if (typingTimeout) clearTimeout(typingTimeout);
       typingTimeout = setTimeout(async () => {
         const receiverId =
@@ -167,7 +139,6 @@ export function createWebSocket(io, database, sendNotification) {
     });
 
     socket.on("typing_end", async ({ senderUsername, receiverUsername }) => {
-      console.log("typing_end");
       try {
         const receiverId =
           await database.userService.fromUsernameToId(receiverUsername);
@@ -203,22 +174,12 @@ export function createWebSocket(io, database, sendNotification) {
       }
     });
 
-    // Evento per la connessione iniziale alle notifiche
-    socket.on("join_notifications", async ({ userId }) => {
-      try {
-        // Aggiungi l'utente alla stanza delle notifiche
-        socket.join(`notifications:${userId}`);
-      } catch (error) {
-        console.error("Error in join_notifications handler:", error);
-      }
-    });
-
     // Handle disconnection
     socket.on("disconnect", async () => {
       try {
         const user = activeUsers.get(socket.id);
         if (user) {
-          // pdate user's status
+          // update user's status
           await database.userService.update(user.userId, {
             isOnline: false,
             lastSeen: await database.getDateTime(),
@@ -252,14 +213,13 @@ export function createWebSocket(io, database, sendNotification) {
   return io;
 }
 
+// Function to send WS notification to user
 export async function emitNotification(userId, notification) {
   if (!ioInstance) {
     throw new Error("Socket.io not initialized");
   }
 
   try {
-    //console.log("Trying to emit notification to user", userId, notification);
-    // Invia la notifica alla room personale dell'utente
     ioInstance.to(userId).emit("new_notification", notification);
     console.log(`Notification emitted to user ${userId}`);
     return true;

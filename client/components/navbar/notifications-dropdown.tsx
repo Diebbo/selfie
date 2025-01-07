@@ -33,7 +33,6 @@ export const NotificationsDropdown = () => {
         method: "GET",
         credentials: "include",
       });
-      console.log("END FETCHING NOTIFICATIONS");
 
       if (!response.ok) {
         throw new Error("Failed to fetch notifications");
@@ -44,7 +43,7 @@ export const NotificationsDropdown = () => {
       setNotifications(data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error fetching notifications",
+        err instanceof Error ? err.message : "Error fetching notifications"
       );
     } finally {
       setIsLoading(false);
@@ -53,17 +52,8 @@ export const NotificationsDropdown = () => {
 
   const fetchID = async () => {
     try {
-      /*const response = await fetch("/api/users/id", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch user ID");
-      }*/
-
       const user = await getUser();
-      return user; // Ritorna l'utente
+      return user;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error fetching user ID");
       throw err; // Rilancia l'errore per gestirlo in initializeSocket
@@ -86,7 +76,6 @@ export const NotificationsDropdown = () => {
           throw new Error("Socket URL not defined");
         }
         socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL as string);
-        console.log("Connected to socket notification server");
 
         socketRef.current.on("connect", () => {
           console.log("Connected to notification server");
@@ -99,7 +88,6 @@ export const NotificationsDropdown = () => {
         socketRef.current.on(
           "new_notification",
           (notification: Notification) => {
-            console.log("Received new notification", notification);
             setNotifications((prev) => [notification, ...prev]);
 
             toast(
@@ -116,9 +104,9 @@ export const NotificationsDropdown = () => {
               {
                 duration: 5000,
                 position: "top-right",
-              },
+              }
             );
-          },
+          }
         );
 
         // Gestione errori di connessione
@@ -129,7 +117,7 @@ export const NotificationsDropdown = () => {
       } catch (error) {
         console.error("Error initializing socket:", error);
         setError(
-          error instanceof Error ? error.message : "Error initializing socket",
+          error instanceof Error ? error.message : "Error initializing socket"
         );
       } finally {
         setIsLoading(false);
@@ -137,7 +125,6 @@ export const NotificationsDropdown = () => {
     };
 
     // Fetch le notifiche iniziali
-    // Avvia l'inizializzazione
     initializeSocket();
 
     // Cleanup
@@ -165,7 +152,7 @@ export const NotificationsDropdown = () => {
       setNotifications([]); // Aggiorna lo stato locale dopo la cancellazione
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error clearing notifications",
+        err instanceof Error ? err.message : "Error clearing notifications"
       );
     }
   };
@@ -182,11 +169,11 @@ export const NotificationsDropdown = () => {
       }
 
       setNotifications((prev) =>
-        prev.filter((n) => n._id !== notification._id),
+        prev.filter((n) => n._id !== notification._id)
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Error deleting notification",
+        err instanceof Error ? err.message : "Error deleting notification"
       );
     }
   };
@@ -209,7 +196,6 @@ export const NotificationsDropdown = () => {
         />
       </div>
       <Dropdown
-        className="overflow-y-auto scrollbar-hide"
         placement="bottom-end"
       >
         <DropdownTrigger>
@@ -227,7 +213,7 @@ export const NotificationsDropdown = () => {
           </NavbarItem>
         </DropdownTrigger>
         <DropdownMenu
-          className="w-80 max-h-[40vh] "
+          className="w-80 max-h-[40vh] overflow-y-auto scrollbar-hide"
           aria-label="Notifications"
           variant="flat"
           color="success"
@@ -261,8 +247,8 @@ export const NotificationsDropdown = () => {
                 <DropdownItem
                   key={index}
                   className="px-2 py-2"
-                  onClick={(e) => {
-                    e.preventDefault();
+                  textValue={notification.title}
+                  onPress={() => {
                     window.location.href = notification.link;
                   }}
                   closeOnSelect={false}

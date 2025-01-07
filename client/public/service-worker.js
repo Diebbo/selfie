@@ -7,8 +7,6 @@ self.addEventListener("push", function (event) {
 
     const notificationPromise = self.registration.showNotification(data.title, {
       body: data.body,
-      //icon: "/icon.png",
-      //badge: "/badge.png",
       data: { url: data.data.url },
       actions: [
         {

@@ -43,11 +43,15 @@ export const UserDropdown = () => {
   const handleChange = useCallback((event: CustomEvent<UserChangeEvents>) => {
     switch (event.type) {
       case "emailUpdated":
-        setUser((prev) => ({ ...prev, email: event.detail.updatedEmail } as Person));
+        setUser(
+          (prev) => ({ ...prev, email: event.detail.updatedEmail } as Person)
+        );
         break;
       case "avatarUpdated":
         console.log("Avatar updated:", event.detail.updatedAvatar);
-        setUser((prev) => ({ ...prev, avatar: event.detail.updatedAvatar } as Person));
+        setUser(
+          (prev) => ({ ...prev, avatar: event.detail.updatedAvatar } as Person)
+        );
         break;
       default:
         console.error("Unknown event type:", event);
@@ -61,7 +65,10 @@ export const UserDropdown = () => {
     window.addEventListener("avatarUpdated", handleChange as EventListener);
     return () => {
       window.removeEventListener("emailUpdated", handleChange as EventListener);
-      window.removeEventListener("avatarUpdated", handleChange as EventListener);
+      window.removeEventListener(
+        "avatarUpdated",
+        handleChange as EventListener
+      );
     };
   }, [fetchUser, handleChange]);
 
@@ -98,19 +105,23 @@ export const UserDropdown = () => {
         <DropdownItem
           key="profile"
           className="flex flex-col justify-start w-full items-start"
+          textValue="Profile"
         >
           <p>Signed in as</p>
           <p>{user?.email || "Loading..."}</p>
         </DropdownItem>
-        <DropdownItem key="settings">My Settings</DropdownItem>
+        <DropdownItem key="settings" textValue="settings">
+          My Settings
+        </DropdownItem>
         <DropdownItem
           key="logout"
           color="danger"
           className="text-danger"
+          textValue="logout"
         >
           Log Out
         </DropdownItem>
-        <DropdownItem key="switch">
+        <DropdownItem key="switch" textValue="Switch Theme">
           <DarkModeSwitch />
         </DropdownItem>
       </DropdownMenu>

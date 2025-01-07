@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, ReactElement } from "react";
+import React, { useState, useEffect } from "react";
 import { areIntervalsOverlapping, parseISO } from "date-fns";
 import { Interval } from "date-fns";
 import {
@@ -46,7 +46,6 @@ async function createEvent(
   resourceId: string | undefined,
 ): Promise<boolean> {
   try {
-    console.log("evento aggiunto", event);
     var res = await fetch(`${EVENTS_API_URL}`, {
       method: "PUT",
       headers: {
@@ -64,7 +63,6 @@ async function createEvent(
       throw new Error("Failed to create events");
     }
 
-    console.log("aggiungo la risorsa con Id: ", resourceId);
     if (resourceId !== undefined) {
       res = await fetch(`${EVENTS_API_URL}/resource/${resourceId}`, {
         method: "PATCH",
@@ -137,7 +135,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
   isMobile,
   resource,
 }) => {
-  console.log("eventAdder risorse", resource);
   const [isOpen, setIsOpen] = useState(false);
   const [availableResources, setAvailableResources] = useState<ResourceModel[]>(
     [],
@@ -192,7 +189,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
         eventData.dtend as Date,
       ),
     );
-    console.log("available: ", available);
     setAvailableResources(available);
   }, [eventData.dtstart, eventData.dtend, resource]);
 
@@ -273,7 +269,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
               return false;
             });
 
-          console.log("suggestions: ", suggestions);
           setLocationSuggestions(suggestions);
         } catch (error) {
           console.error("Error fetching location suggestions:", error);
@@ -318,7 +313,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       const [_, notificationField, repetitionField] = name.split(".");
 
       setEventData((prev: any) => {
-        // Se stiamo gestendo un campo di repetition
         if (notificationField === "repetition") {
           return {
             ...prev,
@@ -332,7 +326,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
           };
         }
 
-        // Se stiamo gestendo fromDate
         if (notificationField === "fromDate") {
           return {
             ...prev,
@@ -343,7 +336,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
           };
         }
 
-        // Per tutti gli altri campi della notification
+        // Per tutti gli altri campi della campo notification
         return {
           ...prev,
           notification: {
@@ -363,14 +356,14 @@ const EventAdder: React.FC<EventAdderProps> = ({
     const endDate = new Date(end);
 
     setEventData((prev) => {
-      //keep resource if possible
+      //keep resource if possible after date change
       if (prev.resource) {
         const selectedResource = resource.find((r) => r.name === prev.resource);
         if (
           selectedResource &&
           !checkResourceAvailability(selectedResource, startDate, endDate)
         ) {
-          //remove old resource
+          //remove old resource because not available
           return {
             ...prev,
             dtstart: startDate,
@@ -410,7 +403,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       ...prev,
       rrule: newRrule,
     }));
-    console.log("newRrule", newRrule);
   };
 
   const handleParticipantSelect = (friend: Person) => {
@@ -418,7 +410,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       ...prev,
       participants: [...(prev.participants || []), { _id: friend._id } as Partial<Person>],
     }));
-    console.log(eventData.participants);
   };
 
   const handleRemoveParticipant = (friendToRemove: Person) => {
@@ -486,7 +477,6 @@ const EventAdder: React.FC<EventAdderProps> = ({
       return;
     }
 
-    console.log("isError", isError, "dateError", dateError);
     if (!isError && !notificationError && !dateError) {
       const newEvent: SelfieEvent = {
         ...eventData,
@@ -499,10 +489,8 @@ const EventAdder: React.FC<EventAdderProps> = ({
       } as SelfieEvent;
 
       try {
-        console.log("aggiungo la risorsa _id", selectedResource?._id);
         const success = await createEvent(newEvent, selectedResource?._id);
         if (success) {
-          console.log("Event created successfully");
           handleExit();
         } else {
           console.error("Failed to create event");
@@ -573,7 +561,7 @@ const EventAdder: React.FC<EventAdderProps> = ({
                   }}
                 >
                   <div className="flex flex-col gap-1">
-                    <p className="text-medium">Tutto il giorno</p>
+                    <p className="text-medium">All day</p>
                   </div>
                 </Switch>
               )}

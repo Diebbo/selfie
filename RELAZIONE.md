@@ -9,7 +9,7 @@
 ## Relazione
 
 ### Stack
-- Frontend: React, Next, TailwindCSS, TypeScript, websockets, next-ui
+- Frontend: React, Next, TailwindCSS, TypeScript, web-sockets, next-ui
 - Backend: Node, Express, websockets
 - Database: MongoDB
 
@@ -19,7 +19,7 @@
 
 #### Frontend
 
-Il frontend è stato realizzato con React, Next per il routing e rendering server-side. Tra le altre librerie utilizzate e' importante citare websockets per la comunicazione real-time con il server, e next-ui per la gestione temi dei componenti.
+Il frontend è stato realizzato con React, Next(ma non abbiamo usato Express per i routing?) per il routing e rendering server-side. Tra le altre librerie utilizzate e' importante citare web-sockets per la comunicazione real-time con il server, e next-ui per la gestione temi dei componenti.
 
 Per l'invio di notifiche lato client e' stato utilizzato il servizio di notifiche integrato nei browser, grazie all'integrazione WPA.
 
@@ -29,16 +29,17 @@ Vorrei dare inoltre credito alla [repo](https://github.com/Siumauricio/nextui-da
 
 Il backend è stato realizzato con Node e Express, con l'aggiunta di websockets per la comunicazione real-time con il frontend. Viene inoltre utilizzato node-mailer, con annesso account google, per la spedizione di notifiche email. 
 
-I web sockets sono stati utilizzati per:
+I web-sockets sono stati utilizzati per:
 - chat: messaggi in tempo reale
 - notifiche: sistema di notifiche sulla creazione di nuovi eventi/progetti
 
 ### Scelte implementative
 
-Nel complesso il progetto cerca di mantenere una struttura pulita e ben organizzata, con un approccio improntato ai componenti e alla modularità. Una delle peggiori scelte e' stata quella di non adoperare ts anche per il backend, che avrebbe reso il codice più robusto e manutenibile.
+Nel complesso il progetto cerca di mantenere una struttura pulita e ben organizzata, con un approccio improntato ai componenti e alla modularità. 
+Una possibile strada che non abbiamo seguito è stata quella di non usare ts anche per il backend, che avrebbe reso il codice più robusto e manutenibile.
 
 ### AI
 
-Il progetto e' stato realizzato utilizzando Github Copilot come strumento di LLM, che ha aiutato notevolmente nella stesura del codice, specialmente nei primi momenti di sviluppo.
+Alcuni elementi del gruppo hanno fatto uso di Github Copilot, il quale ha aiutato notevolmente nella stesura del codice, specialmente nei primi momenti di sviluppo.
 
-Pensiamo sia degno di nota segnalare che e' stato utilizzato anche chatgpt e/o claudai per la generazione di alcuni componenti front-end: quello che sembrava un ottimo e veloce lavoro, e' risultato essere un disastro, in quanto questo genere di tecnologie non tiene in considerazione delle librerie utilizzate, non e' in grado di generare condice mantenibile.
+Desideriamo segnalarle che abbiamo utilizzato ChatGPT e/o ClaudeAI per la generazione di alcuni componenti front-end del progetto. Sebbene inizialmente il materiale prodotto da questi strumenti sembrasse di alta qualità e fosse stato creato in tempi rapidi, ci siamo accorti che la sua gestione si è rivelata più complessa del previsto. Questo perché tali tecnologie non considerano sempre una serie di fattori cruciali, rendendo il codice meno facilmente manutenibile e, in alcuni casi, non conforme agli standard richiesti. Di conseguenza, abbiamo appreso che, per ottenere risultati corretti e sostenibili, è necessaria una supervisione attenta e continua del codice generato.

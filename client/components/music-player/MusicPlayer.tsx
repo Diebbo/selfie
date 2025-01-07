@@ -100,7 +100,7 @@ export default function MusicPlayer() {
         ? await musicPlayerService.fetchRandomSong()
         : await musicPlayerService.fetchNextSong();
       setCurrentSong(song);
-      audioElement.src = "/song/" + song.title + ".wav";
+      audioElement.src = "/song/" + song.title + ".mp3";
       await audioElement.load();
       const playPromise = audioElement.play();
       if (playPromise !== undefined) {
@@ -124,7 +124,7 @@ export default function MusicPlayer() {
         ? await musicPlayerService.fetchRandomSong()
         : await musicPlayerService.fetchPrevSong();
       setCurrentSong(song);
-      audioElement.src = "/song/" + song.title + ".wav";
+      audioElement.src = "/song/" + song.title + ".mp3";
       await audioElement.load();
       const playPromise = audioElement.play();
       if (playPromise !== undefined) {
