@@ -25,23 +25,6 @@ export default function createNotificationWorker(db) {
           continue;
         }
 
-        // send notifications for user
-        if (user?.inbox?.length > 0) {
-          while (user.inbox.length > 0) {
-            const notification = user.inbox[0];
-            try {
-              await sendNotification(user, notification);
-              user.inbox.shift();
-            } catch (error) {
-              console.error(
-                `Error sending notification to user ${user.username}:`,
-                error,
-              );
-              // Continue with next notification
-            }
-          }
-        }
-
         for (const event of user.events || []) {
           if (!event?.notification) {
             console.log(
