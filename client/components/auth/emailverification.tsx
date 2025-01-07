@@ -3,13 +3,11 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { deleteAuthCookie, verification } from "@/actions/auth.action";
-import getBaseUrl from "@/config/proxy";
 
 export function EmailVerificationPage() {
   const [verificationStatus, setVerificationStatus] = useState<string>(
     "Verifica in corso..."
   );
-  const [isVerified, setIsVerified] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const emailToken = searchParams.get("emailToken");
   const router = useRouter();
