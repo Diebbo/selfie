@@ -1054,8 +1054,8 @@ const ShowEvent: React.FC<ShowEventProps> = ({
 
                   <DatePicker
                     defaultValue={getDateParsed(
-                      displayEvent.dtstart,
-                      displayEvent.allDay,
+                      displayEvent.notification.fromDate,
+                      displayEvent.notification.repetition.freq === 'minutley',
                     )}
                     maxValue={getDateParsed(
                       displayEvent.dtstart,
