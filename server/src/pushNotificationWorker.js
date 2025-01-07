@@ -191,7 +191,7 @@ export default function createNotificationWorker(db) {
       from: "selfie.notification@gmail.com",
       to: payload.email,
       subject: payload.title,
-      text: payload.body,
+      html: payload.body,
     };
 
     if (process.env.NODE_ENV !== "production") {
